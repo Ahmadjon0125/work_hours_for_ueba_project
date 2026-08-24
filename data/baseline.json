@@ -1,0 +1,326 @@
+{
+  "meta": {
+    "windowDays": 60,
+    "trainedAt": "2026-08-24T19:42:19.958630",
+    "minDowSamples": 2,
+    "userCount": 12
+  },
+  "baselines": {
+    "6a7dc01496f1753c3c23c352": {
+      "username": "sanja@desktop-q46u2et",
+      "weeks": {
+        "Monday": {
+          "count": 3,
+          "meanStart": 351.98,
+          "stdStart": 304.85,
+          "meanFinish": 694.76,
+          "stdFinish": 208.29,
+          "meanDuration": 342.78
+        },
+        "Tuesday": {
+          "count": 3,
+          "meanStart": 786.16,
+          "stdStart": 232.14,
+          "meanFinish": 805.45,
+          "stdFinish": 204.83,
+          "meanDuration": 19.29
+        },
+        "Wednesday": {
+          "count": 2,
+          "meanStart": 271.23,
+          "stdStart": 383.57,
+          "meanFinish": 850.34,
+          "stdFinish": 435.42,
+          "meanDuration": 579.12
+        },
+        "Thursday": {
+          "count": 4,
+          "meanStart": 385.02,
+          "stdStart": 461.43,
+          "meanFinish": 1098.79,
+          "stdFinish": 399.22,
+          "meanDuration": 713.77
+        },
+        "Friday": {
+          "count": 2,
+          "meanStart": 0.0,
+          "stdStart": 0.0,
+          "meanFinish": 1154.75,
+          "stdFinish": 288.12,
+          "meanDuration": 1154.75
+        },
+        "Saturday": {
+          "count": 2,
+          "meanStart": 319.97,
+          "stdStart": 452.5,
+          "meanFinish": 1063.62,
+          "stdFinish": 213.96,
+          "meanDuration": 743.66
+        }
+      }
+    },
+    "6a86f21875dddb668378ff44": {
+      "username": "azam@desktop-a26gj2s",
+      "weeks": {
+        "Thursday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a58d232d3e5f5c2831242d1": {
+      "username": "Azamat Muqumjonov",
+      "weeks": {
+        "Monday": {
+          "count": 3,
+          "meanStart": 0.0,
+          "stdStart": 0.0,
+          "meanFinish": 1244.83,
+          "stdFinish": 238.07,
+          "meanDuration": 1244.83
+        },
+        "Tuesday": {
+          "count": 2,
+          "meanStart": 0.0,
+          "stdStart": 0.0,
+          "meanFinish": 689.87,
+          "stdFinish": 13.81,
+          "meanDuration": 689.87
+        },
+        "Thursday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Friday": {
+          "count": 2,
+          "meanStart": 0.0,
+          "stdStart": 0.0,
+          "meanFinish": 846.6,
+          "stdFinish": 307.4,
+          "meanDuration": 846.6
+        }
+      }
+    },
+    "6a58d0aa55f309e9348439a7": {
+      "username": "rakhmatillo",
+      "weeks": {
+        "Tuesday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Thursday": {
+          "count": 2,
+          "meanStart": 0.0,
+          "stdStart": 0.0,
+          "meanFinish": 1203.58,
+          "stdFinish": 200.29,
+          "meanDuration": 1203.58
+        },
+        "Friday": {
+          "count": 2,
+          "meanStart": 0.0,
+          "stdStart": 0.0,
+          "meanFinish": 1260.18,
+          "stdFinish": 147.84,
+          "meanDuration": 1260.18
+        },
+        "Saturday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a6ca7640eef1739bea6f534": {
+      "username": "Bellissimo Pizza Pizza",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Friday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a679c5319253d88c9b5f2cf": {
+      "username": "Alisher",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a51ecf5448f29c37aaa629a": {
+      "username": "6a51ecf5448f29c37aaa629a",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Friday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Saturday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Sunday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "69d39296be20f719382c88a0": {
+      "username": "69d39296be20f719382c88a0",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "69d4d05bbe20f719382c9d7e": {
+      "username": "69d4d05bbe20f719382c9d7e",
+      "weeks": {
+        "Wednesday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a68d16e4abd38577c6314fb": {
+      "username": "azam Greeter",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Tuesday": {
+          "count": 2,
+          "meanStart": 940.07,
+          "stdStart": 394.21,
+          "meanFinish": 1303.29,
+          "stdFinish": 99.83,
+          "meanDuration": 363.23
+        },
+        "Wednesday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        },
+        "Thursday": {
+          "count": 2,
+          "meanStart": 932.85,
+          "stdStart": 82.21,
+          "meanFinish": 1169.49,
+          "stdFinish": 251.44,
+          "meanDuration": 236.64
+        },
+        "Friday": {
+          "count": 3,
+          "meanStart": 728.81,
+          "stdStart": 178.51,
+          "meanFinish": 993.82,
+          "stdFinish": 341.33,
+          "meanDuration": 265.01
+        },
+        "Saturday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a8c1e58bb74e322c4c2f2fc": {
+      "username": "user_1",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    },
+    "6a8c1952bb74e322c4c2e68c": {
+      "username": "user_1",
+      "weeks": {
+        "Monday": {
+          "count": 1,
+          "meanStart": null,
+          "stdStart": null,
+          "meanFinish": null,
+          "stdFinish": null,
+          "meanDuration": null
+        }
+      }
+    }
+  }
+}

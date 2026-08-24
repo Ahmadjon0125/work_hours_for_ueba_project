@@ -1,929 +1,550 @@
 {
   "meta": {
-    "windowDays": 60,
-    "generatedAt": "2026-08-21T18:40:41.564660"
+    "evalFrom": "2026-06-29",
+    "evalTo": "2026-08-24",
+    "generatedAt": "2026-08-24T19:42:20.481832",
+    "baselineTrainedAt": "2026-08-24T19:42:19.958630"
   },
   "users": [
     {
-      "clientId": "6a58d232d3e5f5c2831242d1",
-      "username": "Azamat Muqumjonov",
-      "daily": [
-        {
-          "date": "2026-07-16",
-          "dayOfWeek": "Thursday",
-          "start": "2026-07-16 00:00:00",
-          "finish": "2026-07-16 23:59:23",
-          "hours": 23.9897,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
-        },
-        {
-          "date": "2026-07-17",
-          "dayOfWeek": "Friday",
-          "start": "2026-07-17 00:00:00",
-          "finish": "2026-07-17 17:43:58",
-          "hours": 17.7328,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-07-20",
-          "dayOfWeek": "Monday",
-          "start": "2026-07-20 00:00:00",
-          "finish": "2026-07-20 22:55:44",
-          "hours": 22.9289,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": 0.673,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-07-21",
-          "dayOfWeek": "Tuesday",
-          "start": "2026-07-21 00:00:00",
-          "finish": "2026-07-21 11:20:06",
-          "hours": 11.335,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-07-27",
-          "dayOfWeek": "Monday",
-          "start": "2026-07-27 00:00:00",
-          "finish": "2026-07-27 23:08:44",
-          "hours": 23.1456,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": 0.74,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-07-31",
-          "dayOfWeek": "Friday",
-          "start": "2026-07-31 00:00:00",
-          "finish": "2026-07-31 10:29:14",
-          "hours": 10.4872,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers",
-            "screenshots"
-          ],
-          "contribCount": 4,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-08-04",
-          "dayOfWeek": "Tuesday",
-          "start": "2026-08-04 00:00:00",
-          "finish": "2026-08-04 11:39:38",
-          "hours": 11.6606,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-08-17",
-          "dayOfWeek": "Monday",
-          "start": "2026-08-17 00:00:00",
-          "finish": "2026-08-17 16:10:02",
-          "hours": 16.1672,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": -1.414,
-          "status": "anomaly",
-          "color": "orange"
-        }
-      ],
-      "summary": {
-        "activeDays": 8,
-        "totalHours": 137.45,
-        "avgDailyHours": 17.18
-      }
-    },
-    {
       "clientId": "6a7dc01496f1753c3c23c352",
       "username": "sanja@desktop-q46u2et",
-      "daily": [
+      "days": [
         {
           "date": "2026-07-07",
           "dayOfWeek": "Tuesday",
-          "start": "2026-07-07 17:04:26",
-          "finish": "2026-07-07 17:04:26",
-          "hours": 0.0,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -0.707,
-          "status": "watch",
-          "color": "yellow"
+          "start": "17:04:26",
+          "finish": "17:04:26",
+          "durationMin": 0.0,
+          "zStart": 1.026,
+          "zFinish": 1.069
         },
         {
           "date": "2026-07-23",
           "dayOfWeek": "Thursday",
-          "start": "2026-07-23 10:18:43",
-          "finish": "2026-07-23 10:18:43",
-          "hours": 0.0,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "10:18:43",
+          "finish": "10:18:43",
+          "durationMin": 0.0,
+          "zStart": 0.506,
+          "zFinish": -1.203
         },
         {
           "date": "2026-07-30",
           "dayOfWeek": "Thursday",
-          "start": "2026-07-30 15:21:21",
-          "finish": "2026-07-30 15:21:21",
-          "hours": 0.0,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "15:21:21",
+          "finish": "15:21:21",
+          "durationMin": 0.0,
+          "zStart": 1.162,
+          "zFinish": -0.444
         },
         {
           "date": "2026-08-04",
           "dayOfWeek": "Tuesday",
-          "start": "2026-08-04 12:53:21",
-          "finish": "2026-08-04 12:53:21",
-          "hours": 0.0,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -0.707,
-          "status": "watch",
-          "color": "yellow"
+          "start": "12:53:21",
+          "finish": "12:53:21",
+          "durationMin": 0.0,
+          "zStart": -0.055,
+          "zFinish": -0.157
         },
         {
           "date": "2026-08-08",
           "dayOfWeek": "Saturday",
-          "start": "2026-08-08 10:39:56",
-          "finish": "2026-08-08 15:12:20",
-          "hours": 4.54,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "10:39:56",
+          "finish": "15:12:20",
+          "durationMin": 272.4,
+          "zStart": 0.707,
+          "zFinish": -0.707
         },
         {
           "date": "2026-08-10",
           "dayOfWeek": "Monday",
-          "start": "2026-08-10 08:51:36",
-          "finish": "2026-08-10 09:05:34",
-          "hours": 0.2328,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "08:51:36",
+          "finish": "09:05:34",
+          "durationMin": 13.97,
+          "zStart": 0.589,
+          "zFinish": -0.716
         },
         {
           "date": "2026-08-12",
           "dayOfWeek": "Wednesday",
-          "start": "2026-08-12 09:02:27",
-          "finish": "2026-08-12 09:02:27",
-          "hours": 0.0,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "09:02:27",
+          "finish": "09:02:27",
+          "durationMin": 0.0,
+          "zStart": 0.707,
+          "zFinish": -0.707
         },
         {
           "date": "2026-08-13",
           "dayOfWeek": "Thursday",
-          "start": "2026-08-13 00:00:00",
-          "finish": "2026-08-13 23:49:46",
-          "hours": 23.8294,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "filemonitors",
-            "keyloggers",
-            "telegrams",
-            "usbmonitors",
-            "websearches",
-            "webvisitings"
-          ],
-          "contribCount": 8,
-          "zScore": 1.003,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "23:49:46",
+          "durationMin": 1429.77,
+          "zStart": -0.834,
+          "zFinish": 0.829
         },
         {
           "date": "2026-08-14",
           "dayOfWeek": "Friday",
-          "start": "2026-08-14 00:00:00",
-          "finish": "2026-08-14 22:38:29",
-          "hours": 22.6414,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "filemonitors",
-            "keyloggers",
-            "websearches",
-            "webvisitings"
-          ],
-          "contribCount": 6,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "22:38:29",
+          "durationMin": 1358.48,
+          "zStart": null,
+          "zFinish": 0.707
         },
         {
           "date": "2026-08-15",
           "dayOfWeek": "Saturday",
-          "start": "2026-08-15 00:00:00",
-          "finish": "2026-08-15 20:14:55",
-          "hours": 20.2486,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "filemonitors",
-            "keyloggers",
-            "websearches",
-            "webvisitings"
-          ],
-          "contribCount": 6,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "20:14:55",
+          "durationMin": 1214.92,
+          "zStart": -0.707,
+          "zFinish": 0.707
         },
         {
           "date": "2026-08-17",
           "dayOfWeek": "Monday",
-          "start": "2026-08-17 08:44:21",
-          "finish": "2026-08-17 10:05:59",
-          "hours": 1.3606,
-          "contributing": [
-            "telegrams"
-          ],
-          "contribCount": 1,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "08:44:21",
+          "finish": "10:05:59",
+          "durationMin": 81.63,
+          "zStart": 0.565,
+          "zFinish": -0.426
         },
         {
           "date": "2026-08-18",
           "dayOfWeek": "Tuesday",
-          "start": "2026-08-18 09:20:41",
-          "finish": "2026-08-18 10:18:34",
-          "hours": 0.9647,
-          "contributing": [
-            "clipboards",
-            "emails",
-            "incidents",
-            "prints",
-            "telegrams",
-            "usbsniffs",
-            "websniffs",
-            "whatsapps"
-          ],
-          "contribCount": 8,
-          "zScore": 1.414,
-          "status": "anomaly",
-          "color": "orange"
+          "start": "09:20:41",
+          "finish": "10:18:34",
+          "durationMin": 57.88,
+          "zStart": -0.971,
+          "zFinish": -0.912
         },
         {
           "date": "2026-08-19",
           "dayOfWeek": "Wednesday",
-          "start": "2026-08-19 00:00:00",
-          "finish": "2026-08-19 19:18:14",
-          "hours": 19.3039,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "clipboards",
-            "filemonitors",
-            "keyloggers",
-            "screenshots",
-            "telegrams",
-            "websearches",
-            "webvisitings"
-          ],
-          "contribCount": 9,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "19:18:14",
+          "durationMin": 1158.23,
+          "zStart": -0.707,
+          "zFinish": 0.707
         },
         {
           "date": "2026-08-20",
           "dayOfWeek": "Thursday",
-          "start": "2026-08-20 00:00:00",
-          "finish": "2026-08-20 23:45:20",
-          "hours": 23.7556,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "clipboards",
-            "filemonitors",
-            "screenshots",
-            "telegrams",
-            "webvisitings"
-          ],
-          "contribCount": 7,
-          "zScore": 0.997,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "23:45:20",
+          "durationMin": 1425.33,
+          "zStart": -0.834,
+          "zFinish": 0.818
         },
         {
           "date": "2026-08-21",
           "dayOfWeek": "Friday",
-          "start": "2026-08-21 00:00:00",
-          "finish": "2026-08-21 15:51:01",
-          "hours": 15.8503,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "clipboards",
-            "filemonitors",
-            "incidents",
-            "keyloggers",
-            "screenshots",
-            "telegrams",
-            "webvisitings"
-          ],
-          "contribCount": 9,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "15:51:01",
+          "durationMin": 951.02,
+          "zStart": null,
+          "zFinish": -0.707
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "00:00:00",
+          "finish": "15:32:44",
+          "durationMin": 932.73,
+          "zStart": -1.155,
+          "zFinish": 1.143
         }
-      ],
-      "summary": {
-        "activeDays": 15,
-        "totalHours": 132.73,
-        "avgDailyHours": 8.85
-      }
+      ]
     },
     {
-      "clientId": "6a58d0aa55f309e9348439a7",
-      "username": "rakhmatillo",
-      "daily": [
+      "clientId": "6a58d232d3e5f5c2831242d1",
+      "username": "Azamat Muqumjonov",
+      "days": [
         {
           "date": "2026-07-16",
           "dayOfWeek": "Thursday",
-          "start": "2026-07-16 00:00:00",
-          "finish": "2026-07-16 17:41:57",
-          "hours": 17.6992,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "23:59:23",
+          "durationMin": 1439.38,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-07-17",
           "dayOfWeek": "Friday",
-          "start": "2026-07-17 00:00:00",
-          "finish": "2026-07-17 19:15:38",
-          "hours": 19.2606,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "00:00:00",
+          "finish": "17:43:58",
+          "durationMin": 1063.97,
+          "zStart": null,
+          "zFinish": 0.707
         },
         {
-          "date": "2026-07-30",
-          "dayOfWeek": "Thursday",
-          "start": "2026-07-30 00:00:00",
-          "finish": "2026-07-30 22:25:12",
-          "hours": 22.42,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "00:00:00",
+          "finish": "22:55:44",
+          "durationMin": 1375.73,
+          "zStart": null,
+          "zFinish": 0.55
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "00:00:00",
+          "finish": "11:20:06",
+          "durationMin": 680.1,
+          "zStart": null,
+          "zFinish": -0.707
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "00:00:00",
+          "finish": "23:08:44",
+          "durationMin": 1388.73,
+          "zStart": null,
+          "zFinish": 0.604
         },
         {
           "date": "2026-07-31",
           "dayOfWeek": "Friday",
-          "start": "2026-07-31 00:00:00",
-          "finish": "2026-07-31 22:44:43",
-          "hours": 22.7453,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
-        },
-        {
-          "date": "2026-08-01",
-          "dayOfWeek": "Saturday",
-          "start": "2026-08-01 00:00:00",
-          "finish": "2026-08-01 21:52:30",
-          "hours": 21.875,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "10:29:14",
+          "durationMin": 629.23,
+          "zStart": null,
+          "zFinish": -0.707
         },
         {
           "date": "2026-08-04",
           "dayOfWeek": "Tuesday",
-          "start": "2026-08-04 00:00:00",
-          "finish": "2026-08-04 12:14:14",
-          "hours": 12.2372,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "11:39:38",
+          "durationMin": 699.63,
+          "zStart": null,
+          "zFinish": 0.707
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "00:00:00",
+          "finish": "16:10:02",
+          "durationMin": 970.03,
+          "zStart": null,
+          "zFinish": -1.154
         }
-      ],
-      "summary": {
-        "activeDays": 6,
-        "totalHours": 116.24,
-        "avgDailyHours": 19.37
-      }
+      ]
+    },
+    {
+      "clientId": "6a58d0aa55f309e9348439a7",
+      "username": "rakhmatillo",
+      "days": [
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "00:00:00",
+          "finish": "17:41:57",
+          "durationMin": 1061.95,
+          "zStart": null,
+          "zFinish": -0.707
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "00:00:00",
+          "finish": "19:15:38",
+          "durationMin": 1155.63,
+          "zStart": null,
+          "zFinish": -0.707
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "00:00:00",
+          "finish": "22:25:12",
+          "durationMin": 1345.2,
+          "zStart": null,
+          "zFinish": 0.707
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "00:00:00",
+          "finish": "22:44:43",
+          "durationMin": 1364.72,
+          "zStart": null,
+          "zFinish": 0.707
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "00:00:00",
+          "finish": "21:52:30",
+          "durationMin": 1312.5,
+          "zStart": null,
+          "zFinish": null
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "00:00:00",
+          "finish": "12:14:14",
+          "durationMin": 734.23,
+          "zStart": null,
+          "zFinish": null
+        }
+      ]
     },
     {
       "clientId": "6a51ecf5448f29c37aaa629a",
       "username": "6a51ecf5448f29c37aaa629a",
-      "daily": [
+      "days": [
         {
           "date": "2026-07-10",
           "dayOfWeek": "Friday",
-          "start": "2026-07-10 00:00:00",
-          "finish": "2026-07-10 20:38:02",
-          "hours": 20.6339,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "webvisitings"
-          ],
-          "contribCount": 3,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "20:38:02",
+          "durationMin": 1238.03,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-07-11",
           "dayOfWeek": "Saturday",
-          "start": "2026-07-11 00:00:00",
-          "finish": "2026-07-11 00:41:41",
-          "hours": 0.6947,
-          "contributing": [
-            "activewindows",
-            "activities"
-          ],
-          "contribCount": 2,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "00:41:41",
+          "durationMin": 41.68,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-07-12",
           "dayOfWeek": "Sunday",
-          "start": "2026-07-12 00:00:00",
-          "finish": "2026-07-12 22:33:38",
-          "hours": 22.5606,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "usbmonitors"
-          ],
-          "contribCount": 3,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "22:33:38",
+          "durationMin": 1353.63,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-07-13",
           "dayOfWeek": "Monday",
-          "start": "2026-07-13 00:00:00",
-          "finish": "2026-07-13 22:47:45",
-          "hours": 22.7958,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "rdps",
-            "usbmonitors",
-            "webvisitings"
-          ],
-          "contribCount": 5,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "22:47:45",
+          "durationMin": 1367.75,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 4,
-        "totalHours": 66.69,
-        "avgDailyHours": 16.67
-      }
+      ]
     },
     {
       "clientId": "6a68d16e4abd38577c6314fb",
       "username": "azam Greeter",
-      "daily": [
+      "days": [
         {
           "date": "2026-07-28",
           "dayOfWeek": "Tuesday",
-          "start": "2026-07-28 20:18:49",
-          "finish": "2026-07-28 22:53:53",
-          "hours": 2.5844,
-          "contributing": [
-            "clipboards",
-            "keyloggers"
-          ],
-          "contribCount": 2,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "20:18:49",
+          "finish": "22:53:53",
+          "durationMin": 155.07,
+          "zStart": 0.707,
+          "zFinish": 0.707
         },
         {
           "date": "2026-07-30",
           "dayOfWeek": "Thursday",
-          "start": "2026-07-30 14:34:43",
-          "finish": "2026-07-30 22:27:17",
-          "hours": 7.8761,
-          "contributing": [
-            "clipboards",
-            "keyloggers",
-            "screenshots"
-          ],
-          "contribCount": 3,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "14:34:43",
+          "finish": "22:27:17",
+          "durationMin": 472.57,
+          "zStart": -0.707,
+          "zFinish": 0.707
         },
         {
           "date": "2026-07-31",
           "dayOfWeek": "Friday",
-          "start": "2026-07-31 10:31:19",
-          "finish": "2026-07-31 22:40:47",
-          "hours": 12.1578,
-          "contributing": [
-            "clipboards",
-            "filemonitors",
-            "keyloggers",
-            "screenshots",
-            "usbmonitors"
-          ],
-          "contribCount": 5,
-          "zScore": 1.41,
-          "status": "anomaly",
-          "color": "orange"
+          "start": "10:31:19",
+          "finish": "22:40:47",
+          "durationMin": 729.47,
+          "zStart": -0.546,
+          "zFinish": 1.075
         },
         {
           "date": "2026-08-01",
           "dayOfWeek": "Saturday",
-          "start": "2026-08-01 15:47:23",
-          "finish": "2026-08-01 23:05:48",
-          "hours": 7.3069,
-          "contributing": [
-            "filemonitors",
-            "keyloggers",
-            "usbmonitors"
-          ],
-          "contribCount": 3,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "15:47:23",
+          "finish": "23:05:48",
+          "durationMin": 438.42,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-08-03",
           "dayOfWeek": "Monday",
-          "start": "2026-08-03 11:16:02",
-          "finish": "2026-08-03 11:19:19",
-          "hours": 0.0547,
-          "contributing": [
-            "usbmonitors"
-          ],
-          "contribCount": 1,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "11:16:02",
+          "finish": "11:19:19",
+          "durationMin": 3.28,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-08-04",
           "dayOfWeek": "Tuesday",
-          "start": "2026-08-04 11:01:19",
-          "finish": "2026-08-04 20:32:42",
-          "hours": 9.5231,
-          "contributing": [
-            "filemonitors",
-            "keyloggers"
-          ],
-          "contribCount": 2,
-          "zScore": 1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "11:01:19",
+          "finish": "20:32:42",
+          "durationMin": 571.38,
+          "zStart": -0.707,
+          "zFinish": -0.707
         },
         {
           "date": "2026-08-05",
           "dayOfWeek": "Wednesday",
-          "start": "2026-08-05 11:19:51",
-          "finish": "2026-08-05 11:51:03",
-          "hours": 0.52,
-          "contributing": [
-            "filemonitors"
-          ],
-          "contribCount": 1,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "11:19:51",
+          "finish": "11:51:03",
+          "durationMin": 31.2,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-08-07",
           "dayOfWeek": "Friday",
-          "start": "2026-08-07 15:34:50",
-          "finish": "2026-08-07 15:34:52",
-          "hours": 0.0006,
-          "contributing": [
-            "filemonitors"
-          ],
-          "contribCount": 1,
-          "zScore": -0.804,
-          "status": "watch",
-          "color": "yellow"
+          "start": "15:34:50",
+          "finish": "15:34:52",
+          "durationMin": 0.03,
+          "zStart": 1.154,
+          "zFinish": -0.173
         },
         {
           "date": "2026-08-13",
           "dayOfWeek": "Thursday",
-          "start": "2026-08-13 16:30:59",
-          "finish": "2026-08-13 16:31:42",
-          "hours": 0.0119,
-          "contributing": [
-            "filemonitors"
-          ],
-          "contribCount": 1,
-          "zScore": -1.0,
-          "status": "watch",
-          "color": "yellow"
+          "start": "16:30:59",
+          "finish": "16:31:42",
+          "durationMin": 0.72,
+          "zStart": 0.707,
+          "zFinish": -0.707
         },
         {
           "date": "2026-08-14",
           "dayOfWeek": "Friday",
-          "start": "2026-08-14 10:20:17",
-          "finish": "2026-08-14 11:25:48",
-          "hours": 1.0919,
-          "contributing": [
-            "filemonitors"
-          ],
-          "contribCount": 1,
-          "zScore": -0.605,
-          "status": "watch",
-          "color": "yellow"
+          "start": "10:20:17",
+          "finish": "11:25:48",
+          "durationMin": 65.52,
+          "zStart": -0.608,
+          "zFinish": -0.902
         }
-      ],
-      "summary": {
-        "activeDays": 10,
-        "totalHours": 41.13,
-        "avgDailyHours": 4.11
-      }
+      ]
     },
     {
       "clientId": "6a6ca7640eef1739bea6f534",
       "username": "Bellissimo Pizza Pizza",
-      "daily": [
+      "days": [
         {
           "date": "2026-07-31",
           "dayOfWeek": "Friday",
-          "start": "2026-07-31 00:00:00",
-          "finish": "2026-07-31 18:55:29",
-          "hours": 18.9247,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers",
-            "screenshots"
-          ],
-          "contribCount": 4,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "18:55:29",
+          "durationMin": 1135.48,
+          "zStart": null,
+          "zFinish": null
         },
         {
           "date": "2026-08-03",
           "dayOfWeek": "Monday",
-          "start": "2026-08-03 00:00:00",
-          "finish": "2026-08-03 14:46:28",
-          "hours": 14.7744,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "14:46:28",
+          "durationMin": 886.47,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 2,
-        "totalHours": 33.7,
-        "avgDailyHours": 16.85
-      }
+      ]
     },
     {
       "clientId": "6a679c5319253d88c9b5f2cf",
       "username": "Alisher",
-      "daily": [
+      "days": [
         {
           "date": "2026-07-27",
           "dayOfWeek": "Monday",
-          "start": "2026-07-27 00:00:00",
-          "finish": "2026-07-27 23:12:56",
-          "hours": 23.2156,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "keyloggers"
-          ],
-          "contribCount": 3,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "23:12:56",
+          "durationMin": 1392.93,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 1,
-        "totalHours": 23.22,
-        "avgDailyHours": 23.22
-      }
+      ]
     },
     {
       "clientId": "6a86f21875dddb668378ff44",
       "username": "azam@desktop-a26gj2s",
-      "daily": [
+      "days": [
         {
           "date": "2026-08-20",
           "dayOfWeek": "Thursday",
-          "start": "2026-08-20 00:00:00",
-          "finish": "2026-08-20 22:45:50",
-          "hours": 22.7639,
-          "contributing": [
-            "activewindows",
-            "activities",
-            "clipboards",
-            "filemonitors",
-            "keyloggers",
-            "screenshots",
-            "websearches",
-            "webvisitings"
-          ],
-          "contribCount": 8,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "00:00:00",
+          "finish": "22:45:50",
+          "durationMin": 1365.83,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 1,
-        "totalHours": 22.76,
-        "avgDailyHours": 22.76
-      }
+      ]
     },
     {
-      "clientId": "6a62ff8e79849f58b78f6192",
+      "clientId": "6a8c1952bb74e322c4c2e68c",
       "username": "user_1",
-      "daily": [
+      "days": [
         {
-          "date": "2026-06-24",
-          "dayOfWeek": "Wednesday",
-          "start": "2026-06-24 14:16:46",
-          "finish": "2026-06-24 14:35:10",
-          "hours": 0.3067,
-          "contributing": [
-            "websniffs"
-          ],
-          "contribCount": 1,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "15:13:39",
+          "finish": "15:14:28",
+          "durationMin": 0.82,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 1,
-        "totalHours": 0.31,
-        "avgDailyHours": 0.31
-      }
+      ]
+    },
+    {
+      "clientId": "6a8c1e58bb74e322c4c2f2fc",
+      "username": "user_1",
+      "days": [
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "15:35:05",
+          "finish": "15:35:17",
+          "durationMin": 0.2,
+          "zStart": null,
+          "zFinish": null
+        }
+      ]
     },
     {
       "clientId": "69d39296be20f719382c88a0",
       "username": "69d39296be20f719382c88a0",
-      "daily": [
+      "days": [
         {
           "date": "2026-06-29",
           "dayOfWeek": "Monday",
-          "start": "2026-06-29 11:16:41",
-          "finish": "2026-06-29 11:16:41",
-          "hours": 0.0,
-          "contributing": [
-            "rdps"
-          ],
-          "contribCount": 1,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "11:16:41",
+          "finish": "11:16:41",
+          "durationMin": 0.0,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 1,
-        "totalHours": 0.0,
-        "avgDailyHours": 0.0
-      }
+      ]
     },
     {
       "clientId": "69d4d05bbe20f719382c9d7e",
       "username": "69d4d05bbe20f719382c9d7e",
-      "daily": [
+      "days": [
         {
           "date": "2026-07-01",
           "dayOfWeek": "Wednesday",
-          "start": "2026-07-01 09:16:29",
-          "finish": "2026-07-01 09:16:29",
-          "hours": 0.0,
-          "contributing": [
-            "rdps"
-          ],
-          "contribCount": 1,
-          "zScore": null,
-          "status": "normal",
-          "color": "green"
+          "start": "09:16:29",
+          "finish": "09:16:29",
+          "durationMin": 0.0,
+          "zStart": null,
+          "zFinish": null
         }
-      ],
-      "summary": {
-        "activeDays": 1,
-        "totalHours": 0.0,
-        "avgDailyHours": 0.0
-      }
+      ]
     }
   ]
 }
