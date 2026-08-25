@@ -1,548 +1,3782 @@
 {
   "meta": {
-    "evalFrom": "2026-06-29",
+    "evalFrom": "2026-06-30",
     "evalTo": "2026-08-24",
-    "generatedAt": "2026-08-24T19:42:20.481832",
-    "baselineTrainedAt": "2026-08-24T19:42:19.958630"
+    "generatedAt": "2026-08-25T16:10:01.197519",
+    "baselineTrainedAt": "2026-08-25T16:10:01.125038"
   },
   "users": [
     {
-      "clientId": "6a7dc01496f1753c3c23c352",
-      "username": "sanja@desktop-q46u2et",
+      "clientId": "6a7f000000000000000000a5",
+      "username": "6a7f000000000000000000a5",
       "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "09:01:06",
+          "finish": "18:12:57",
+          "durationMin": 551.85,
+          "zStart": -1.005,
+          "zFinish": 0.331
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "09:21:34",
+          "finish": "18:49:42",
+          "durationMin": 568.12,
+          "zStart": 0.688,
+          "zFinish": 1.384
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "09:42:02",
+          "finish": "18:06:18",
+          "durationMin": 504.26,
+          "zStart": 0.684,
+          "zFinish": -0.141
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "09:01:35",
+          "finish": "19:01:52",
+          "durationMin": 600.28,
+          "zStart": -0.939,
+          "zFinish": 1.585
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "10:05:00",
+          "finish": "16:55:14",
+          "durationMin": 410.22,
+          "zStart": -1.505,
+          "zFinish": 0.071
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "10:44:11",
+          "finish": "18:17:54",
+          "durationMin": 453.73,
+          "zStart": -0.323,
+          "zFinish": 1.614
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "09:23:49",
+          "finish": "17:56:55",
+          "durationMin": 513.11,
+          "zStart": 0.029,
+          "zFinish": -0.837
+        },
         {
           "date": "2026-07-07",
           "dayOfWeek": "Tuesday",
-          "start": "17:04:26",
-          "finish": "17:04:26",
-          "durationMin": 0.0,
-          "zStart": 1.026,
-          "zFinish": 1.069
+          "start": "09:55:14",
+          "finish": "18:13:24",
+          "durationMin": 498.17,
+          "zStart": 1.891,
+          "zFinish": 0.35
         },
         {
-          "date": "2026-07-23",
-          "dayOfWeek": "Thursday",
-          "start": "10:18:43",
-          "finish": "10:18:43",
-          "durationMin": 0.0,
-          "zStart": 0.506,
-          "zFinish": -1.203
-        },
-        {
-          "date": "2026-07-30",
-          "dayOfWeek": "Thursday",
-          "start": "15:21:21",
-          "finish": "15:21:21",
-          "durationMin": 0.0,
-          "zStart": 1.162,
-          "zFinish": -0.444
-        },
-        {
-          "date": "2026-08-04",
-          "dayOfWeek": "Tuesday",
-          "start": "12:53:21",
-          "finish": "12:53:21",
-          "durationMin": 0.0,
-          "zStart": -0.055,
-          "zFinish": -0.157
-        },
-        {
-          "date": "2026-08-08",
-          "dayOfWeek": "Saturday",
-          "start": "10:39:56",
-          "finish": "15:12:20",
-          "durationMin": 272.4,
-          "zStart": 0.707,
-          "zFinish": -0.707
-        },
-        {
-          "date": "2026-08-10",
-          "dayOfWeek": "Monday",
-          "start": "08:51:36",
-          "finish": "09:05:34",
-          "durationMin": 13.97,
-          "zStart": 0.589,
-          "zFinish": -0.716
-        },
-        {
-          "date": "2026-08-12",
+          "date": "2026-07-08",
           "dayOfWeek": "Wednesday",
-          "start": "09:02:27",
-          "finish": "09:02:27",
-          "durationMin": 0.0,
-          "zStart": 0.707,
-          "zFinish": -0.707
+          "start": "09:42:09",
+          "finish": "18:11:46",
+          "durationMin": 509.61,
+          "zStart": 1.309,
+          "zFinish": -0.099
         },
         {
-          "date": "2026-08-13",
+          "date": "2026-07-09",
           "dayOfWeek": "Thursday",
-          "start": "00:00:00",
-          "finish": "23:49:46",
-          "durationMin": 1429.77,
-          "zStart": -0.834,
-          "zFinish": 0.829
+          "start": "08:20:18",
+          "finish": "17:57:52",
+          "durationMin": 577.57,
+          "zStart": -1.351,
+          "zFinish": -0.526
         },
-        {
-          "date": "2026-08-14",
-          "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "22:38:29",
-          "durationMin": 1358.48,
-          "zStart": null,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-08-15",
-          "dayOfWeek": "Saturday",
-          "start": "00:00:00",
-          "finish": "20:14:55",
-          "durationMin": 1214.92,
-          "zStart": -0.707,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-08-17",
-          "dayOfWeek": "Monday",
-          "start": "08:44:21",
-          "finish": "10:05:59",
-          "durationMin": 81.63,
-          "zStart": 0.565,
-          "zFinish": -0.426
-        },
-        {
-          "date": "2026-08-18",
-          "dayOfWeek": "Tuesday",
-          "start": "09:20:41",
-          "finish": "10:18:34",
-          "durationMin": 57.88,
-          "zStart": -0.971,
-          "zFinish": -0.912
-        },
-        {
-          "date": "2026-08-19",
-          "dayOfWeek": "Wednesday",
-          "start": "00:00:00",
-          "finish": "19:18:14",
-          "durationMin": 1158.23,
-          "zStart": -0.707,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-08-20",
-          "dayOfWeek": "Thursday",
-          "start": "00:00:00",
-          "finish": "23:45:20",
-          "durationMin": 1425.33,
-          "zStart": -0.834,
-          "zFinish": 0.818
-        },
-        {
-          "date": "2026-08-21",
-          "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "15:51:01",
-          "durationMin": 951.02,
-          "zStart": null,
-          "zFinish": -0.707
-        },
-        {
-          "date": "2026-08-24",
-          "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "15:32:44",
-          "durationMin": 932.73,
-          "zStart": -1.155,
-          "zFinish": 1.143
-        }
-      ]
-    },
-    {
-      "clientId": "6a58d232d3e5f5c2831242d1",
-      "username": "Azamat Muqumjonov",
-      "days": [
-        {
-          "date": "2026-07-16",
-          "dayOfWeek": "Thursday",
-          "start": "00:00:00",
-          "finish": "23:59:23",
-          "durationMin": 1439.38,
-          "zStart": null,
-          "zFinish": null
-        },
-        {
-          "date": "2026-07-17",
-          "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "17:43:58",
-          "durationMin": 1063.97,
-          "zStart": null,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-07-20",
-          "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "22:55:44",
-          "durationMin": 1375.73,
-          "zStart": null,
-          "zFinish": 0.55
-        },
-        {
-          "date": "2026-07-21",
-          "dayOfWeek": "Tuesday",
-          "start": "00:00:00",
-          "finish": "11:20:06",
-          "durationMin": 680.1,
-          "zStart": null,
-          "zFinish": -0.707
-        },
-        {
-          "date": "2026-07-27",
-          "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "23:08:44",
-          "durationMin": 1388.73,
-          "zStart": null,
-          "zFinish": 0.604
-        },
-        {
-          "date": "2026-07-31",
-          "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "10:29:14",
-          "durationMin": 629.23,
-          "zStart": null,
-          "zFinish": -0.707
-        },
-        {
-          "date": "2026-08-04",
-          "dayOfWeek": "Tuesday",
-          "start": "00:00:00",
-          "finish": "11:39:38",
-          "durationMin": 699.63,
-          "zStart": null,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-08-17",
-          "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "16:10:02",
-          "durationMin": 970.03,
-          "zStart": null,
-          "zFinish": -1.154
-        }
-      ]
-    },
-    {
-      "clientId": "6a58d0aa55f309e9348439a7",
-      "username": "rakhmatillo",
-      "days": [
-        {
-          "date": "2026-07-16",
-          "dayOfWeek": "Thursday",
-          "start": "00:00:00",
-          "finish": "17:41:57",
-          "durationMin": 1061.95,
-          "zStart": null,
-          "zFinish": -0.707
-        },
-        {
-          "date": "2026-07-17",
-          "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "19:15:38",
-          "durationMin": 1155.63,
-          "zStart": null,
-          "zFinish": -0.707
-        },
-        {
-          "date": "2026-07-30",
-          "dayOfWeek": "Thursday",
-          "start": "00:00:00",
-          "finish": "22:25:12",
-          "durationMin": 1345.2,
-          "zStart": null,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-07-31",
-          "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "22:44:43",
-          "durationMin": 1364.72,
-          "zStart": null,
-          "zFinish": 0.707
-        },
-        {
-          "date": "2026-08-01",
-          "dayOfWeek": "Saturday",
-          "start": "00:00:00",
-          "finish": "21:52:30",
-          "durationMin": 1312.5,
-          "zStart": null,
-          "zFinish": null
-        },
-        {
-          "date": "2026-08-04",
-          "dayOfWeek": "Tuesday",
-          "start": "00:00:00",
-          "finish": "12:14:14",
-          "durationMin": 734.23,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "6a51ecf5448f29c37aaa629a",
-      "username": "6a51ecf5448f29c37aaa629a",
-      "days": [
         {
           "date": "2026-07-10",
           "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "20:38:02",
-          "durationMin": 1238.03,
-          "zStart": null,
-          "zFinish": null
-        },
-        {
-          "date": "2026-07-11",
-          "dayOfWeek": "Saturday",
-          "start": "00:00:00",
-          "finish": "00:41:41",
-          "durationMin": 41.68,
-          "zStart": null,
-          "zFinish": null
-        },
-        {
-          "date": "2026-07-12",
-          "dayOfWeek": "Sunday",
-          "start": "00:00:00",
-          "finish": "22:33:38",
-          "durationMin": 1353.63,
-          "zStart": null,
-          "zFinish": null
+          "start": "08:38:41",
+          "finish": "18:42:45",
+          "durationMin": 604.07,
+          "zStart": -1.708,
+          "zFinish": 0.717
         },
         {
           "date": "2026-07-13",
           "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "22:47:45",
-          "durationMin": 1367.75,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "6a68d16e4abd38577c6314fb",
-      "username": "azam Greeter",
-      "days": [
+          "start": "09:26:12",
+          "finish": "17:46:36",
+          "durationMin": 500.4,
+          "zStart": 0.136,
+          "zFinish": -1.199
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "09:24:12",
+          "finish": "18:03:09",
+          "durationMin": 518.94,
+          "zStart": 0.231,
+          "zFinish": -0.089
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "08:36:25",
+          "finish": "17:29:55",
+          "durationMin": 533.51,
+          "zStart": -0.674,
+          "zFinish": -1.736
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "10:17:45",
+          "finish": "17:34:11",
+          "durationMin": 436.43,
+          "zStart": 1.573,
+          "zFinish": -1.609
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "10:03:49",
+          "finish": "18:47:53",
+          "durationMin": 524.08,
+          "zStart": 1.151,
+          "zFinish": 0.95
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "11:17:11",
+          "finish": "17:00:05",
+          "durationMin": 342.9,
+          "zStart": 0.162,
+          "zFinish": 0.424
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "11:50:23",
+          "finish": "17:24:36",
+          "durationMin": 334.23,
+          "zStart": 1.337,
+          "zFinish": 0.59
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "09:27:35",
+          "finish": "18:37:48",
+          "durationMin": 550.22,
+          "zStart": 0.199,
+          "zFinish": 0.595
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "09:24:26",
+          "finish": "17:12:38",
+          "durationMin": 468.19,
+          "zStart": 0.243,
+          "zFinish": -2.253
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "08:47:00",
+          "finish": "18:04:23",
+          "durationMin": 557.38,
+          "zStart": -0.354,
+          "zFinish": -0.388
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "08:36:40",
+          "finish": "18:04:39",
+          "durationMin": 567.99,
+          "zStart": -0.944,
+          "zFinish": -0.216
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "09:35:47",
+          "finish": "17:56:11",
+          "durationMin": 500.4,
+          "zStart": 0.209,
+          "zFinish": -1.397
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "11:16:37",
+          "finish": "17:00:57",
+          "durationMin": 344.34,
+          "zStart": 0.149,
+          "zFinish": 0.487
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:38:43",
+          "finish": "16:56:26",
+          "durationMin": 377.72,
+          "zStart": -0.46,
+          "zFinish": 0.049
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "10:00:51",
+          "finish": "18:06:55",
+          "durationMin": 486.07,
+          "zStart": 1.695,
+          "zFinish": -0.487
+        },
         {
           "date": "2026-07-28",
           "dayOfWeek": "Tuesday",
-          "start": "20:18:49",
-          "finish": "22:53:53",
-          "durationMin": 155.07,
-          "zStart": 0.707,
-          "zFinish": 0.707
+          "start": "08:55:26",
+          "finish": "18:15:27",
+          "durationMin": 560.01,
+          "zStart": -1.309,
+          "zFinish": 0.438
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "08:52:12",
+          "finish": "18:40:37",
+          "durationMin": 588.42,
+          "zStart": -0.198,
+          "zFinish": 1.029
         },
         {
           "date": "2026-07-30",
           "dayOfWeek": "Thursday",
-          "start": "14:34:43",
-          "finish": "22:27:17",
-          "durationMin": 472.57,
-          "zStart": -0.707,
-          "zFinish": 0.707
+          "start": "09:15:16",
+          "finish": "18:17:21",
+          "durationMin": 542.09,
+          "zStart": 0.017,
+          "zFinish": 0.364
         },
         {
           "date": "2026-07-31",
           "dayOfWeek": "Friday",
-          "start": "10:31:19",
-          "finish": "22:40:47",
-          "durationMin": 729.47,
-          "zStart": -0.546,
-          "zFinish": 1.075
+          "start": "09:54:49",
+          "finish": "18:10:34",
+          "durationMin": 495.75,
+          "zStart": 0.848,
+          "zFinish": -0.744
         },
         {
           "date": "2026-08-01",
           "dayOfWeek": "Saturday",
-          "start": "15:47:23",
-          "finish": "23:05:48",
-          "durationMin": 438.42,
-          "zStart": null,
-          "zFinish": null
+          "start": "12:10:55",
+          "finish": "17:02:23",
+          "durationMin": 291.47,
+          "zStart": 1.403,
+          "zFinish": 0.591
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "09:56:15",
+          "finish": "16:13:12",
+          "durationMin": 376.95,
+          "zStart": -1.525,
+          "zFinish": -0.782
         },
         {
           "date": "2026-08-03",
           "dayOfWeek": "Monday",
-          "start": "11:16:02",
-          "finish": "11:19:19",
-          "durationMin": 3.28,
-          "zStart": null,
-          "zFinish": null
+          "start": "09:07:37",
+          "finish": "17:58:13",
+          "durationMin": 530.59,
+          "zStart": -0.7,
+          "zFinish": -0.792
         },
         {
           "date": "2026-08-04",
           "dayOfWeek": "Tuesday",
-          "start": "11:01:19",
-          "finish": "20:32:42",
-          "durationMin": 571.38,
-          "zStart": -0.707,
-          "zFinish": -0.707
+          "start": "09:18:58",
+          "finish": "17:55:52",
+          "durationMin": 516.9,
+          "zStart": -0.049,
+          "zFinish": -0.401
         },
         {
           "date": "2026-08-05",
           "dayOfWeek": "Wednesday",
-          "start": "11:19:51",
-          "finish": "11:51:03",
-          "durationMin": 31.2,
-          "zStart": null,
-          "zFinish": null
+          "start": "07:56:27",
+          "finish": "18:30:37",
+          "durationMin": 634.18,
+          "zStart": -1.879,
+          "zFinish": 0.638
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "08:44:04",
+          "finish": "18:05:41",
+          "durationMin": 561.62,
+          "zStart": -0.76,
+          "zFinish": -0.169
         },
         {
           "date": "2026-08-07",
           "dayOfWeek": "Friday",
-          "start": "15:34:50",
-          "finish": "15:34:52",
-          "durationMin": 0.03,
-          "zStart": 1.154,
-          "zFinish": -0.173
+          "start": "09:36:53",
+          "finish": "18:11:41",
+          "durationMin": 514.8,
+          "zStart": 0.246,
+          "zFinish": -0.693
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "09:38:55",
+          "finish": "18:58:33",
+          "durationMin": 559.63,
+          "zStart": 0.708,
+          "zFinish": 1.322
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "09:30:00",
+          "finish": "18:22:27",
+          "durationMin": 532.44,
+          "zStart": 0.541,
+          "zFinish": 0.737
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "09:22:33",
+          "finish": "18:09:28",
+          "durationMin": 526.92,
+          "zStart": 0.718,
+          "zFinish": -0.189
         },
         {
           "date": "2026-08-13",
           "dayOfWeek": "Thursday",
-          "start": "16:30:59",
-          "finish": "16:31:42",
-          "durationMin": 0.72,
-          "zStart": 0.707,
-          "zFinish": -0.707
+          "start": "09:10:58",
+          "finish": "18:17:08",
+          "durationMin": 546.16,
+          "zStart": -0.09,
+          "zFinish": 0.355
         },
         {
           "date": "2026-08-14",
           "dayOfWeek": "Friday",
-          "start": "10:20:17",
-          "finish": "11:25:48",
-          "durationMin": 65.52,
-          "zStart": -0.608,
-          "zFinish": -0.902
+          "start": "09:11:01",
+          "finish": "18:22:55",
+          "durationMin": 551.9,
+          "zStart": -0.622,
+          "zFinish": -0.184
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "10:40:03",
+          "finish": "17:00:16",
+          "durationMin": 380.23,
+          "zStart": -0.695,
+          "zFinish": 0.437
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "11:07:25",
+          "finish": "15:53:49",
+          "durationMin": 286.4,
+          "zStart": 0.259,
+          "zFinish": -1.154
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "09:15:27",
+          "finish": "19:00:07",
+          "durationMin": 584.67,
+          "zStart": -0.347,
+          "zFinish": 1.377
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "09:09:46",
+          "finish": "18:25:57",
+          "durationMin": 556.19,
+          "zStart": -0.542,
+          "zFinish": 0.887
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "09:11:42",
+          "finish": "17:57:57",
+          "durationMin": 526.24,
+          "zStart": 0.391,
+          "zFinish": -0.639
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "09:49:30",
+          "finish": "18:51:53",
+          "durationMin": 542.38,
+          "zStart": 0.87,
+          "zFinish": 1.943
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "09:53:48",
+          "finish": "18:21:48",
+          "durationMin": 507.99,
+          "zStart": 0.814,
+          "zFinish": -0.234
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "11:31:15",
+          "finish": "16:26:36",
+          "durationMin": 295.35,
+          "zStart": 0.487,
+          "zFinish": -2.009
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "11:25:28",
+          "finish": "16:37:18",
+          "durationMin": 311.84,
+          "zStart": 0.712,
+          "zFinish": -0.319
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "08:44:56",
+          "finish": "18:21:23",
+          "durationMin": 576.46,
+          "zStart": -1.72,
+          "zFinish": 0.02
         }
       ]
     },
     {
-      "clientId": "6a6ca7640eef1739bea6f534",
-      "username": "Bellissimo Pizza Pizza",
+      "clientId": "6a7f000000000000000000a2",
+      "username": "6a7f000000000000000000a2",
       "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "08:43:33",
+          "finish": "18:09:28",
+          "durationMin": 565.92,
+          "zStart": -0.771,
+          "zFinish": 1.777
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "08:53:30",
+          "finish": "18:07:41",
+          "durationMin": 554.18,
+          "zStart": -0.804,
+          "zFinish": 1.6
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "08:00:17",
+          "finish": "16:48:55",
+          "durationMin": 528.63,
+          "zStart": -1.724,
+          "zFinish": -1.337
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "08:47:19",
+          "finish": "17:24:04",
+          "durationMin": 516.76,
+          "zStart": -0.521,
+          "zFinish": -0.121
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "11:08:02",
+          "finish": "15:33:26",
+          "durationMin": 265.4,
+          "zStart": 0.642,
+          "zFinish": -1.205
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "10:27:47",
+          "finish": "15:47:37",
+          "durationMin": 319.84,
+          "zStart": -0.793,
+          "zFinish": -0.786
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "09:01:58",
+          "finish": "17:23:54",
+          "durationMin": 501.93,
+          "zStart": -0.504,
+          "zFinish": -0.196
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "08:48:05",
+          "finish": "17:50:14",
+          "durationMin": 542.14,
+          "zStart": -0.605,
+          "zFinish": 1.16
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "09:13:51",
+          "finish": "17:33:55",
+          "durationMin": 500.06,
+          "zStart": 0.554,
+          "zFinish": 0.091
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "08:40:33",
+          "finish": "17:48:42",
+          "durationMin": 548.15,
+          "zStart": -0.079,
+          "zFinish": 0.793
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "08:25:51",
+          "finish": "17:13:43",
+          "durationMin": 527.86,
+          "zStart": -1.323,
+          "zFinish": -0.754
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "08:41:25",
+          "finish": "16:41:33",
+          "durationMin": 480.12,
+          "zStart": -1.558,
+          "zFinish": -1.354
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "09:45:44",
+          "finish": "17:00:25",
+          "durationMin": 434.7,
+          "zStart": 1.507,
+          "zFinish": -0.438
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "09:19:18",
+          "finish": "17:35:44",
+          "durationMin": 496.43,
+          "zStart": 0.918,
+          "zFinish": 0.172
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "08:28:02",
+          "finish": "17:56:43",
+          "durationMin": 568.68,
+          "zStart": -0.59,
+          "zFinish": 1.078
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "09:05:35",
+          "finish": "17:43:33",
+          "durationMin": 517.98,
+          "zStart": 0.161,
+          "zFinish": 1.072
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "11:28:40",
+          "finish": "16:56:59",
+          "durationMin": 328.33,
+          "zStart": 1.146,
+          "zFinish": 0.899
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "11:42:50",
+          "finish": "15:21:50",
+          "durationMin": 218.99,
+          "zStart": 0.738,
+          "zFinish": -1.4
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "09:08:21",
+          "finish": "18:08:02",
+          "durationMin": 539.68,
+          "zStart": -0.176,
+          "zFinish": 1.01
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "09:04:40",
+          "finish": "16:56:00",
+          "durationMin": 471.34,
+          "zStart": 0.002,
+          "zFinish": -0.58
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "08:40:25",
+          "finish": "17:36:43",
+          "durationMin": 536.3,
+          "zStart": -1.678,
+          "zFinish": 0.216
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "09:00:51",
+          "finish": "17:17:27",
+          "durationMin": 496.6,
+          "zStart": 0.75,
+          "zFinish": -0.321
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "09:29:27",
+          "finish": "17:46:27",
+          "durationMin": 497.0,
+          "zStart": 1.053,
+          "zFinish": 1.249
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "09:40:35",
+          "finish": "16:06:22",
+          "durationMin": 385.79,
+          "zStart": -1.496,
+          "zFinish": -0.376
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:04:48",
+          "finish": "16:16:56",
+          "durationMin": 372.14,
+          "zStart": -1.261,
+          "zFinish": -0.087
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "09:23:40",
+          "finish": "18:16:19",
+          "durationMin": 532.65,
+          "zStart": 0.61,
+          "zFinish": 1.237
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "09:38:06",
+          "finish": "16:45:36",
+          "durationMin": 427.49,
+          "zStart": 1.227,
+          "zFinish": -0.914
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "08:52:08",
+          "finish": "16:48:28",
+          "durationMin": 476.33,
+          "zStart": -0.896,
+          "zFinish": -1.94
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "09:12:12",
+          "finish": "16:51:47",
+          "durationMin": 459.59,
+          "zStart": 1.214,
+          "zFinish": -1.235
+        },
         {
           "date": "2026-07-31",
           "dayOfWeek": "Friday",
-          "start": "00:00:00",
-          "finish": "18:55:29",
-          "durationMin": 1135.48,
-          "zStart": null,
-          "zFinish": null
+          "start": "08:58:31",
+          "finish": "17:17:56",
+          "durationMin": 499.41,
+          "zStart": -0.102,
+          "zFinish": -0.496
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "10:41:17",
+          "finish": "16:09:16",
+          "durationMin": 327.98,
+          "zStart": -0.012,
+          "zFinish": -0.303
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "11:48:04",
+          "finish": "16:48:49",
+          "durationMin": 300.75,
+          "zStart": 0.845,
+          "zFinish": 0.673
         },
         {
           "date": "2026-08-03",
           "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "14:46:28",
-          "durationMin": 886.47,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "6a679c5319253d88c9b5f2cf",
-      "username": "Alisher",
-      "days": [
+          "start": "09:05:09",
+          "finish": "17:49:00",
+          "durationMin": 523.86,
+          "zStart": -0.34,
+          "zFinish": 0.49
+        },
         {
-          "date": "2026-07-27",
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "08:35:25",
+          "finish": "16:41:05",
+          "durationMin": 485.68,
+          "zStart": -1.069,
+          "zFinish": -1.059
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "09:21:38",
+          "finish": "17:44:51",
+          "durationMin": 503.22,
+          "zStart": 1.074,
+          "zFinish": 0.58
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "09:10:10",
+          "finish": "17:53:07",
+          "durationMin": 522.96,
+          "zStart": 1.131,
+          "zFinish": 0.95
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "Friday",
+          "start": "09:17:32",
+          "finish": "17:01:59",
+          "durationMin": 464.44,
+          "zStart": 0.608,
+          "zFinish": -1.472
+        },
+        {
+          "date": "2026-08-10",
           "dayOfWeek": "Monday",
-          "start": "00:00:00",
-          "finish": "23:12:56",
-          "durationMin": 1392.93,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "6a86f21875dddb668378ff44",
-      "username": "azam@desktop-a26gj2s",
-      "days": [
+          "start": "09:46:41",
+          "finish": "16:49:51",
+          "durationMin": 423.17,
+          "zStart": 1.791,
+          "zFinish": -1.127
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "08:40:35",
+          "finish": "17:12:30",
+          "durationMin": 511.91,
+          "zStart": -0.88,
+          "zFinish": -0.051
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "09:08:44",
+          "finish": "17:23:34",
+          "durationMin": 494.83,
+          "zStart": 0.213,
+          "zFinish": -0.371
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "08:28:06",
+          "finish": "17:08:47",
+          "durationMin": 520.69,
+          "zStart": -0.587,
+          "zFinish": -0.629
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "08:27:44",
+          "finish": "17:17:54",
+          "durationMin": 530.17,
+          "zStart": -1.252,
+          "zFinish": -0.498
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "11:04:59",
+          "finish": "17:20:47",
+          "durationMin": 375.8,
+          "zStart": 0.567,
+          "zFinish": 1.498
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "10:36:59",
+          "finish": "17:18:40",
+          "durationMin": 401.67,
+          "zStart": -0.605,
+          "zFinish": 1.384
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "09:03:03",
+          "finish": "17:03:18",
+          "durationMin": 480.26,
+          "zStart": -0.448,
+          "zFinish": -0.76
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "09:20:39",
+          "finish": "17:17:21",
+          "durationMin": 476.7,
+          "zStart": 0.588,
+          "zFinish": 0.105
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "09:14:52",
+          "finish": "17:24:04",
+          "durationMin": 489.19,
+          "zStart": 0.622,
+          "zFinish": -0.349
+        },
         {
           "date": "2026-08-20",
           "dayOfWeek": "Thursday",
-          "start": "00:00:00",
-          "finish": "22:45:50",
-          "durationMin": 1365.83,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "6a8c1952bb74e322c4c2e68c",
-      "username": "user_1",
-      "days": [
+          "start": "08:39:37",
+          "finish": "17:46:10",
+          "durationMin": 546.54,
+          "zStart": -0.117,
+          "zFinish": 0.702
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "09:38:06",
+          "finish": "17:42:44",
+          "durationMin": 484.64,
+          "zStart": 1.376,
+          "zFinish": 1.022
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "10:07:08",
+          "finish": "16:00:55",
+          "durationMin": 353.79,
+          "zStart": -0.847,
+          "zFinish": -0.513
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "11:59:25",
+          "finish": "16:29:39",
+          "durationMin": 270.24,
+          "zStart": 1.076,
+          "zFinish": 0.216
+        },
         {
           "date": "2026-08-24",
           "dayOfWeek": "Monday",
-          "start": "15:13:39",
-          "finish": "15:14:28",
-          "durationMin": 0.82,
-          "zStart": null,
-          "zFinish": null
+          "start": "09:23:58",
+          "finish": "17:56:39",
+          "durationMin": 512.69,
+          "zStart": 0.625,
+          "zFinish": 0.699
         }
       ]
     },
     {
-      "clientId": "6a8c1e58bb74e322c4c2f2fc",
-      "username": "user_1",
+      "clientId": "6a7f000000000000000000a7",
+      "username": "6a7f000000000000000000a7",
       "days": [
         {
-          "date": "2026-08-24",
-          "dayOfWeek": "Monday",
-          "start": "15:35:05",
-          "finish": "15:35:17",
-          "durationMin": 0.2,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "69d39296be20f719382c88a0",
-      "username": "69d39296be20f719382c88a0",
-      "days": [
-        {
-          "date": "2026-06-29",
-          "dayOfWeek": "Monday",
-          "start": "11:16:41",
-          "finish": "11:16:41",
-          "durationMin": 0.0,
-          "zStart": null,
-          "zFinish": null
-        }
-      ]
-    },
-    {
-      "clientId": "69d4d05bbe20f719382c9d7e",
-      "username": "69d4d05bbe20f719382c9d7e",
-      "days": [
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "09:00:20",
+          "finish": "17:18:02",
+          "durationMin": 497.69,
+          "zStart": 0.508,
+          "zFinish": 0.496
+        },
         {
           "date": "2026-07-01",
           "dayOfWeek": "Wednesday",
-          "start": "09:16:29",
-          "finish": "09:16:29",
-          "durationMin": 0.0,
-          "zStart": null,
-          "zFinish": null
+          "start": "09:11:58",
+          "finish": "16:54:43",
+          "durationMin": 462.75,
+          "zStart": 0.426,
+          "zFinish": 0.263
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "09:44:48",
+          "finish": "17:27:53",
+          "durationMin": 463.08,
+          "zStart": 1.001,
+          "zFinish": 0.396
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "08:54:04",
+          "finish": "16:55:31",
+          "durationMin": 481.44,
+          "zStart": 0.279,
+          "zFinish": 0.199
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "09:25:54",
+          "finish": "15:58:17",
+          "durationMin": 392.38,
+          "zStart": -0.477,
+          "zFinish": 0.36
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "09:49:45",
+          "finish": "15:20:01",
+          "durationMin": 330.27,
+          "zStart": -0.123,
+          "zFinish": -0.795
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "08:50:01",
+          "finish": "17:01:11",
+          "durationMin": 491.16,
+          "zStart": 0.422,
+          "zFinish": 0.395
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "09:34:26",
+          "finish": "17:36:12",
+          "durationMin": 481.76,
+          "zStart": 0.68,
+          "zFinish": 0.589
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "08:52:42",
+          "finish": "17:01:19",
+          "durationMin": 488.61,
+          "zStart": 0.297,
+          "zFinish": 0.31
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "09:51:54",
+          "finish": "17:44:52",
+          "durationMin": 472.96,
+          "zStart": 1.223,
+          "zFinish": 1.771
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "08:30:27",
+          "finish": "17:30:08",
+          "durationMin": 539.69,
+          "zStart": 0.114,
+          "zFinish": 0.44
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "08:26:38",
+          "finish": "17:12:16",
+          "durationMin": 525.63,
+          "zStart": 0.305,
+          "zFinish": 0.45
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "08:59:35",
+          "finish": "17:39:50",
+          "durationMin": 520.25,
+          "zStart": 0.504,
+          "zFinish": 0.608
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "08:42:23",
+          "finish": "17:04:42",
+          "durationMin": 502.32,
+          "zStart": 0.227,
+          "zFinish": 0.334
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "08:53:11",
+          "finish": "17:20:59",
+          "durationMin": 507.79,
+          "zStart": -0.616,
+          "zFinish": -0.162
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "09:29:16",
+          "finish": "17:22:11",
+          "durationMin": 472.93,
+          "zStart": 0.524,
+          "zFinish": 0.385
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "10:40:24",
+          "finish": "15:54:46",
+          "durationMin": 314.36,
+          "zStart": 1.516,
+          "zFinish": 0.238
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "09:52:13",
+          "finish": "15:56:35",
+          "durationMin": 364.36,
+          "zStart": 0.039,
+          "zFinish": 0.209
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "10:04:16",
+          "finish": "17:29:04",
+          "durationMin": 444.8,
+          "zStart": 0.794,
+          "zFinish": 0.532
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "09:22:31",
+          "finish": "17:20:11",
+          "durationMin": 477.66,
+          "zStart": 0.62,
+          "zFinish": 0.507
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "02:01:32",
+          "finish": "10:35:16",
+          "durationMin": 513.73,
+          "zStart": -2.467,
+          "zFinish": -2.454
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "09:11:26",
+          "finish": "17:33:19",
+          "durationMin": 501.88,
+          "zStart": -0.044,
+          "zFinish": 0.836
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "08:57:05",
+          "finish": "16:28:50",
+          "durationMin": 451.76,
+          "zStart": 0.3,
+          "zFinish": 0.013
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "09:17:42",
+          "finish": "15:57:14",
+          "durationMin": 399.54,
+          "zStart": -0.696,
+          "zFinish": 0.324
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:08:44",
+          "finish": "16:17:51",
+          "durationMin": 369.11,
+          "zStart": 1.127,
+          "zFinish": 0.793
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "09:32:34",
+          "finish": "17:53:56",
+          "durationMin": 501.36,
+          "zStart": 0.635,
+          "zFinish": 0.654
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "02:12:23",
+          "finish": "10:34:01",
+          "durationMin": 501.64,
+          "zStart": -1.549,
+          "zFinish": -1.59
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "09:09:37",
+          "finish": "16:59:58",
+          "durationMin": 470.35,
+          "zStart": 0.411,
+          "zFinish": 0.3
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "09:18:43",
+          "finish": "17:16:30",
+          "durationMin": 477.78,
+          "zStart": 0.184,
+          "zFinish": -0.526
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "09:05:01",
+          "finish": "17:24:41",
+          "durationMin": 499.66,
+          "zStart": 0.355,
+          "zFinish": 0.402
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "10:15:45",
+          "finish": "15:21:20",
+          "durationMin": 305.59,
+          "zStart": 0.856,
+          "zFinish": -0.916
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "09:58:51",
+          "finish": "16:42:14",
+          "durationMin": 403.38,
+          "zStart": 0.476,
+          "zFinish": 1.462
+        },
+        {
+          "date": "2026-08-03",
+          "dayOfWeek": "Monday",
+          "start": "08:52:08",
+          "finish": "17:53:54",
+          "durationMin": 541.78,
+          "zStart": 0.433,
+          "zFinish": 0.654
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "01:46:37",
+          "finish": "10:22:55",
+          "durationMin": 516.3,
+          "zStart": -1.679,
+          "zFinish": -1.647
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "09:15:26",
+          "finish": "17:43:23",
+          "durationMin": 507.95,
+          "zStart": 0.45,
+          "zFinish": 0.611
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "09:25:45",
+          "finish": "17:22:19",
+          "durationMin": 476.56,
+          "zStart": 0.404,
+          "zFinish": -0.055
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "Friday",
+          "start": "09:23:04",
+          "finish": "17:34:11",
+          "durationMin": 491.13,
+          "zStart": 0.481,
+          "zFinish": 0.468
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "01:47:47",
+          "finish": "09:39:19",
+          "durationMin": 471.53,
+          "zStart": -1.69,
+          "zFinish": -1.769
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "08:55:18",
+          "finish": "17:24:10",
+          "durationMin": 508.87,
+          "zStart": 0.482,
+          "zFinish": 0.527
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "08:50:35",
+          "finish": "17:20:43",
+          "durationMin": 510.13,
+          "zStart": 0.283,
+          "zFinish": 0.449
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "09:07:08",
+          "finish": "17:12:26",
+          "durationMin": 485.31,
+          "zStart": -0.179,
+          "zFinish": -0.855
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "09:11:43",
+          "finish": "17:43:21",
+          "durationMin": 511.63,
+          "zStart": 0.402,
+          "zFinish": 0.532
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "09:40:44",
+          "finish": "15:07:28",
+          "durationMin": 326.73,
+          "zStart": -0.08,
+          "zFinish": -1.394
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "09:23:41",
+          "finish": "15:29:04",
+          "durationMin": 365.38,
+          "zStart": -1.839,
+          "zFinish": -0.547
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "02:23:51",
+          "finish": "10:45:09",
+          "durationMin": 501.29,
+          "zStart": -1.51,
+          "zFinish": -1.447
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "08:45:46",
+          "finish": "17:20:50",
+          "durationMin": 515.06,
+          "zStart": 0.434,
+          "zFinish": 0.51
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "09:04:09",
+          "finish": "16:43:56",
+          "durationMin": 459.79,
+          "zStart": 0.374,
+          "zFinish": 0.186
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "08:09:51",
+          "finish": "17:05:38",
+          "durationMin": 535.78,
+          "zStart": -1.973,
+          "zFinish": -1.405
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "02:21:38",
+          "finish": "10:36:40",
+          "durationMin": 495.03,
+          "zStart": -2.455,
+          "zFinish": -2.44
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "09:01:54",
+          "finish": "16:28:04",
+          "durationMin": 446.18,
+          "zStart": -1.119,
+          "zFinish": 1.388
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "09:56:31",
+          "finish": "15:08:08",
+          "durationMin": 311.61,
+          "zStart": 0.322,
+          "zFinish": -1.122
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "09:27:36",
+          "finish": "17:28:58",
+          "durationMin": 481.36,
+          "zStart": 0.61,
+          "zFinish": 0.531
+        }
+      ]
+    },
+    {
+      "clientId": "6a7f000000000000000000a3",
+      "username": "6a7f000000000000000000a3",
+      "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "09:53:07",
+          "finish": "18:59:49",
+          "durationMin": 546.7,
+          "zStart": -0.186,
+          "zFinish": 1.033
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "09:28:03",
+          "finish": "18:19:01",
+          "durationMin": 530.97,
+          "zStart": -1.661,
+          "zFinish": -0.142
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "10:02:48",
+          "finish": "18:25:16",
+          "durationMin": 502.47,
+          "zStart": -0.257,
+          "zFinish": 0.209
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "10:11:28",
+          "finish": "18:35:22",
+          "durationMin": 503.9,
+          "zStart": 0.632,
+          "zFinish": 0.337
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "10:44:56",
+          "finish": "16:40:29",
+          "durationMin": 355.54,
+          "zStart": -0.75,
+          "zFinish": -0.049
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "12:07:24",
+          "finish": "15:58:01",
+          "durationMin": 230.62,
+          "zStart": 0.762,
+          "zFinish": -1.899
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "09:55:26",
+          "finish": "18:04:40",
+          "durationMin": 489.23,
+          "zStart": -0.894,
+          "zFinish": -1.102
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "10:18:24",
+          "finish": "18:21:16",
+          "durationMin": 482.88,
+          "zStart": 0.973,
+          "zFinish": -1.02
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "10:28:39",
+          "finish": "18:28:49",
+          "durationMin": 480.16,
+          "zStart": 1.307,
+          "zFinish": 0.337
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "10:31:57",
+          "finish": "18:14:39",
+          "durationMin": 462.71,
+          "zStart": 1.266,
+          "zFinish": -0.143
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "10:07:21",
+          "finish": "18:32:07",
+          "durationMin": 504.77,
+          "zStart": 0.279,
+          "zFinish": 0.164
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "10:35:33",
+          "finish": "18:41:50",
+          "durationMin": 486.28,
+          "zStart": 0.798,
+          "zFinish": 0.901
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "09:12:38",
+          "finish": "18:51:21",
+          "durationMin": 578.72,
+          "zStart": -2.042,
+          "zFinish": 0.582
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "09:57:59",
+          "finish": "18:09:18",
+          "durationMin": 491.32,
+          "zStart": -0.195,
+          "zFinish": -0.616
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "09:33:39",
+          "finish": "18:28:23",
+          "durationMin": 534.74,
+          "zStart": -1.78,
+          "zFinish": 0.312
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "09:47:22",
+          "finish": "18:10:04",
+          "durationMin": 502.7,
+          "zStart": -1.436,
+          "zFinish": -1.01
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "10:46:54",
+          "finish": "15:47:42",
+          "durationMin": 300.8,
+          "zStart": -0.688,
+          "zFinish": -1.461
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "11:07:35",
+          "finish": "17:17:03",
+          "durationMin": 369.47,
+          "zStart": -0.829,
+          "zFinish": 1.029
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "10:21:25",
+          "finish": "18:24:10",
+          "durationMin": 482.76,
+          "zStart": 0.202,
+          "zFinish": -0.051
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "10:24:56",
+          "finish": "18:38:16",
+          "durationMin": 493.34,
+          "zStart": 1.273,
+          "zFinish": -0.115
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "10:07:38",
+          "finish": "18:10:57",
+          "durationMin": 483.33,
+          "zStart": 0.277,
+          "zFinish": -0.536
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "10:07:43",
+          "finish": "18:55:36",
+          "durationMin": 527.89,
+          "zStart": 0.0,
+          "zFinish": 1.213
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "10:21:25",
+          "finish": "18:32:34",
+          "durationMin": 491.15,
+          "zStart": 1.486,
+          "zFinish": 0.188
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "12:06:53",
+          "finish": "16:12:50",
+          "durationMin": 245.95,
+          "zStart": 1.817,
+          "zFinish": -0.789
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:45:37",
+          "finish": "17:02:14",
+          "durationMin": 376.61,
+          "zStart": -1.413,
+          "zFinish": 0.48
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "10:23:53",
+          "finish": "18:03:28",
+          "durationMin": 459.58,
+          "zStart": 0.306,
+          "zFinish": -1.167
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "10:05:38",
+          "finish": "18:46:39",
+          "durationMin": 521.01,
+          "zStart": 0.388,
+          "zFinish": 0.332
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "10:06:13",
+          "finish": "18:54:33",
+          "durationMin": 528.34,
+          "zStart": 0.208,
+          "zFinish": 1.593
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "10:29:20",
+          "finish": "17:27:23",
+          "durationMin": 418.04,
+          "zStart": 1.13,
+          "zFinish": -1.708
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "09:58:50",
+          "finish": "18:55:47",
+          "durationMin": 536.94,
+          "zStart": -0.452,
+          "zFinish": 1.425
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "10:50:26",
+          "finish": "17:16:03",
+          "durationMin": 385.62,
+          "zStart": -0.577,
+          "zFinish": 0.903
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "11:44:19",
+          "finish": "16:55:56",
+          "durationMin": 311.63,
+          "zStart": 0.148,
+          "zFinish": 0.247
+        },
+        {
+          "date": "2026-08-03",
+          "dayOfWeek": "Monday",
+          "start": "10:05:27",
+          "finish": "18:29:45",
+          "durationMin": 504.3,
+          "zStart": -0.472,
+          "zFinish": 0.249
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "09:54:37",
+          "finish": "18:14:07",
+          "durationMin": 499.51,
+          "zStart": -0.117,
+          "zFinish": -1.401
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "10:28:07",
+          "finish": "17:51:48",
+          "durationMin": 443.69,
+          "zStart": 1.28,
+          "zFinish": -1.471
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "09:51:37",
+          "finish": "18:58:09",
+          "durationMin": 546.53,
+          "zStart": -0.841,
+          "zFinish": 1.298
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "Friday",
+          "start": "10:03:09",
+          "finish": "17:54:36",
+          "durationMin": 471.46,
+          "zStart": -0.082,
+          "zFinish": -1.833
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "10:24:16",
+          "finish": "18:13:34",
+          "durationMin": 469.3,
+          "zStart": 0.322,
+          "zFinish": -0.622
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "09:56:16",
+          "finish": "18:25:50",
+          "durationMin": 509.57,
+          "zStart": -0.041,
+          "zFinish": -0.777
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "09:49:13",
+          "finish": "18:45:59",
+          "durationMin": 536.77,
+          "zStart": -0.625,
+          "zFinish": 1.175
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "10:08:51",
+          "finish": "17:55:28",
+          "durationMin": 466.61,
+          "zStart": 0.06,
+          "zFinish": -0.778
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "10:13:07",
+          "finish": "18:41:02",
+          "durationMin": 507.92,
+          "zStart": 0.774,
+          "zFinish": 0.639
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "10:59:26",
+          "finish": "17:26:12",
+          "durationMin": 386.77,
+          "zStart": -0.296,
+          "zFinish": 1.174
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "12:27:56",
+          "finish": "16:47:50",
+          "durationMin": 259.91,
+          "zStart": 1.308,
+          "zFinish": -0.054
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "10:51:14",
+          "finish": "18:58:08",
+          "durationMin": 486.9,
+          "zStart": 1.46,
+          "zFinish": 1.779
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "09:51:44",
+          "finish": "19:06:03",
+          "durationMin": 554.31,
+          "zStart": -0.249,
+          "zFinish": 1.365
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "09:49:55",
+          "finish": "18:14:58",
+          "durationMin": 505.06,
+          "zStart": -0.59,
+          "zFinish": -0.34
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "10:15:48",
+          "finish": "18:06:49",
+          "durationMin": 471.02,
+          "zStart": 0.423,
+          "zFinish": -0.402
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "09:50:06",
+          "finish": "18:30:42",
+          "durationMin": 520.61,
+          "zStart": -1.202,
+          "zFinish": 0.089
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "11:24:39",
+          "finish": "16:50:34",
+          "durationMin": 325.92,
+          "zStart": 0.494,
+          "zFinish": 0.221
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "11:39:39",
+          "finish": "16:54:38",
+          "durationMin": 314.98,
+          "zStart": 0.024,
+          "zFinish": 0.198
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "09:35:48",
+          "finish": "18:25:24",
+          "durationMin": 529.6,
+          "zStart": -1.723,
+          "zFinish": 0.015
+        }
+      ]
+    },
+    {
+      "clientId": "6a7f000000000000000000a6",
+      "username": "6a7f000000000000000000a6",
+      "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "11:04:02",
+          "finish": "18:59:46",
+          "durationMin": 475.73,
+          "zStart": 1.349,
+          "zFinish": 0.442
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "11:08:20",
+          "finish": "18:35:24",
+          "durationMin": 447.07,
+          "zStart": 0.998,
+          "zFinish": -1.253
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "10:26:38",
+          "finish": "19:05:34",
+          "durationMin": 518.93,
+          "zStart": -0.801,
+          "zFinish": 0.396
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "10:45:14",
+          "finish": "18:45:13",
+          "durationMin": 479.99,
+          "zStart": 0.295,
+          "zFinish": -0.673
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "11:31:57",
+          "finish": "15:41:56",
+          "durationMin": 249.97,
+          "zStart": -1.173,
+          "zFinish": -1.904
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "12:28:22",
+          "finish": "16:59:06",
+          "durationMin": 270.73,
+          "zStart": 0.443,
+          "zFinish": -1.327
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "10:26:12",
+          "finish": "18:59:47",
+          "durationMin": 513.57,
+          "zStart": -0.649,
+          "zFinish": 0.14
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "09:48:16",
+          "finish": "18:48:33",
+          "durationMin": 540.27,
+          "zStart": -1.446,
+          "zFinish": -0.19
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "10:29:38",
+          "finish": "18:39:40",
+          "durationMin": 490.03,
+          "zStart": -0.456,
+          "zFinish": -1.042
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "10:42:51",
+          "finish": "19:16:39",
+          "durationMin": 513.8,
+          "zStart": 1.179,
+          "zFinish": 1.038
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "10:25:24",
+          "finish": "19:11:09",
+          "durationMin": 525.75,
+          "zStart": -0.903,
+          "zFinish": 0.458
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "11:04:32",
+          "finish": "18:48:05",
+          "durationMin": 463.55,
+          "zStart": 2.017,
+          "zFinish": -0.3
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "10:24:47",
+          "finish": "19:17:18",
+          "durationMin": 532.53,
+          "zStart": -0.099,
+          "zFinish": 1.428
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "11:04:28",
+          "finish": "19:20:36",
+          "durationMin": 496.13,
+          "zStart": 0.853,
+          "zFinish": 0.983
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "10:26:51",
+          "finish": "18:59:42",
+          "durationMin": 512.86,
+          "zStart": -0.774,
+          "zFinish": 0.056
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "11:04:05",
+          "finish": "18:34:54",
+          "durationMin": 450.81,
+          "zStart": 1.433,
+          "zFinish": -1.123
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "12:13:26",
+          "finish": "16:57:45",
+          "durationMin": 284.32,
+          "zStart": 0.27,
+          "zFinish": 0.132
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "11:05:24",
+          "finish": "17:39:47",
+          "durationMin": 394.39,
+          "zStart": -1.041,
+          "zFinish": -0.03
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "10:32:54",
+          "finish": "18:06:08",
+          "durationMin": 453.24,
+          "zStart": -0.183,
+          "zFinish": -1.875
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "10:43:46",
+          "finish": "18:44:13",
+          "durationMin": 480.45,
+          "zStart": 0.602,
+          "zFinish": -0.434
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "10:49:24",
+          "finish": "18:48:52",
+          "durationMin": 479.47,
+          "zStart": 0.286,
+          "zFinish": -0.587
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "10:38:04",
+          "finish": "18:45:33",
+          "durationMin": 487.48,
+          "zStart": 0.595,
+          "zFinish": -0.763
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "10:30:13",
+          "finish": "19:05:57",
+          "durationMin": 515.72,
+          "zStart": -0.612,
+          "zFinish": 0.231
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "11:50:35",
+          "finish": "16:59:54",
+          "durationMin": 309.32,
+          "zStart": -0.525,
+          "zFinish": 0.19
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "11:57:35",
+          "finish": "17:24:05",
+          "durationMin": 326.5,
+          "zStart": -0.108,
+          "zFinish": -0.531
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "10:24:50",
+          "finish": "18:44:55",
+          "durationMin": 500.09,
+          "zStart": -0.744,
+          "zFinish": -0.418
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "10:40:04",
+          "finish": "19:01:08",
+          "durationMin": 501.06,
+          "zStart": 0.465,
+          "zFinish": 0.518
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "10:46:15",
+          "finish": "19:29:16",
+          "durationMin": 523.02,
+          "zStart": 0.168,
+          "zFinish": 1.412
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "10:31:01",
+          "finish": "19:11:34",
+          "durationMin": 520.55,
+          "zStart": -0.265,
+          "zFinish": 0.743
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "10:39:32",
+          "finish": "19:22:50",
+          "durationMin": 523.3,
+          "zStart": -0.049,
+          "zFinish": 0.968
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "12:45:04",
+          "finish": "17:01:25",
+          "durationMin": 256.35,
+          "zStart": 1.369,
+          "zFinish": 0.23
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "11:00:33",
+          "finish": "17:26:41",
+          "durationMin": 386.14,
+          "zStart": -1.127,
+          "zFinish": -0.448
+        },
+        {
+          "date": "2026-08-03",
+          "dayOfWeek": "Monday",
+          "start": "10:23:46",
+          "finish": "19:35:53",
+          "durationMin": 552.1,
+          "zStart": -0.818,
+          "zFinish": 1.495
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "10:28:55",
+          "finish": "18:36:32",
+          "durationMin": 487.61,
+          "zStart": 0.054,
+          "zFinish": -0.866
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "09:58:25",
+          "finish": "18:48:36",
+          "durationMin": 530.18,
+          "zStart": -1.63,
+          "zFinish": -0.6
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "10:34:26",
+          "finish": "18:23:29",
+          "durationMin": 469.05,
+          "zStart": 0.152,
+          "zFinish": -2.041
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "Friday",
+          "start": "11:04:10",
+          "finish": "18:58:46",
+          "durationMin": 474.59,
+          "zStart": 1.438,
+          "zFinish": -0.082
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "10:29:15",
+          "finish": "18:51:52",
+          "durationMin": 502.62,
+          "zStart": -0.437,
+          "zFinish": -0.157
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "09:47:20",
+          "finish": "19:06:07",
+          "durationMin": 558.79,
+          "zStart": -1.48,
+          "zFinish": 0.799
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "11:07:17",
+          "finish": "19:07:37",
+          "durationMin": 480.32,
+          "zStart": 0.958,
+          "zFinish": 0.341
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "10:44:17",
+          "finish": "18:56:57",
+          "durationMin": 492.67,
+          "zStart": 1.354,
+          "zFinish": -0.103
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "10:33:37",
+          "finish": "18:30:35",
+          "durationMin": 476.97,
+          "zStart": -0.407,
+          "zFinish": -1.312
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "12:30:36",
+          "finish": "17:02:22",
+          "durationMin": 271.76,
+          "zStart": 0.866,
+          "zFinish": 0.256
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "13:29:21",
+          "finish": "18:21:05",
+          "durationMin": 291.74,
+          "zStart": 1.533,
+          "zFinish": 1.286
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "10:50:04",
+          "finish": "19:21:29",
+          "durationMin": 511.41,
+          "zStart": 1.011,
+          "zFinish": 0.955
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "10:42:32",
+          "finish": "18:21:44",
+          "durationMin": 459.21,
+          "zStart": 0.556,
+          "zFinish": -1.699
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "10:10:28",
+          "finish": "19:15:50",
+          "durationMin": 545.36,
+          "zStart": -1.177,
+          "zFinish": 0.747
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "10:21:22",
+          "finish": "19:10:21",
+          "durationMin": 528.98,
+          "zStart": -1.444,
+          "zFinish": 0.673
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "10:20:31",
+          "finish": "19:35:50",
+          "durationMin": 555.32,
+          "zStart": -1.198,
+          "zFinish": 1.535
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "11:42:28",
+          "finish": "17:33:42",
+          "durationMin": 351.23,
+          "zStart": -0.807,
+          "zFinish": 1.097
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "12:20:24",
+          "finish": "18:13:40",
+          "durationMin": 353.28,
+          "zStart": 0.3,
+          "zFinish": 1.05
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "10:32:41",
+          "finish": "19:00:22",
+          "durationMin": 507.69,
+          "zStart": -0.198,
+          "zFinish": 0.162
+        }
+      ]
+    },
+    {
+      "clientId": "6a7f000000000000000000a1",
+      "username": "6a7f000000000000000000a1",
+      "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "09:42:44",
+          "finish": "17:55:10",
+          "durationMin": 492.44,
+          "zStart": -0.174,
+          "zFinish": 0.903
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "09:56:53",
+          "finish": "17:55:28",
+          "durationMin": 478.59,
+          "zStart": -0.038,
+          "zFinish": 0.548
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "09:19:40",
+          "finish": "17:36:05",
+          "durationMin": 496.42,
+          "zStart": -1.002,
+          "zFinish": -0.59
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "09:43:18",
+          "finish": "18:36:25",
+          "durationMin": 533.11,
+          "zStart": -0.088,
+          "zFinish": 1.277
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "10:18:35",
+          "finish": "17:14:28",
+          "durationMin": 415.88,
+          "zStart": -0.526,
+          "zFinish": 1.611
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "11:43:59",
+          "finish": "17:03:04",
+          "durationMin": 319.08,
+          "zStart": 1.143,
+          "zFinish": 0.22
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "10:01:30",
+          "finish": "17:51:57",
+          "durationMin": 470.45,
+          "zStart": 0.794,
+          "zFinish": -0.391
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "09:44:41",
+          "finish": "17:52:22",
+          "durationMin": 487.69,
+          "zStart": -0.056,
+          "zFinish": 0.716
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "09:56:38",
+          "finish": "17:30:45",
+          "durationMin": 454.1,
+          "zStart": -0.047,
+          "zFinish": -0.762
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "09:26:00",
+          "finish": "18:25:05",
+          "durationMin": 539.09,
+          "zStart": -0.675,
+          "zFinish": 1.262
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "09:26:46",
+          "finish": "17:39:56",
+          "durationMin": 493.18,
+          "zStart": -1.103,
+          "zFinish": -0.66
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "09:37:50",
+          "finish": "18:15:27",
+          "durationMin": 517.62,
+          "zStart": -0.683,
+          "zFinish": 0.582
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "09:52:12",
+          "finish": "17:44:45",
+          "durationMin": 472.55,
+          "zStart": 0.4,
+          "zFinish": 0.209
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "10:10:18",
+          "finish": "17:43:15",
+          "durationMin": 452.95,
+          "zStart": 0.468,
+          "zFinish": -0.1
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "09:38:27",
+          "finish": "17:10:37",
+          "durationMin": 452.17,
+          "zStart": -0.034,
+          "zFinish": -1.553
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "09:58:55",
+          "finish": "18:30:10",
+          "durationMin": 511.24,
+          "zStart": 0.87,
+          "zFinish": 1.062
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "10:36:15",
+          "finish": "16:49:53",
+          "durationMin": 373.63,
+          "zStart": -0.135,
+          "zFinish": 0.766
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "09:36:20",
+          "finish": "17:01:20",
+          "durationMin": 445.0,
+          "zStart": -1.314,
+          "zFinish": 0.182
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "10:10:35",
+          "finish": "17:27:08",
+          "durationMin": 436.54,
+          "zStart": 1.36,
+          "zFinish": -1.419
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "09:45:05",
+          "finish": "17:25:16",
+          "durationMin": 460.17,
+          "zStart": -0.031,
+          "zFinish": -1.09
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "10:40:52",
+          "finish": "18:10:02",
+          "durationMin": 449.16,
+          "zStart": 1.62,
+          "zFinish": 1.32
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "09:46:39",
+          "finish": "18:06:30",
+          "durationMin": 499.84,
+          "zStart": 0.388,
+          "zFinish": 0.559
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "09:32:08",
+          "finish": "17:59:07",
+          "durationMin": 506.97,
+          "zStart": -0.773,
+          "zFinish": -0.002
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "10:25:02",
+          "finish": "16:13:18",
+          "durationMin": 348.27,
+          "zStart": -0.383,
+          "zFinish": -0.492
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:00:41",
+          "finish": "15:57:37",
+          "durationMin": 356.94,
+          "zStart": -0.845,
+          "zFinish": -1.201
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "09:55:48",
+          "finish": "17:54:20",
+          "durationMin": 478.54,
+          "zStart": 0.438,
+          "zFinish": -0.292
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "10:09:31",
+          "finish": "17:19:59",
+          "durationMin": 430.47,
+          "zStart": 1.449,
+          "zFinish": -1.442
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "09:39:21",
+          "finish": "17:58:52",
+          "durationMin": 499.52,
+          "zStart": -0.698,
+          "zFinish": 0.728
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "10:16:05",
+          "finish": "18:04:40",
+          "durationMin": 468.58,
+          "zStart": 1.905,
+          "zFinish": 0.49
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "09:45:26",
+          "finish": "17:22:43",
+          "durationMin": 457.29,
+          "zStart": 0.043,
+          "zFinish": -1.25
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "09:47:07",
+          "finish": "16:18:18",
+          "durationMin": 391.17,
+          "zStart": -1.224,
+          "zFinish": -0.32
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "11:27:44",
+          "finish": "17:29:17",
+          "durationMin": 361.56,
+          "zStart": 0.83,
+          "zFinish": 0.789
+        },
+        {
+          "date": "2026-08-03",
+          "dayOfWeek": "Monday",
+          "start": "09:29:25",
+          "finish": "18:11:16",
+          "durationMin": 521.85,
+          "zStart": -1.208,
+          "zFinish": 0.409
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "09:59:15",
+          "finish": "17:59:05",
+          "durationMin": 479.83,
+          "zStart": 0.827,
+          "zFinish": 1.164
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "09:28:42",
+          "finish": "18:00:00",
+          "durationMin": 511.29,
+          "zStart": -1.099,
+          "zFinish": 0.788
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "09:34:48",
+          "finish": "18:01:43",
+          "durationMin": 506.93,
+          "zStart": -0.222,
+          "zFinish": 0.379
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "Friday",
+          "start": "09:49:34",
+          "finish": "17:19:50",
+          "durationMin": 450.26,
+          "zStart": 0.296,
+          "zFinish": -1.349
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "10:04:36",
+          "finish": "17:41:00",
+          "durationMin": 456.4,
+          "zStart": 0.987,
+          "zFinish": -0.845
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "09:37:54",
+          "finish": "17:28:07",
+          "durationMin": 470.21,
+          "zStart": -0.467,
+          "zFinish": -0.9
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "09:25:52",
+          "finish": "17:23:49",
+          "durationMin": 477.95,
+          "zStart": -1.206,
+          "zFinish": -1.13
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "09:53:15",
+          "finish": "18:09:36",
+          "durationMin": 496.36,
+          "zStart": 0.728,
+          "zFinish": 0.676
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "10:14:04",
+          "finish": "18:12:24",
+          "durationMin": 478.33,
+          "zStart": 1.799,
+          "zFinish": 0.453
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "11:55:47",
+          "finish": "16:15:04",
+          "durationMin": 259.27,
+          "zStart": 1.627,
+          "zFinish": -0.431
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "11:16:32",
+          "finish": "15:58:05",
+          "durationMin": 281.53,
+          "zStart": 0.615,
+          "zFinish": -1.191
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "09:34:39",
+          "finish": "18:46:42",
+          "durationMin": 552.05,
+          "zStart": -0.881,
+          "zFinish": 1.877
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "09:13:26",
+          "finish": "17:48:12",
+          "durationMin": 514.76,
+          "zStart": -1.949,
+          "zFinish": 0.439
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "10:24:26",
+          "finish": "17:18:53",
+          "durationMin": 414.45,
+          "zStart": 1.001,
+          "zFinish": -1.392
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "09:18:00",
+          "finish": "17:19:22",
+          "durationMin": 481.38,
+          "zStart": -1.088,
+          "zFinish": -1.222
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "09:27:42",
+          "finish": "18:12:51",
+          "durationMin": 525.16,
+          "zStart": -1.045,
+          "zFinish": 0.469
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "11:11:18",
+          "finish": "15:54:35",
+          "durationMin": 283.28,
+          "zStart": 0.642,
+          "zFinish": -1.135
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "10:22:20",
+          "finish": "17:48:10",
+          "durationMin": 445.83,
+          "zStart": -0.429,
+          "zFinish": 1.199
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "09:35:50",
+          "finish": "18:03:18",
+          "durationMin": 507.47,
+          "zStart": -0.808,
+          "zFinish": 0.079
+        }
+      ]
+    },
+    {
+      "clientId": "6a7f000000000000000000a4",
+      "username": "6a7f000000000000000000a4",
+      "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "09:17:18",
+          "finish": "16:25:25",
+          "durationMin": 428.12,
+          "zStart": 1.137,
+          "zFinish": -0.93
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "07:47:20",
+          "finish": "16:58:07",
+          "durationMin": 550.78,
+          "zStart": -1.346,
+          "zFinish": 0.719
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "08:14:49",
+          "finish": "16:34:33",
+          "durationMin": 499.73,
+          "zStart": -1.397,
+          "zFinish": -0.685
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "08:50:00",
+          "finish": "16:55:12",
+          "durationMin": 485.2,
+          "zStart": 0.817,
+          "zFinish": 0.838
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "09:54:38",
+          "finish": "16:28:01",
+          "durationMin": 393.39,
+          "zStart": -0.35,
+          "zFinish": 0.394
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "10:52:14",
+          "finish": "14:55:23",
+          "durationMin": 243.14,
+          "zStart": 0.599,
+          "zFinish": -0.917
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "08:22:52",
+          "finish": "17:24:37",
+          "durationMin": 541.75,
+          "zStart": -0.51,
+          "zFinish": 0.861
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "08:33:20",
+          "finish": "16:26:55",
+          "durationMin": 473.59,
+          "zStart": -0.824,
+          "zFinish": -0.867
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "09:20:11",
+          "finish": "16:41:06",
+          "durationMin": 440.92,
+          "zStart": 1.209,
+          "zFinish": -0.381
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "08:49:03",
+          "finish": "16:22:23",
+          "durationMin": 453.34,
+          "zStart": 0.585,
+          "zFinish": -1.519
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "08:53:35",
+          "finish": "16:47:33",
+          "durationMin": 473.97,
+          "zStart": 0.999,
+          "zFinish": 0.261
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "08:24:32",
+          "finish": "16:52:28",
+          "durationMin": 507.92,
+          "zStart": -0.463,
+          "zFinish": -0.209
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "08:49:29",
+          "finish": "16:58:42",
+          "durationMin": 489.21,
+          "zStart": -0.103,
+          "zFinish": 0.46
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "08:17:51",
+          "finish": "16:30:55",
+          "durationMin": 493.07,
+          "zStart": -0.506,
+          "zFinish": -1.039
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "08:41:58",
+          "finish": "16:43:38",
+          "durationMin": 481.68,
+          "zStart": 0.175,
+          "zFinish": -0.062
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "08:23:47",
+          "finish": "16:41:26",
+          "durationMin": 497.65,
+          "zStart": -0.513,
+          "zFinish": -0.201
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "09:43:06",
+          "finish": "16:46:23",
+          "durationMin": 423.29,
+          "zStart": -0.526,
+          "zFinish": 0.814
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "10:27:53",
+          "finish": "16:12:19",
+          "durationMin": 344.43,
+          "zStart": -0.464,
+          "zFinish": 0.935
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "08:23:48",
+          "finish": "17:04:06",
+          "durationMin": 520.29,
+          "zStart": -0.484,
+          "zFinish": 0.178
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "09:02:20",
+          "finish": "16:57:06",
+          "durationMin": 474.77,
+          "zStart": 0.47,
+          "zFinish": 0.393
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "08:56:13",
+          "finish": "16:30:57",
+          "durationMin": 454.73,
+          "zStart": 0.549,
+          "zFinish": -1.037
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "08:55:44",
+          "finish": "17:06:38",
+          "durationMin": 490.89,
+          "zStart": 0.972,
+          "zFinish": 1.514
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "08:41:53",
+          "finish": "16:48:41",
+          "durationMin": 486.8,
+          "zStart": 0.405,
+          "zFinish": 0.347
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "09:53:07",
+          "finish": "15:27:44",
+          "durationMin": 334.6,
+          "zStart": -0.373,
+          "zFinish": -0.984
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:17:59",
+          "finish": "14:31:32",
+          "durationMin": 253.55,
+          "zStart": -0.896,
+          "zFinish": -1.491
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "08:03:04",
+          "finish": "16:39:55",
+          "durationMin": 516.85,
+          "zStart": -1.073,
+          "zFinish": -0.626
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "08:57:16",
+          "finish": "16:34:22",
+          "durationMin": 457.1,
+          "zStart": 0.244,
+          "zFinish": -0.556
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "08:29:35",
+          "finish": "17:08:14",
+          "durationMin": 518.65,
+          "zStart": -0.183,
+          "zFinish": 1.373
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "08:19:39",
+          "finish": "16:38:02",
+          "durationMin": 498.39,
+          "zStart": -1.117,
+          "zFinish": -0.446
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "08:51:29",
+          "finish": "16:24:07",
+          "durationMin": 452.64,
+          "zStart": 0.892,
+          "zFinish": -1.507
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "10:04:59",
+          "finish": "17:10:27",
+          "durationMin": 425.46,
+          "zStart": -0.192,
+          "zFinish": 1.364
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "10:40:33",
+          "finish": "16:12:14",
+          "durationMin": 331.68,
+          "zStart": 0.089,
+          "zFinish": 0.933
+        },
+        {
+          "date": "2026-08-03",
+          "dayOfWeek": "Monday",
+          "start": "08:14:03",
+          "finish": "16:43:02",
+          "durationMin": 508.98,
+          "zStart": -0.761,
+          "zFinish": -0.523
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "08:12:30",
+          "finish": "16:54:36",
+          "durationMin": 522.1,
+          "zStart": -1.753,
+          "zFinish": 0.288
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "09:29:39",
+          "finish": "17:07:46",
+          "durationMin": 458.11,
+          "zStart": 1.469,
+          "zFinish": 1.343
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "08:23:32",
+          "finish": "16:40:32",
+          "durationMin": 497.0,
+          "zStart": -0.892,
+          "zFinish": -0.275
+        },
+        {
+          "date": "2026-08-07",
+          "dayOfWeek": "Friday",
+          "start": "08:33:57",
+          "finish": "16:51:06",
+          "durationMin": 497.14,
+          "zStart": 0.003,
+          "zFinish": 0.529
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "08:53:22",
+          "finish": "16:32:36",
+          "durationMin": 459.23,
+          "zStart": 0.357,
+          "zFinish": -0.87
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "09:19:19",
+          "finish": "17:35:37",
+          "durationMin": 496.3,
+          "zStart": 1.227,
+          "zFinish": 2.0
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "08:27:58",
+          "finish": "16:40:42",
+          "durationMin": 492.74,
+          "zStart": -0.228,
+          "zFinish": -0.407
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "08:46:54",
+          "finish": "17:03:05",
+          "durationMin": 496.18,
+          "zStart": 0.461,
+          "zFinish": 1.271
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "07:56:21",
+          "finish": "16:24:51",
+          "durationMin": 508.51,
+          "zStart": -1.904,
+          "zFinish": -1.452
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "09:39:25",
+          "finish": "15:45:14",
+          "durationMin": 365.82,
+          "zStart": -0.582,
+          "zFinish": -0.584
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "10:16:22",
+          "finish": "15:50:57",
+          "durationMin": 334.58,
+          "zStart": -0.966,
+          "zFinish": 0.42
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "09:41:33",
+          "finish": "16:33:50",
+          "durationMin": 412.28,
+          "zStart": 1.727,
+          "zFinish": -0.829
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "08:42:50",
+          "finish": "16:28:46",
+          "durationMin": 465.93,
+          "zStart": -0.4,
+          "zFinish": -0.79
+        },
+        {
+          "date": "2026-08-19",
+          "dayOfWeek": "Wednesday",
+          "start": "08:01:15",
+          "finish": "16:38:10",
+          "durationMin": 516.93,
+          "zStart": -0.963,
+          "zFinish": -0.57
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "08:59:54",
+          "finish": "16:47:27",
+          "durationMin": 467.55,
+          "zStart": 1.214,
+          "zFinish": 0.199
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "08:20:07",
+          "finish": "16:59:49",
+          "durationMin": 519.69,
+          "zStart": -0.698,
+          "zFinish": 1.187
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "12:29:51",
+          "finish": "15:26:48",
+          "durationMin": 176.95,
+          "zStart": 2.022,
+          "zFinish": -1.005
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "11:16:04",
+          "finish": "15:38:31",
+          "durationMin": 262.45,
+          "zStart": 1.639,
+          "zFinish": 0.121
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "09:23:13",
+          "finish": "17:59:23",
+          "durationMin": 516.17,
+          "zStart": 1.205,
+          "zFinish": 2.018
+        }
+      ]
+    },
+    {
+      "clientId": "6a7f000000000000000000a8",
+      "username": "6a7f000000000000000000a8",
+      "days": [
+        {
+          "date": "2026-06-30",
+          "dayOfWeek": "Tuesday",
+          "start": "09:53:29",
+          "finish": "17:42:56",
+          "durationMin": 469.45,
+          "zStart": -0.481,
+          "zFinish": -0.485
+        },
+        {
+          "date": "2026-07-01",
+          "dayOfWeek": "Wednesday",
+          "start": "09:37:08",
+          "finish": "17:55:07",
+          "durationMin": 497.98,
+          "zStart": -0.635,
+          "zFinish": 1.236
+        },
+        {
+          "date": "2026-07-02",
+          "dayOfWeek": "Thursday",
+          "start": "10:06:32",
+          "finish": "18:06:45",
+          "durationMin": 480.22,
+          "zStart": 0.663,
+          "zFinish": -0.319
+        },
+        {
+          "date": "2026-07-03",
+          "dayOfWeek": "Friday",
+          "start": "09:54:21",
+          "finish": "17:43:39",
+          "durationMin": 469.31,
+          "zStart": -0.108,
+          "zFinish": -1.05
+        },
+        {
+          "date": "2026-07-04",
+          "dayOfWeek": "Saturday",
+          "start": "11:16:40",
+          "finish": "15:33:19",
+          "durationMin": 256.66,
+          "zStart": 0.224,
+          "zFinish": -1.22
+        },
+        {
+          "date": "2026-07-05",
+          "dayOfWeek": "Sunday",
+          "start": "11:26:17",
+          "finish": "17:59:53",
+          "durationMin": 393.6,
+          "zStart": 1.081,
+          "zFinish": 1.752
+        },
+        {
+          "date": "2026-07-06",
+          "dayOfWeek": "Monday",
+          "start": "09:49:04",
+          "finish": "18:20:32",
+          "durationMin": 511.46,
+          "zStart": -0.005,
+          "zFinish": 1.741
+        },
+        {
+          "date": "2026-07-07",
+          "dayOfWeek": "Tuesday",
+          "start": "09:42:10",
+          "finish": "18:01:37",
+          "durationMin": 499.45,
+          "zStart": -1.252,
+          "zFinish": -0.265
+        },
+        {
+          "date": "2026-07-08",
+          "dayOfWeek": "Wednesday",
+          "start": "09:33:31",
+          "finish": "17:40:00",
+          "durationMin": 486.48,
+          "zStart": -0.805,
+          "zFinish": -0.229
+        },
+        {
+          "date": "2026-07-09",
+          "dayOfWeek": "Thursday",
+          "start": "09:50:01",
+          "finish": "18:27:36",
+          "durationMin": 517.59,
+          "zStart": -0.511,
+          "zFinish": -0.05
+        },
+        {
+          "date": "2026-07-10",
+          "dayOfWeek": "Friday",
+          "start": "10:00:48",
+          "finish": "17:46:49",
+          "durationMin": 466.02,
+          "zStart": 0.617,
+          "zFinish": -0.785
+        },
+        {
+          "date": "2026-07-13",
+          "dayOfWeek": "Monday",
+          "start": "09:52:39",
+          "finish": "17:49:23",
+          "durationMin": 476.74,
+          "zStart": 0.521,
+          "zFinish": -0.937
+        },
+        {
+          "date": "2026-07-14",
+          "dayOfWeek": "Tuesday",
+          "start": "09:38:53",
+          "finish": "17:29:44",
+          "durationMin": 470.86,
+          "zStart": -1.476,
+          "zFinish": -0.64
+        },
+        {
+          "date": "2026-07-15",
+          "dayOfWeek": "Wednesday",
+          "start": "10:17:23",
+          "finish": "17:32:04",
+          "durationMin": 434.67,
+          "zStart": 1.265,
+          "zFinish": -0.997
+        },
+        {
+          "date": "2026-07-16",
+          "dayOfWeek": "Thursday",
+          "start": "09:54:01",
+          "finish": "21:36:27",
+          "durationMin": 702.43,
+          "zStart": -0.226,
+          "zFinish": 2.392
+        },
+        {
+          "date": "2026-07-17",
+          "dayOfWeek": "Friday",
+          "start": "09:49:30",
+          "finish": "18:15:47",
+          "durationMin": 506.28,
+          "zStart": -0.653,
+          "zFinish": 1.643
+        },
+        {
+          "date": "2026-07-18",
+          "dayOfWeek": "Saturday",
+          "start": "10:53:36",
+          "finish": "16:39:10",
+          "durationMin": 345.56,
+          "zStart": -0.356,
+          "zFinish": 0.29
+        },
+        {
+          "date": "2026-07-19",
+          "dayOfWeek": "Sunday",
+          "start": "11:12:15",
+          "finish": "16:48:38",
+          "durationMin": 336.37,
+          "zStart": 0.66,
+          "zFinish": -0.053
+        },
+        {
+          "date": "2026-07-20",
+          "dayOfWeek": "Monday",
+          "start": "09:49:56",
+          "finish": "17:54:30",
+          "durationMin": 484.58,
+          "zStart": 0.122,
+          "zFinish": -0.497
+        },
+        {
+          "date": "2026-07-21",
+          "dayOfWeek": "Tuesday",
+          "start": "10:15:13",
+          "finish": "17:55:59",
+          "durationMin": 460.76,
+          "zStart": 1.0,
+          "zFinish": -0.331
+        },
+        {
+          "date": "2026-07-22",
+          "dayOfWeek": "Wednesday",
+          "start": "09:53:27",
+          "finish": "17:55:43",
+          "durationMin": 482.27,
+          "zStart": 0.135,
+          "zFinish": 1.294
+        },
+        {
+          "date": "2026-07-23",
+          "dayOfWeek": "Thursday",
+          "start": "09:53:21",
+          "finish": "17:31:29",
+          "durationMin": 458.13,
+          "zStart": -0.274,
+          "zFinish": -0.775
+        },
+        {
+          "date": "2026-07-24",
+          "dayOfWeek": "Friday",
+          "start": "10:05:52",
+          "finish": "17:44:32",
+          "durationMin": 458.68,
+          "zStart": 1.186,
+          "zFinish": -0.976
+        },
+        {
+          "date": "2026-07-25",
+          "dayOfWeek": "Saturday",
+          "start": "10:08:57",
+          "finish": "16:13:46",
+          "durationMin": 364.8,
+          "zStart": -1.479,
+          "zFinish": -0.293
+        },
+        {
+          "date": "2026-07-26",
+          "dayOfWeek": "Sunday",
+          "start": "10:21:14",
+          "finish": "16:19:59",
+          "durationMin": 358.75,
+          "zStart": -0.872,
+          "zFinish": -0.779
+        },
+        {
+          "date": "2026-07-27",
+          "dayOfWeek": "Monday",
+          "start": "09:42:17",
+          "finish": "18:12:32",
+          "durationMin": 510.26,
+          "zStart": -1.0,
+          "zFinish": 1.054
+        },
+        {
+          "date": "2026-07-28",
+          "dayOfWeek": "Tuesday",
+          "start": "10:14:17",
+          "finish": "21:50:10",
+          "durationMin": 695.88,
+          "zStart": 0.937,
+          "zFinish": 2.427
+        },
+        {
+          "date": "2026-07-29",
+          "dayOfWeek": "Wednesday",
+          "start": "09:34:26",
+          "finish": "17:28:45",
+          "durationMin": 474.3,
+          "zStart": -0.762,
+          "zFinish": -1.319
+        },
+        {
+          "date": "2026-07-30",
+          "dayOfWeek": "Thursday",
+          "start": "10:05:25",
+          "finish": "18:26:54",
+          "durationMin": 501.48,
+          "zStart": 0.584,
+          "zFinish": -0.059
+        },
+        {
+          "date": "2026-07-31",
+          "dayOfWeek": "Friday",
+          "start": "10:03:08",
+          "finish": "18:01:01",
+          "durationMin": 477.87,
+          "zStart": 0.879,
+          "zFinish": 0.405
+        },
+        {
+          "date": "2026-08-01",
+          "dayOfWeek": "Saturday",
+          "start": "10:52:46",
+          "finish": "17:37:19",
+          "durationMin": 404.56,
+          "zStart": -0.377,
+          "zFinish": 1.623
+        },
+        {
+          "date": "2026-08-02",
+          "dayOfWeek": "Sunday",
+          "start": "10:45:50",
+          "finish": "16:24:01",
+          "durationMin": 338.18,
+          "zStart": -0.133,
+          "zFinish": -0.677
+        },
+        {
+          "date": "2026-08-03",
+          "dayOfWeek": "Monday",
+          "start": "09:41:42",
+          "finish": "17:52:32",
+          "durationMin": 490.83,
+          "zStart": -1.085,
+          "zFinish": -0.666
+        },
+        {
+          "date": "2026-08-04",
+          "dayOfWeek": "Tuesday",
+          "start": "10:15:49",
+          "finish": "18:26:33",
+          "durationMin": 490.73,
+          "zStart": 1.041,
+          "zFinish": 0.029
+        },
+        {
+          "date": "2026-08-05",
+          "dayOfWeek": "Wednesday",
+          "start": "09:35:42",
+          "finish": "17:41:41",
+          "durationMin": 485.98,
+          "zStart": -0.702,
+          "zFinish": -0.066
+        },
+        {
+          "date": "2026-08-06",
+          "dayOfWeek": "Thursday",
+          "start": "09:28:49",
+          "finish": "17:42:38",
+          "durationMin": 493.82,
+          "zStart": -2.017,
+          "zFinish": -0.631
+        },
+        {
+          "date": "2026-08-10",
+          "dayOfWeek": "Monday",
+          "start": "10:01:55",
+          "finish": "18:06:55",
+          "durationMin": 484.99,
+          "zStart": 1.879,
+          "zFinish": 0.571
+        },
+        {
+          "date": "2026-08-11",
+          "dayOfWeek": "Tuesday",
+          "start": "10:00:23",
+          "finish": "17:45:07",
+          "durationMin": 464.74,
+          "zStart": -0.011,
+          "zFinish": -0.459
+        },
+        {
+          "date": "2026-08-12",
+          "dayOfWeek": "Wednesday",
+          "start": "10:22:25",
+          "finish": "17:43:11",
+          "durationMin": 440.78,
+          "zStart": 1.502,
+          "zFinish": 0.08
+        },
+        {
+          "date": "2026-08-13",
+          "dayOfWeek": "Thursday",
+          "start": "10:05:28",
+          "finish": "18:16:23",
+          "durationMin": 490.92,
+          "zStart": 0.588,
+          "zFinish": -0.195
+        },
+        {
+          "date": "2026-08-14",
+          "dayOfWeek": "Friday",
+          "start": "09:53:33",
+          "finish": "18:04:12",
+          "durationMin": 490.64,
+          "zStart": -0.198,
+          "zFinish": 0.672
+        },
+        {
+          "date": "2026-08-15",
+          "dayOfWeek": "Saturday",
+          "start": "11:27:09",
+          "finish": "16:42:17",
+          "durationMin": 315.13,
+          "zStart": 0.487,
+          "zFinish": 0.361
+        },
+        {
+          "date": "2026-08-16",
+          "dayOfWeek": "Sunday",
+          "start": "11:14:05",
+          "finish": "17:11:22",
+          "durationMin": 357.28,
+          "zStart": 0.715,
+          "zFinish": 0.523
+        },
+        {
+          "date": "2026-08-17",
+          "dayOfWeek": "Monday",
+          "start": "09:43:01",
+          "finish": "17:49:41",
+          "durationMin": 486.67,
+          "zStart": -0.892,
+          "zFinish": -0.911
+        },
+        {
+          "date": "2026-08-18",
+          "dayOfWeek": "Tuesday",
+          "start": "10:04:07",
+          "finish": "18:00:44",
+          "durationMin": 476.62,
+          "zStart": 0.244,
+          "zFinish": -0.275
+        },
+        {
+          "date": "2026-08-20",
+          "dayOfWeek": "Thursday",
+          "start": "10:13:58",
+          "finish": "18:03:19",
+          "durationMin": 469.35,
+          "zStart": 1.192,
+          "zFinish": -0.364
+        },
+        {
+          "date": "2026-08-21",
+          "dayOfWeek": "Friday",
+          "start": "09:40:00",
+          "finish": "17:57:16",
+          "durationMin": 497.27,
+          "zStart": -1.72,
+          "zFinish": 0.091
+        },
+        {
+          "date": "2026-08-22",
+          "dayOfWeek": "Saturday",
+          "start": "12:07:30",
+          "finish": "15:53:24",
+          "durationMin": 225.9,
+          "zStart": 1.502,
+          "zFinish": -0.76
+        },
+        {
+          "date": "2026-08-23",
+          "dayOfWeek": "Sunday",
+          "start": "10:01:58",
+          "finish": "16:20:25",
+          "durationMin": 378.45,
+          "zStart": -1.451,
+          "zFinish": -0.768
+        },
+        {
+          "date": "2026-08-24",
+          "dayOfWeek": "Monday",
+          "start": "09:52:15",
+          "finish": "17:56:08",
+          "durationMin": 483.89,
+          "zStart": 0.462,
+          "zFinish": -0.357
         }
       ]
     }

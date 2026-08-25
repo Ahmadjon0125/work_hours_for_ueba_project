@@ -19,9 +19,12 @@ from .utils import (
     BASELINE_FILE,
     DAYS_MAP,
     DAYS_WINDOW,
+    MAX_DAILY_HOURS,
+    MIN_DAILY_EVENTS,
     MIN_DOW_SAMPLES,
     RAW_DATA_FILE,
     build_user_day_ts,
+    filter_valid_days,
     load_usernames,
     sample_std,
     to_minutes,
@@ -45,16 +48,24 @@ def train():
     user_names = load_usernames(uids)
 
     # user -> dow -> [(start_min, finish_min, dur_min)]
+    # Shovqin filtri: kam eventli yoki 12+ soatlik kunlar o'qitishga kirmaydi
     dow_samples = defaultdict(lambda: defaultdict(list))
+    total_days = kept_days = 0
     for uid, days in user_day_ts.items():
-        for dk, tss in days.items():
-            if not tss:
-                continue
+        valid_days = filter_valid_days(days)
+        total_days += len(days)
+        kept_days += len(valid_days)
+        for dk, tss in valid_days.items():
             start, finish = min(tss), max(tss)
             dur_min = (finish - start).total_seconds() / 60.0
             dow_samples[uid][dk.weekday()].append(
                 (to_minutes(start), to_minutes(finish), dur_min)
             )
+
+    print(
+        f"Shovqin filtri: {total_days} kundan {kept_days} toza kun o'qitishga olindi "
+        f"(min {MIN_DAILY_EVENTS} event, max {MAX_DAILY_HOURS:.0f} soat)"
+    )
 
     baselines = {}
     for uid, dows in dow_samples.items():

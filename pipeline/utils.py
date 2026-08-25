@@ -15,7 +15,9 @@ DB_NAME = os.getenv("DB_NAME", "ueba_db")
 DAYS_WINDOW = int(os.getenv("DAYS_WINDOW", 60))
 Z_THRESHOLD = float(os.getenv("Z_THRESHOLD", 1.2))
 SEVERE_THRESHOLD = float(os.getenv("SEVERE_THRESHOLD", 1.8))
-MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 2))
+MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 5))
+MIN_DAILY_EVENTS = int(os.getenv("MIN_DAILY_EVENTS", 5))      # kunlik minimal event (shovqin filtri)
+MAX_DAILY_HOURS = float(os.getenv("MAX_DAILY_HOURS", 12.0))   # kunlik maksimal davomiylik (daemon filtri)
 
 # Fayl yo'llari
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -90,6 +92,24 @@ def build_user_day_ts(raw_payload):
                 dt = datetime.fromisoformat(ts_str)
                 user_day_ts[uid][dt.date()].append(dt)
     return user_day_ts, uids
+
+def filter_valid_days(days):
+    """days: {date: [datetime]} -> {date: [datetime]}, faqat toza ish kunlari.
+
+    Shovqin filtri:
+      - MIN_DAILY_EVENTS tadan kam event -> shovqin (masalan 1 ta yozuvli kun)
+      - MAX_DAILY_HOURS dan uzun davomiylik -> fon monitor/daemon (00:00-23:xx)
+    Trainer va scorer bir xil filtrdan foydalanadi.
+    """
+    valid = {}
+    for dk, tss in days.items():
+        if not tss or len(tss) < MIN_DAILY_EVENTS:
+            continue
+        dur_h = (max(tss) - min(tss)).total_seconds() / 3600.0
+        if dur_h > MAX_DAILY_HOURS:
+            continue
+        valid[dk] = tss
+    return valid
 
 def load_usernames(uids):
     """clients kolleksiyasi orqali username mapping.

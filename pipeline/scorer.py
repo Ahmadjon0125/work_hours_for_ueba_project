@@ -13,9 +13,12 @@ from datetime import datetime
 from .utils import (
     BASELINE_FILE,
     DAYS_MAP,
+    MAX_DAILY_HOURS,
+    MIN_DAILY_EVENTS,
     RAW_DATA_FILE,
     RESULTS_FILE,
     build_user_day_ts,
+    filter_valid_days,
     to_minutes,
 )
 
@@ -41,6 +44,14 @@ def score():
 
     baselines = baseline.get("baselines", {})
     user_day_ts, _uids = build_user_day_ts(raw_payload)
+    # Trainer bilan bir xil shovqin filtri (kam eventli / 12+ soatlik kunlar baholanmaydi)
+    user_day_ts = {
+        uid: filter_valid_days(days) for uid, days in user_day_ts.items()
+    }
+    print(
+        f"Shovqin filtri qo'llandi: min {MIN_DAILY_EVENTS} event, "
+        f"max {MAX_DAILY_HOURS:.0f} soat kunlik"
+    )
 
     all_dates = set()
     for days in user_day_ts.values():
