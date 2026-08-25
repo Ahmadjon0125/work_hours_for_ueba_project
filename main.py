@@ -12,15 +12,16 @@ Ketma-ketlik:
 Ishlatish:
   python main.py            # pipeline; o'qitish faqat birinchi marta
   python main.py --retrain  # baseline yangidan o'qitiladi (qo'lda yangilash)
+  python main.py --skip-collect  # Stage 0 o'tkazib yuboriladi, mavjud raw_data.json ishlatiladi
 """
 import argparse
 import json
 import sys
 
-from pipeline.utils import BASELINE_FILE
+from pipeline.utils import BASELINE_FILE, RAW_DATA_FILE
 
 
-def run_pipeline(retrain=False):
+def run_pipeline(retrain=False, skip_collect=False):
     from pipeline.collector import collect_data
     from pipeline.scorer import score
     from pipeline.trainer import train
@@ -32,7 +33,14 @@ def run_pipeline(retrain=False):
 
     try:
         # Stage 0: MongoDB -> raw_data.json
-        collect_data()
+        if skip_collect:
+            if not RAW_DATA_FILE.exists():
+                raise FileNotFoundError(
+                    f"{RAW_DATA_FILE} not found. Run without --skip-collect first."
+                )
+            print(f"Stage 0 (Collect) SKIPPED (--skip-collect): existing {RAW_DATA_FILE.name} will be used")
+        else:
+            collect_data()
 
         # Stage 1: raw_data.json -> baseline.json
         if BASELINE_FILE.exists() and not retrain:
@@ -65,8 +73,13 @@ def main():
         action="store_true",
         help="baseline yangidan o'qitiladi (default: mavjud baseline ishlatiladi)",
     )
+    parser.add_argument(
+        "--skip-collect",
+        action="store_true",
+        help="Stage 0 (MongoDB) o'tkazib yuboriladi, mavjud raw_data.json ishlatiladi",
+    )
     args = parser.parse_args()
-    run_pipeline(retrain=args.retrain)
+    run_pipeline(retrain=args.retrain, skip_collect=args.skip_collect)
 
 
 if __name__ == "__main__":
