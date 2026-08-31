@@ -738,7 +738,7 @@ Barcha tekshiruvlar o'tgach → §13 o'chirish bosqichi.
 | `main.py`, `requirements.txt` | yangi versiya bilan almashtiriladi |
 | `README.md` | yangi tizim bo'yicha qayta yoziladi |
 | `.env` | saqlanadi (mavjud 2 qator + yangilari) |
-| `UEBA_PIPELINE_ARCHITECTURE.md` (v1) | tarix sifatida saqlanadi |
+| `UEBA_PIPELINE_ARCHITECTURE.md` (v1) | **allaqachon o'chirilgan** (bu hujjat o'rnini bosadi; tarix git'da qoladi) |
 | `ai-db-context (1).md` | saqlanadi (DB referens) |
 
 ---
