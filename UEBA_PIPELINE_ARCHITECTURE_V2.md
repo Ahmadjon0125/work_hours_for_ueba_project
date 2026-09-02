@@ -7,7 +7,7 @@
 
 ## 1. Nima quryapmiz?
 
-DataGaze DLP tizimi xodimlarning kompyuterlaridan har xil aktivlik yozuvlarini yig'adi: email, Telegram, fayl operatsiyalari, sayt tashriflari va hokazo — jami **17 ta collection** bitta MongoDB'da (`alpha-demo`) turadi.
+DataGaze DLP tizimi xodimlarning kompyuterlaridan har xil aktivlik yozuvlarini yig'adi: email, Telegram, fayl operatsiyalari, sayt tashriflari va hokazo — bitta MongoDB'da (`alpha-demo`). Ulardan **16 tasi** real event jurnali va pipeline shulardan foydalanadi (`activities` — kunlik agregat, ishlatilmaydi; §4.1).
 
 Biz shu yozuvlarning **vaqtlaridan** foydalanamiz: har bir xodimning har bir kundagi **eng birinchi eventi = ishga kelgan vaqti (start)**, **eng oxirgi eventi = ketgan vaqti (finish)**. Har xodim uchun har hafta kuni bo'yicha "normal" jadval o'rganiladi (baseline), keyin har yangi kun shu norma bilan solishtirilib **z-score** hisoblanadi.
 
@@ -41,7 +41,7 @@ Butun oqim besh bosqichdan iborat:
 flowchart TD
     subgraph MAIN["ASOSIY MONGODB — alpha-demo (FAQAT O'QISH)"]
         C["clients"]
-        E["17 ta aktivlik collection'i"]
+        E["16 ta aktivlik collection'i"]
     end
 
     subgraph LOCAL["MAHALLIY MONGODB — ueba_local (O'QISH/YOZISH)"]
@@ -93,7 +93,7 @@ Trigger/worker oqimi `raw_data_for_train` ga umuman tegmaydi; worker `trigger_da
 
 ## 3. O'zgarmas qarorlar
 
-Quyidagi 13 qaror tasdiqlangan va muhokama qilinmaydi:
+Quyidagi 15 qaror tasdiqlangan va muhokama qilinmaydi:
 
 | # | Qaror |
 |---|---|
@@ -111,6 +111,7 @@ Quyidagi 13 qaror tasdiqlangan va muhokama qilinmaydi:
 | 12 | Local DB'da **4 ta doimiy collection** (§2 jadvali; eski `sent_days` bekor — vazifasini `trigger_data` bajaradi). Train jarayonida vaqtincha 5-chisi — `baseline_tmp` — paydo bo'lib, swap bilan yo'qoladi. |
 | 13 | **Retrain — to'liq zanjir:** dashboard'dagi «Baseline yangilash» tugmasi → `POST /api/retrain` → fon thread'ida collector (yangi 60 kun) → trainer. Retrain davomida **eski baseline joyida qoladi** — yangisi `baseline_tmp` da qurilib, tayyor bo'lgach atomik `rename(dropTarget=True)` bilan almashtiriladi; workerlar uchun bo'sh oyna bo'lmaydi. Parallel retrain'ga **409**. Birinchi o'rnatishda CLI (`python collector.py` + `python trainer.py`) ham ishlaydi. |
 | 14 | **Trigger faqat avtomatik ishlaydi** — uni API orqali ishga tushirish yoki boshqarish yo'q (`/api/trigger` endpointi mavjud emas). Vazifasi — o'zgarish bo'lganda yangi datalarni olib kelish; o'zgarishni tekshirish uchun har `TRIGGER_INTERVAL_HOURS`(5) soatda ishlab turadi — bu shunchaki qiymat, faqat `.env` dan o'zgartiriladi. Takror yubormaslik `trigger_data` dedup'i bilan kafolatlanadi (qaror #11). |
+| 15 | **`activities` collection'i ishlatilmaydi** — u event jurnali emas, kunlik agregat jadvali (§4.1). Pipeline faqat 16 ta real event collection'idan foydalanadi. |
 
 ---
 
@@ -120,12 +121,11 @@ Quyidagi 13 qaror tasdiqlangan va muhokama qilinmaydi:
 
 Ulanish: `.env` dagi mavjud `MONGO_URI` + `DB_NAME`.
 
-**17 ta aktivlik collection'i.** Diqqat: maydon nomlari bir xil emas — jadvalga aynan rioya qilinadi:
+**16 ta aktivlik collection'i.** Diqqat: maydon nomlari bir xil emas — jadvalga aynan rioya qilinadi:
 
 | Collection | ID maydoni | Vaqt maydon(lar)i |
 |---|---|---|
 | `activewindows` | `clientId` | `datetime` |
-| `activities` | `employee` | `dateTime` |
 | `rdps` | `clientId` | `connectTime` **va** `disconnectTime` |
 | `screenshots` | `clientId` | `dateTime` |
 | `keyloggers` | `clientId` | `dateTime` |
@@ -142,7 +142,13 @@ Ulanish: `.env` dagi mavjud `MONGO_URI` + `DB_NAME`.
 | `prints` | `clientId` | `dateTime` |
 | `incidents` | `employee` | `time` |
 
-Yodda tutiladigan istisnolar: `activities` va `incidents` da ID maydoni `employee`; `activewindows` da vaqt maydoni kichik harfli `datetime`; `incidents` da `time`; `rdps` da **ikkita** vaqt maydoni bor va har biri alohida hisoblanadi.
+Yodda tutiladigan istisnolar: `incidents` da ID maydoni `employee` (boshqalarida `clientId`); `activewindows` da vaqt maydoni kichik harfli `datetime`; `incidents` da `time`; `rdps` da **ikkita** vaqt maydoni bor va har biri alohida hisoblanadi.
+
+> **`activities` ATAYLAB YO'Q (qaror #15).** U event jurnali emas — **kunlik agregat jadvali**: `dateTime` doim `00:00:00` (real ma'lumotda tekshirilgan: 155/155 yozuv), ichida `allActiveTime`, `allWebTime`, `efficiencyProcTime`, `efficiencyWebTime` kabi kunlik yig'indilar. Uni qo'shsak har kunning `start` i soxta `00:00` ga tushib, tizimning asosiy signali — "ishga kelish vaqti" — butunlay yo'qoladi.
+>
+> Real misol (client `rakhmatillo@...`, 2026-07-16): `activities` bilan kun `00:00:00 → 17:41:57` (1062 daqiqa), usiz esa haqiqiy `16:40:47 → 17:41:57` (61 daqiqa).
+>
+> Qolgan 16 collection tekshirilgan — ularda yarim tunga tushgan timestamp ulushi 0%, ya'ni hammasi real eventlar.
 
 **`clients` collection'idan faqat 3 ta maydon kerak:** `_id` (ObjectId), `hostname`, `disabled`. Boshqa maydonlar (`firstName`, `username` va h.k.) ataylab e'tiborsiz qoldiriladi — qaror #10. `disabled` maydoni optional: umuman bo'lmasa ham client **active** hisoblanadi.
 
@@ -183,7 +189,7 @@ Maydonlar haqida:
 
 - `start` / `finish` — **naive lokal ISO datetime** (`YYYY-MM-DDTHH:MM:SS`). `start` = kunning eng erta eventi, `finish` = eng kechi (§5.1 qoidasi bilan).
 - `durationMin` = `(finish − start)` daqiqalarda, 2 xonagacha yaxlitlanadi.
-- `eventCount` = shu kunga to'g'ri kelgan yaroqli timestamp'lar soni (17 collection jami; `rdps` documenti 2 ta timestamp berishi mumkin — har biri alohida sanaladi).
+- `eventCount` = shu kunga to'g'ri kelgan yaroqli timestamp'lar soni (16 collection jami; `rdps` documenti 2 ta timestamp berishi mumkin — har biri alohida sanaladi).
 - `date` — `"YYYY-MM-DD"` **string**. Bu ataylab: ISO formatdagi string'lar alifbo tartibida solishtirilganda xronologik tartib bilan mos tushadi, shuning uchun `$lt`/`$gte` filtrlar string ustida ham to'g'ri ishlaydi.
 - **Indeks:** UNIQUE `{ clientId: 1, date: 1 }`.
 - **Yozish usuli — replacement upsert:** har safar kunning to'liq qayta hisoblangan ma'lumoti yoziladi (merge emas). Shuning uchun qayta yozish har doim xavfsiz (idempotent).
@@ -262,7 +268,7 @@ Bu bo'limdagi funksiyalar eski `pipeline/utils.py` dan **aynan** ko'chiriladi (y
 
 ### 5.1 Kunlik agregat — `build_day_agg(tss)`
 
-Bir kunga tegishli barcha timestamp'lardan (17 collection jami) start/finish shunday chiqariladi:
+Bir kunga tegishli barcha timestamp'lardan (16 collection jami) start/finish shunday chiqariladi:
 
 | Kunda nechta event bor | `start` | `finish` |
 |---|---|---|
@@ -359,7 +365,7 @@ Kun uchun umumiy og'ish: `z = max(|zStart| yoki 0, |zFinish| yoki 0)` (null'lar 
 1. `ueba_local` da 4 ta unique indeksni yaratish/tekshirish (§4.2).
 2. Active client'lar ro'yxatini olish (§4.1 so'rovi). Ro'yxat bo'sh bo'lsa — ogohlantirish va normal tugash (exit 0). Har client'ning `hostname` i shu yerda olinadi (bo'sh bo'lsa `str(_id)`).
 3. **Har bir client uchun** (client → collection tartibida, ketma-ket; bitta client xato bersa qolganlari davom etadi):
-   - 16 ta oddiy collection so'rovi (`T` — vaqt maydoni, `ID` — ID maydoni, `W = now − 60 kun`):
+   - 15 ta oddiy collection so'rovi (`T` — vaqt maydoni, `ID` — ID maydoni, `W = now − 60 kun`):
      ```json
      find( { "ID": <clientId>, "T": { "$gte": W } },
            { "ID": 1, "T": 1, "_id": 0 } )
@@ -416,7 +422,7 @@ O'qish har doim **batched streaming** usulida (§6.3.1) — katta hajm ham xotir
 2. Active client'lar ro'yxati (§4.1).
 3. Har client uchun (mustaqil try/except — bittasi yiqilsa qolganlari davom etadi):
    - cursor → `windowStart`;
-   - 17 collection bo'yicha batched so'rovlar (§6.1 shakllari, faqat `W = windowStart`);
+   - 16 collection bo'yicha batched so'rovlar (§6.1 shakllari, faqat `W = windowStart`);
    - timestamp'lar kun bo'yicha guruhlanib `build_day_agg` (§5.1) → `{date: {start, finish, eventCount}}`.
 4. **Dedup:** har hisoblangan (clientId, date) `trigger_data` dagi yozuv bilan solishtiriladi:
    - yozuv yo'q → yangi kun → job'ga kiradi;
@@ -494,29 +500,48 @@ Takroriy job'lardan qo'rqish shart emas: trigger allaqachon dedup qilgan, kelgan
 | `/api/retrain` | POST | Fon thread'ida to'liq zanjir (qaror #13): collector (yangi 60 kun) → trainer (tmp + atomik swap; eski baseline swap'gacha xizmat qiladi) → **202** `{"status": "retraining"}`. Retrain allaqachon ketayotgan bo'lsa → **409** `{"detail": "retrain davom etmoqda"}` |
 | `/api/results` | GET | Filtrlar: `from`, `to` (YYYY-MM-DD), `client_id`, `status` (vergul bilan bir nechta), `limit` (default 100, max 5000), `offset` (default 0). Javob: `{ "total": N, "limit": ..., "offset": ..., "items": [result doc'lari] }`, `date` kamayish tartibida |
 | `/api/results/{client_id}` | GET | Xuddi shu filtrlar, bitta client uchun; client topilmasa **404** |
+| `/api/baseline` | GET | Har client uchun o'rganilgan jadval (`weeks`) — dashboard «odatda qachon kelardi» ni shundan oladi |
+| `/api/clients` | GET | Dashboard dropdown'i uchun: `results` dagi client'lar `[{clientId, hostname}]` (aggregation: `$group` + `$last: "$hostname"`) |
 | `/api/dashboard` | GET | `dashboard/index.html`; `/` (root) ham shuni qaytaradi |
 | `/static/*` | GET | `dashboard/static/` (StaticFiles mount) |
+
+Mahalliy MongoDB yotgan bo'lsa API xom 500 emas, **503** `{"detail": "MongoDB bilan aloqa yo'q"}` qaytaradi (global exception handler).
 
 Fon amallar — `threading.Thread(daemon=True)`. Har amalning holati (startedAt / finishedAt / stage / status / error) modul darajasidagi oddiy dict'da turadi va `/api/health` da ko'rinadi.
 
 ### 6.6 Dashboard (`dashboard/` — vanilla JS, hech qanday CDN yo'q)
 
-Fayllar: `index.html`, `static/style.css`, `static/script.js`. Grafiklar **brauzerda** JS bilan SVG orqali chiziladi (eski "server tayyorlab beradi" usuli bekor). Faqat `fetch` + DOM + inline SVG — tashqi kutubxona yo'q.
+Fayllar: `index.html`, `static/style.css`, `static/script.js`. Grafiklar brauzerda inline SVG bilan chiziladi. Faqat `fetch` + DOM — tashqi kutubxona yo'q.
 
-**Yagona sahifa, tarkibi:**
+**Asosiy tamoyil: dashboard statistika tilida emas, inson tilida gapiradi.** Foydalanuvchiga `zStart = -1.892` emas, «**5 soat 18 daqiqa kech keldi** — Keldi 18:00, odatda payshanbalarda 12:43» ko'rsatiladi. Z-score ichki mexanizm bo'lib qoladi: u faqat kunlarni tartiblash va rang berish uchun ishlatiladi, ekranda ko'rinmaydi.
 
-1. **Filter paneli:**
-   - sana oralig'i `from`/`to` (`input[type=date]`, default: oxirgi 7 kun);
-   - client dropdown (`results` dagi clientId'lar + hostname; ro'yxat aggregation bilan olinadi);
-   - status checkbox'lari (normal / watch / anomaly / severe / insufficient);
-   - «Yangilash» tugmasi + avto-refresh har **5 daqiqada**;
-   - **«Baseline yangilash» tugmasi** (qaror #13): `POST /api/retrain` yuboradi. Bosilgach tugma **disabled** bo'ladi va `/api/health` dagi `lastRetrain` har 5–10 soniyada polling qilinadi: `collecting` → "Ma'lumot yig'ilmoqda...", `training` → "O'qitilmoqda...", `error` → xato matni. `finished` bo'lgach tugma qayta faollashadi va jadval/grafiklar yangilanadi. API 409 qaytarsa — "retrain davom etmoqda" xabari, tugma disabled qoladi.
-2. **Xulosa kartalari:** tanlangan oraliqdagi jami kunlar va har status bo'yicha sonlar (5 ta rangli karta).
-3. **SVG grafik 1 — z-timeline:** x = sana; har client uchun 2 chiziq: `zStart` (`#3b82f6`) va `zFinish` (`#f97316`); ±1.2 va ±1.8 chiziqlari belgilangan, |z| ≥ 1.8 zona qizil, 1.2–1.8 to'q sariq fon. Client tanlanmagan bo'lsa top-10 client.
-4. **SVG grafik 2 — clientlar bo'yicha anomaliya:** gorizontal ustunlar, har client uchun `anomaly + severe` kunlar soni (qizil), kamayish tartibida.
-5. **Jadval:** `date | client | start | finish | durationMin | zStart | zFinish | status`; status — rangli badge (§5.4 hex'lari). Saralash: sana kamayish, keyin hostname.
+Statuslar ham oddiy so'zlarda:
 
-JS statusni o'zi hisoblamaydi — `result.status` da tayyor keladi, faqat ko'rsatadi.
+| Ichki nom | Ekranda |
+|---|---|
+| `severe` | 🔴 Jiddiy chetlanish |
+| `anomaly` | 🟠 Sezilarli chetlanish |
+| `watch` | 🟡 Kichik chetlanish |
+| `normal` | 🟢 Odatdagidek |
+| `insufficient` | ⚪ Baholanmadi |
+
+**Sahifa tuzilishi (yuqoridan pastga):**
+
+1. **Filtr paneli** — sana oralig'i, xodim tanlash, «Faqat chetlanishlar» belgisi, «Yangilash», va «**Odatiy jadvallarni yangilash**» tugmasi (= retrain, qaror #13; bosilgach disabled bo'lib `lastRetrain.stage` polling qilinadi).
+   Default sana oralig'i — **ma'lumotdagi eng oxirgi kundan 30 kun orqaga** (`GET /api/results?limit=1` orqali topiladi), "oxirgi 7 kun" emas: manba ma'lumoti kechikishi mumkin va bo'sh ekran chiqib qolmasin.
+2. **Xulosa** — bir-ikki jumlada: «*barcha xodimlar bo'yicha 56 ish kuni tekshirildi. Ulardan 2 kunda jiddiy yoki sezilarli chetlanish bor, yana 3 kunda kichik chetlanish.*» Baholanmagan kunlar bo'lsa, **nima uchun** baholanmagani ham tushuntiriladi (shu hafta kuni bo'yicha 5 tadan kam namuna).
+3. **E'tibor talab qiladigan kunlar** — chetlanishli kunlar kartalar ko'rinishida, jiddiylik bo'yicha tartiblangan. Har karta: xodim nomi, sana o'zbekcha («20-avgust, payshanba»), nima bo'lgani («5 soat 18 daqiqa kech keldi») va dalil («Keldi 18:00 · Odatda payshanbalarda 12:43»).
+4. **Ikkita grafik.** Ikkalasida ham **Y o'qi — sutka soatlari (00:00–24:00)**; xodim yuqoridagi ro'yxatdan tanlanadi (sahifa ochilganda eng ko'p ma'lumotli xodim avtomatik tanlanadi, grafik darrov to'la ko'rinsin).
+
+   - **Asosiy grafik — «Kunlik ish vaqti»:** X o'qi — kalendar kunlari. Har kun bitta ustun: pastki uchi kelgan vaqti, yuqorigi uchi ketgan vaqti; ustun rangi status bo'yicha. Orqa fonda yashil yo'lak — shu hafta kunining odatiy kelish/ketish oralig'i (`mean ± σ`). Hover'da to'liq ma'lumot.
+   - **Ikkinchi grafik — «Haftalik odatiy rejim»:** X o'qi — 7 hafta kuni. Yashil yo'lak = o'rganilgan odatiy oraliq, nuqtalar = haqiqiy kunlar (ko'k — kelish, sariq — ketish, halqasi status rangida). Bu grafik baseline'ning o'zini ko'rinadigan qiladi. Tarixi kam hafta kunida yo'lak o'rniga «tarix kam» yoziladi.
+   - Xodim tanlanmagan bo'lsa (**«Barcha xodimlar»**), ikkinchi grafik o'rniga **umumiy manzara matritsasi** chiziladi: qatorlar xodimlar, ustunlar kunlar, katak rangi holat — kimda muammo borligini bir qarashda ko'rsatadi.
+
+5. **Jadval** — ustunlar: `Sana | Xodim | Keldi | Odatda kelardi | Farq | Ketdi | Odatda ketardi | Farq | Xulosa`. Farq ustunlari «*1 soat 47 daqiqa erta*» ko'rinishida, 5 daqiqadan kichik farq «deyarli bir xil» deb yoziladi.
+
+Baseline ma'lumoti (`meanStart`, `stdStart`, ...) dashboard'ga **`GET /api/baseline`** orqali keladi — «odatda qachon kelardi» va yashil yo'laklar shundan chiziladi.
+
+Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 
 ---
 
@@ -565,12 +590,6 @@ ueba/
 ├── collector.py                # YANGI: CLI wrapper
 ├── trainer.py                  # YANGI: CLI wrapper
 ├── requirements.txt            # yangi ro'yxat
-├── models/
-│   ├── __init__.py
-│   ├── client.py               # Client (Pydantic): clientId, hostname
-│   ├── raw_day.py              # RawDay — raw_data_for_train VA trigger_data uchun umumiy schema
-│   ├── baseline.py             # WeekStats + Baseline (weeks: Dict[str, WeekStats])
-│   └── result.py               # Result: zStart, zFinish, status, statusColor, ...
 ├── services/
 │   ├── __init__.py
 │   ├── mongo.py                # 2 ta MongoClient (main RO + local RW), ensure_indexes()
@@ -594,10 +613,12 @@ ueba/
 │       └── script.js
 ├── utils/
 │   ├── __init__.py
-│   ├── helpers.py              # §5 funksiyalari + COLLECTIONS mapping (17 ta) + DAYS_MAP
+│   ├── helpers.py              # §5 funksiyalari + COLLECTIONS mapping (16 ta) + DAYS_MAP
 │   └── logger.py               # konsol INFO + logs/ueba.log (RotatingFileHandler, 5MB x 3)
 └── logs/                       # runtime'da yaratiladi
 ```
+
+> **`models/` paketi yozilmadi (ataylab).** Dastlab Pydantic modellari rejalashtirilgan edi, lekin document'lar `utils/helpers.py` dagi `build_day_doc` / trainer / processor funksiyalarida quriladi va hech qayerda validatsiya qilinmaydi — modellar sof ortiqcha qatlam bo'lardi. Schema'lar §4.2 da hujjatlangan va shu funksiyalarda amalga oshirilgan.
 
 Root'dagi `collector.py` va `trainer.py` — `services/` funksiyalarini chaqiruvchi **yupqa CLI o'ramlar**: argparse'siz, oddiy `main()`, xatoda `sys.exit(1)`.
 
@@ -619,21 +640,47 @@ Eski ro'yxatdagi `numpy` kerak emas — barcha matematika oddiy Python'da. Mavju
 
 ## 9. Ishga tushirish
 
-### 9.1 Docker konteynerlar (foydalanuvchi o'rnatadi)
+### 9.1 Docker Compose (tavsiya etilgan usul)
+
+Uchala servis — mahalliy MongoDB, RabbitMQ va dasturning o'zi — `docker-compose.yml` da:
 
 ```bash
-# MongoDB (ichida 2 database: alpha-demo — RO, ueba_local — RW)
-docker run -d --name ueba-mongo --restart unless-stopped \
-  -p 27017:27017 -v ueba_mongo_data:/data/db mongo:7
-
-# RabbitMQ (+ management UI :15672, guest/guest)
-docker run -d --name ueba-rabbitmq --restart unless-stopped \
-  -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+docker compose up -d --build      # hammasi ko'tariladi
+docker compose ps                 # holat
+docker compose logs -f app        # loglar
 ```
 
-Tekshiruv: `docker ps` da ikkalasi `Up`; `http://localhost:15672` ochiladi (guest/guest); `mongosh --eval "show dbs"` da `alpha-demo` ko'rinadi.
+Compose ichidagi muhim sozlamalar:
 
-**Production:** faqat `.env` dagi URL'lar (`MONGO_URI`, `LOCAL_MONGO_URI`) almashtiriladi — kod o'zgarmaydi.
+| Sozlama | Nima uchun |
+|---|---|
+| `TZ: Asia/Tashkent` (app) | **Eng muhimi.** Konteynerlar default UTC bo'ladi — bu §9.4 dagi xavfning aynan o'zi. Compose'da TZ qat'iy qo'yilgani uchun server sozlamasiga bog'liqlik yo'qoladi |
+| `LOCAL_MONGO_URI: mongodb://mongo:27017` | konteyner tarmog'idagi nom (`.env` dagi `localhost` faqat venv'da ishlaganda kerak) |
+| `RABBITMQ_HOST: rabbitmq` | xuddi shunday |
+| `API_HOST: 0.0.0.0` | konteyner tashqarisidan ko'rinishi uchun |
+| `depends_on: condition: service_healthy` | Mongo va RabbitMQ tayyor bo'lgunicha app kutadi |
+| `./logs:/app/logs` | loglar host'dan o'qiladi |
+| `restart: unless-stopped` | reboot'dan keyin o'zi ko'tariladi |
+
+App konteyneri **bitta protsess** ishga tushiradi (`python main.py`) — §9.4 qoidasi tabiiy bajariladi.
+
+CLI amallar konteyner ichida:
+
+```bash
+docker compose exec app python collector.py
+docker compose exec app python trainer.py
+```
+
+**Production:** faqat `.env` dagi `MONGO_URI` almashtiriladi — kod va compose o'zgarmaydi.
+
+### 9.1.1 Docker'siz (venv bilan lokal ishlash)
+
+```bash
+docker run -d --name ueba-mongo -p 27017:27017 -v ueba_mongo_data:/data/db mongo:8.0.4
+docker run -d --name ueba-rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-management
+```
+
+so'ng §9.2 dagi tartib. Bu usulda §9.4 dagi timezone ogohlantirishi **o'z kuchida qoladi**.
 
 ### 9.2 Birinchi ishga tushirish
 
@@ -678,7 +725,7 @@ Kodda `main_client` ustida yozma metod chaqirig'i bo'lishi **mumkin emas**. Ikki
 |---|---|---|
 | 1 | `clients` da `disabled` maydoni umuman yo'q | `$or` so'rovi (§4.1) — client active hisoblanadi |
 | 2 | `rdps` da 2 ta vaqt maydoni | `$or` so'rov; har maydon alohida parse + hisob |
-| 3 | `activities`/`incidents` da ID maydoni `employee` | §4.1 jadvaliga aynan rioya |
+| 3 | `incidents` da ID maydoni `employee` (boshqalarida `clientId`) | §4.1 jadvaliga aynan rioya |
 | 4 | `hostname` bo'sh yoki yo'q | o'rniga `str(_id)` |
 | 5 | Vaqt maydoni parse bo'lmasa | `None` → skip, xato tashlanmaydi |
 | 6 | Vaqt son bo'lsa (sec/ms) | `parse_to_datetime` qoidasi (§5.5) |
@@ -706,7 +753,7 @@ Kodda `main_client` ustida yozma metod chaqirig'i bo'lishi **mumkin emas**. Ikki
 |---|---|---|
 | 1 | `docker ps` | `ueba-mongo`, `ueba-rabbitmq` — `Up` |
 | 2 | `mongosh --eval "show dbs"` | `alpha-demo` (keyinroq `ueba_local` ham) ko'rinadi |
-| 3 | `python collector.py` | konsolda 17 collection × clientlar loglari; exit 0 |
+| 3 | `python collector.py` | konsolda 16 collection × clientlar loglari; exit 0 |
 | 4 | `mongosh ueba_local --eval "db.raw_data_for_train.countDocuments({})"` | `> 0`; bitta document ko'z bilan tekshiriladi (start ≤ finish, eventCount ≥ 1) |
 | 5 | `python trainer.py` | `db.baseline.countDocuments({})` = data'si bor active clientlar soni; bitta `weeks.Monday` statlari mantiqiy (0–1440 daqiqa) |
 | 6 | `python main.py` | loglarda: indekslar OK, 3 worker ulandi, scheduler rejasi, 10 soniyadan keyin birinchi trigger o'tishi |
@@ -726,20 +773,22 @@ Barcha tekshiruvlar o'tgach → §13 o'chirish bosqichi.
 
 ---
 
-## 13. Eski kodni o'chirish (sinovdan keyin, tasdiqlangan)
+## 13. Eski kodni o'chirish — BAJARILDI
 
-| Narsa | Amal |
+Quyidagilar allaqachon amalga oshirilgan (eski kod git tarixida saqlanib qoladi):
+
+| Narsa | Holat |
 |---|---|
-| `pipeline/` | o'chiriladi (butun papka) |
-| `data/` | o'chiriladi |
-| `tools/` | o'chiriladi (generator kerak emas — qaror #7) |
-| `dashboard.html` (root) | o'chiriladi (yangisi `dashboard/index.html`) |
-| `__pycache__/` | o'chiriladi |
-| `main.py`, `requirements.txt` | yangi versiya bilan almashtiriladi |
-| `README.md` | yangi tizim bo'yicha qayta yoziladi |
-| `.env` | saqlanadi (mavjud 2 qator + yangilari) |
+| `pipeline/` | ✅ o'chirildi (butun papka) |
+| `data/` | ✅ o'chirildi |
+| `tools/` | ✅ o'chirildi (generator kerak emas — qaror #7) |
+| `dashboard.html` (root) | ✅ o'chirildi (yangisi `dashboard/index.html`) |
+| `__pycache__/` | ✅ o'chirildi |
+| `main.py`, `requirements.txt` | ✅ yangi versiya bilan almashtirildi |
+| `README.md` | ✅ yangi tizim bo'yicha qayta yozildi |
+| `.env` | ✅ saqlandi (`MONGO_URI`, `DB_NAME` tegilmadi + yangi qatorlar; eski `MAX_DAILY_HOURS`, `MIN_DAILY_EVENTS` olib tashlandi) |
 | `UEBA_PIPELINE_ARCHITECTURE.md` (v1) | **allaqachon o'chirilgan** (bu hujjat o'rnini bosadi; tarix git'da qoladi) |
-| `ai-db-context (1).md` | saqlanadi (DB referens) |
+| `ai-db-context (1).md` | ✅ saqlandi (DB referens) |
 
 ---
 
