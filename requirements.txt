@@ -1,4 +1,7 @@
 pymongo
-numpy
 python-dotenv
 python-dateutil
+fastapi
+uvicorn
+pika
+apscheduler

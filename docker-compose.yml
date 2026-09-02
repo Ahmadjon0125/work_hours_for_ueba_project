@@ -1,0 +1,63 @@
+services:
+  mongo:
+    image: mongo:8.0.4
+    container_name: ueba-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - ueba_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: ueba-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # management UI, guest/guest
+    volumes:
+      - ueba_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  app:
+    build: .
+    image: ueba-app
+    container_name: ueba-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Timezone konteynerda ATAYLAB qat'iy: aks holda UTC bo'lib qolib,
+      # barcha kelish/ketish vaqtlari suriladi va baseline buziladi.
+      TZ: Asia/Tashkent
+      # Konteyner tarmog'idagi manzillar .env dagi localhost o'rniga
+      LOCAL_MONGO_URI: mongodb://mongo:27017
+      RABBITMQ_HOST: rabbitmq
+      # Konteyner tashqarisidan ko'rinishi uchun
+      API_HOST: 0.0.0.0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+      # Dashboard statik fayllari — o'zgartirilsa brauzerni yangilash kifoya,
+      # obrazni qayta qurish shart emas (Python kodi uchun rebuild kerak).
+      - ./dashboard:/app/dashboard:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  ueba_mongo_data:
+  ueba_rabbitmq_data:

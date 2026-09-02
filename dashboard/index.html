@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UEBA — Ish vaqti nazorati</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Ish vaqti nazorati</h1>
+      <p class="sub">Xodimlarning ishga kelish va ketish vaqtlari o'z odatiy jadvalidan qanchalik farq qilgani</p>
+    </div>
+    <div class="health" id="health">holat tekshirilmoqda...</div>
+  </header>
+
+  <section class="filters">
+    <label>Sana <input type="date" id="from"></label>
+    <label>dan <input type="date" id="to"></label>
+    <label>Xodim
+      <select id="client"><option value="">Barcha xodimlar</option></select>
+    </label>
+    <label class="check"><input type="checkbox" id="onlyIssues"> Faqat chetlanishlar</label>
+    <button id="refresh">Yangilash</button>
+    <span class="spacer"></span>
+    <button id="retrain" class="secondary" title="Oxirgi 60 kunlik ma'lumotni qaytadan yig'ib, odatiy jadvallarni yangilaydi">Odatiy jadvallarni yangilash</button>
+    <span class="retrain-status" id="retrainStatus"></span>
+  </section>
+
+  <!-- Oddiy tilda xulosa -->
+  <section class="summary" id="summary"></section>
+
+  <!-- Diqqat talab qiladigan kunlar -->
+  <section class="panel" id="issuesPanel">
+    <h2>E'tibor talab qiladigan kunlar</h2>
+    <div id="issues"></div>
+  </section>
+
+  <!-- 1-grafik: umumiy manzara / haftalik profil -->
+  <section class="panel">
+    <h2 id="chart1Title">Umumiy manzara</h2>
+    <p class="hint" id="chart1Hint"></p>
+    <div class="chart-wrap"><svg id="chart1"></svg></div>
+    <div class="legend" id="chart1Legend"></div>
+  </section>
+
+  <!-- 2-grafik: kunlik tafsilot -->
+  <section class="panel">
+    <h2 id="chart2Title">Kunlik ish vaqti</h2>
+    <p class="hint" id="chart2Hint"></p>
+    <div class="chart-wrap"><svg id="chart2"></svg></div>
+    <div class="legend" id="chart2Legend"></div>
+  </section>
+
+  <!-- To'liq jadval -->
+  <section class="panel">
+    <h2>Barcha kunlar <span class="muted" id="tableInfo"></span></h2>
+    <div class="table-wrap">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>Sana</th>
+            <th>Xodim</th>
+            <th>Keldi</th>
+            <th>Odatda kelardi</th>
+            <th>Farq</th>
+            <th>Ketdi</th>
+            <th>Odatda ketardi</th>
+            <th>Farq</th>
+            <th>Xulosa</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
