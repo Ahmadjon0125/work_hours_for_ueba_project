@@ -8,6 +8,20 @@ Ma'lumot manbai — DataGaze DLP tizimining MongoDB'si: xodim kompyuterlaridan k
 
 ---
 
+## Dashboard
+
+Natijalar statistika tilida emas, oddiy tilda ko'rsatiladi — «5 soat 18 daqiqa kech keldi, keldi 18:00, odatda payshanbalarda 12:43».
+
+![Dashboard: xulosa, e'tibor talab qiladigan kunlar va kunlik ish vaqti grafigi](image.png)
+
+*Yuqorida: filtrlar, bir jumlalik xulosa, chetlanishli kunlar kartalari va kunlik ish vaqti grafigi (X — kunlar, Y — sutka soatlari; ustun kelishdan ketishgacha, yashil yo'lak — odatiy oraliq).*
+
+![Haftalik odatiy rejim grafigi va kunlar jadvali](image-1.png)
+
+*Yuqorida: haftalik odatiy rejim (X — hafta kunlari, yashil yo'lak — o'rganilgan norma, nuqtalar — haqiqiy kunlar) va to'liq jadval: kelgan/ketgan vaqt, odatdagi vaqt va farq.*
+
+---
+
 ## Qanday ishlaydi
 
 ```
