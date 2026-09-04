@@ -32,6 +32,7 @@ def evaluate_job(job, baseline_doc, now=None):
     now = now or datetime.now()
     weeks = (baseline_doc or {}).get("weeks") or {}
     hostname = job.get("hostname") or job["clientId"]
+    full_name = job.get("fullName")
 
     docs = []
     for date_str, day in (job.get("days") or {}).items():
@@ -47,6 +48,7 @@ def evaluate_job(job, baseline_doc, now=None):
         docs.append({
             "clientId": job["clientId"],
             "hostname": hostname,
+            "fullName": full_name,
             "date": date_str,
             "dayOfWeek": weekday,
             "start": start.strftime("%H:%M:%S"),

@@ -45,9 +45,10 @@ def train():
     now = datetime.now()
 
     # Har client uchun kunlarni hafta kuni bo'yicha yig'amiz
-    per_client = defaultdict(lambda: {"hostname": None, "weeks": defaultdict(list), "total": 0})
+    per_client = defaultdict(lambda: {"hostname": None, "fullName": None,
+                                      "weeks": defaultdict(list), "total": 0})
     for doc in db[config.COL_RAW_TRAIN].find(
-            {}, {"_id": 0, "clientId": 1, "hostname": 1, "dayOfWeek": 1,
+            {}, {"_id": 0, "clientId": 1, "hostname": 1, "fullName": 1, "dayOfWeek": 1,
                  "start": 1, "finish": 1, "durationMin": 1}):
         start = parse_to_datetime(doc.get("start"))
         finish = parse_to_datetime(doc.get("finish"))
@@ -55,6 +56,7 @@ def train():
             continue
         entry = per_client[doc["clientId"]]
         entry["hostname"] = doc.get("hostname") or doc["clientId"]
+        entry["fullName"] = doc.get("fullName")
         entry["total"] += 1
         entry["weeks"][doc["dayOfWeek"]].append({
             "startMin": to_minutes(start),
@@ -78,6 +80,7 @@ def train():
         docs.append({
             "clientId": client_id,
             "hostname": entry["hostname"],
+            "fullName": entry["fullName"],
             "windowDays": config.DAYS_WINDOW,
             "minDowSamples": config.MIN_DOW_SAMPLES,
             "totalDays": entry["total"],

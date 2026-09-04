@@ -59,6 +59,7 @@ def run():
     try:
         for client in clients:
             cid, hostname = client["clientId"], client["hostname"]
+            full_name = client.get("fullName")
             try:
                 window_start = _window_start(trigger_col, cid, now)
 
@@ -74,7 +75,8 @@ def run():
                     if agg is None:
                         continue
                     start, finish = agg
-                    doc = build_day_doc(cid, hostname, date_str, start, finish, len(tss), now)
+                    doc = build_day_doc(cid, hostname, date_str, start, finish, len(tss), now,
+                                        full_name=full_name)
 
                     # Dedup: allaqachon yuborilgan va o'zgarmagan kun qayta yuborilmaydi
                     existing = trigger_col.find_one(
@@ -102,6 +104,7 @@ def run():
                     "jobId": str(uuid.uuid4()),
                     "clientId": cid,
                     "hostname": hostname,
+                    "fullName": full_name,
                     "windowStart": window_start.isoformat(timespec="seconds"),
                     "windowEnd": now.isoformat(timespec="seconds"),
                     "days": days_payload,

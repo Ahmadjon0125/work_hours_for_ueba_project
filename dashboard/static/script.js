@@ -20,7 +20,16 @@ const MONTH_UZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
 
 let rows = [];          // joriy filtrdagi natijalar
 let baselines = {};     // clientId -> weeks
-let clientList = [];    // [{clientId, hostname}]
+let clientList = [];    // [{clientId, hostname, fullName, label}]
+
+/** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
+function personName(row) {
+  const host = row.hostname || row.clientId;
+  // Eski natijalarda ism yo'q — ro'yxatdan qidiramiz
+  const name = row.fullName
+    || (clientList.find((c) => c.clientId === row.clientId) || {}).fullName;
+  return name ? `${name} — ${host}` : host;
+}
 
 // ---------------------------------------------------------------- formatlash
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -216,7 +225,7 @@ function renderIssues() {
       <div class="issue ${r.status}">
         <div class="mark">${STATUS[r.status].mark}</div>
         <div>
-          <div class="who">${r.hostname || r.clientId}</div>
+          <div class="who">${personName(r)}</div>
           <div class="when">${humanDate(r.date, r.dayOfWeek)}</div>
           <div class="what">${what}</div>
           <div class="detail">${detail}</div>
@@ -519,7 +528,7 @@ function renderTable(visible) {
       return `
       <tr>
         <td>${humanDate(r.date, r.dayOfWeek)}</td>
-        <td>${r.hostname || r.clientId}</td>
+        <td>${personName(r)}</td>
         <td class="time">${r.start.slice(0, 5)}</td>
         <td class="time dim">${c ? minutesToHHMM(c.usualStart) : '—'}</td>
         ${diffCell(c ? c.arriveDiff : null, 'erta', 'kech')}
