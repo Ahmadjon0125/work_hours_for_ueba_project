@@ -1,6 +1,7 @@
 """FastAPI endpoint'lari."""
 import os
 import threading
+from collections import Counter
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
@@ -102,13 +103,45 @@ def retrain_endpoint():
 
 @router.get("/api/clients")
 def clients():
-    """Dashboard dropdown'i uchun: results dagi client'lar (hostname bilan)."""
-    pipeline = [
-        {"$group": {"_id": "$clientId", "hostname": {"$last": "$hostname"}}},
-        {"$sort": {"hostname": 1}},
-    ]
-    return [{"clientId": doc["_id"], "hostname": doc.get("hostname") or doc["_id"]}
-            for doc in local_db()[config.COL_RESULTS].aggregate(pipeline)]
+    """Dashboard dropdown'i uchun xodimlar ro'yxati.
+
+    Ro'yxat `results` dan quriladi (tarix), shuning uchun unda asosiy DLP tizimidan
+    keyinchalik o'chirilgan client'lar ham uchraydi. Ikkita holat alohida belgilanadi:
+      - bir nechta clientId bir xil hostname bilan  -> nomga qisqa id qo'shiladi;
+      - client asosiy `clients` da endi yo'q        -> "o'chirilgan" deb belgilanadi.
+    """
+    rows = list(local_db()[config.COL_RESULTS].aggregate([
+        {"$group": {"_id": "$clientId",
+                    "hostname": {"$last": "$hostname"},
+                    "days": {"$sum": 1},
+                    "lastDate": {"$max": "$date"}}},
+    ]))
+
+    # Asosiy bazada hozir mavjud client'lar (faqat o'qish). Baza yotgan bo'lsa belgilamaymiz.
+    try:
+        live = {str(d["_id"]) for d in main_db()["clients"].find({}, {"_id": 1})}
+    except Exception:
+        live = None
+
+    seen = Counter(r.get("hostname") or r["_id"] for r in rows)
+
+    out = []
+    for r in rows:
+        cid = r["_id"]
+        hostname = r.get("hostname") or cid
+        label = hostname
+        # Bir xil hostname'li bir nechta yozuv bo'lsa — ajratib ko'rsatamiz
+        if seen[hostname] > 1:
+            label += f" ({cid[-7:]})"
+        stale = live is not None and cid not in live
+        if stale:
+            label += " — o'chirilgan"
+        out.append({"clientId": cid, "hostname": hostname, "label": label,
+                    "days": r["days"], "lastDate": r.get("lastDate"), "stale": stale})
+
+    # Mavjudlari birinchi, keyin hostname bo'yicha
+    out.sort(key=lambda c: (c["stale"], c["hostname"].lower()))
+    return out
 
 
 @router.get("/api/baseline")

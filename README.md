@@ -105,7 +105,7 @@ Trigger **faqat avtomatik** ishlaydi — qo'lda ishga tushirish yo'li yo'q. Oral
 | `/api/results` | GET | Natijalar: `from`, `to`, `client_id`, `status`, `limit`, `offset` |
 | `/api/results/{client_id}` | GET | Bitta xodim natijalari |
 | `/api/baseline` | GET | Xodimlarning o'rganilgan odatiy jadvallari |
-| `/api/clients` | GET | Dashboard dropdown'i uchun xodimlar ro'yxati |
+| `/api/clients` | GET | Dashboard dropdown'i: xodimlar (o'chirilganlari va bir xil nomlilari belgilanadi) |
 | `/api/docs` | GET | Swagger |
 
 ---

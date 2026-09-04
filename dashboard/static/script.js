@@ -112,7 +112,7 @@ async function loadClients() {
     sel.innerHTML = '<option value="">Barcha xodimlar</option>';
     for (const c of list) {
       const o = document.createElement('option');
-      o.value = c.clientId; o.textContent = c.hostname;
+      o.value = c.clientId; o.textContent = c.label || c.hostname;
       sel.appendChild(o);
     }
     sel.value = keep;

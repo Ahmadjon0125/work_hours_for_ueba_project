@@ -501,7 +501,7 @@ Takroriy job'lardan qo'rqish shart emas: trigger allaqachon dedup qilgan, kelgan
 | `/api/results` | GET | Filtrlar: `from`, `to` (YYYY-MM-DD), `client_id`, `status` (vergul bilan bir nechta), `limit` (default 100, max 5000), `offset` (default 0). Javob: `{ "total": N, "limit": ..., "offset": ..., "items": [result doc'lari] }`, `date` kamayish tartibida |
 | `/api/results/{client_id}` | GET | Xuddi shu filtrlar, bitta client uchun; client topilmasa **404** |
 | `/api/baseline` | GET | Har client uchun o'rganilgan jadval (`weeks`) — dashboard «odatda qachon kelardi» ni shundan oladi |
-| `/api/clients` | GET | Dashboard dropdown'i uchun: `results` dagi client'lar `[{clientId, hostname}]` (aggregation: `$group` + `$last: "$hostname"`) |
+| `/api/clients` | GET | Dashboard dropdown'i: `results` dagi client'lar (`clientId`, `hostname`, `label`, `days`, `lastDate`, `stale`). Ro'yxat tarixdan quriladi, shuning uchun **asosiy tizimdan o'chirilgan** client'lar ham chiqadi — ular `stale: true` va label'da «o'chirilgan» deb belgilanadi; **bir xil hostname'li** bir nechta clientId bo'lsa, label'ga qisqa id qo'shiladi. Eski (bekor qilingan) shakli: `results` dagi client'lar `[{clientId, hostname}]` (aggregation: `$group` + `$last: "$hostname"`) |
 | `/api/dashboard` | GET | `dashboard/index.html`; `/` (root) ham shuni qaytaradi |
 | `/static/*` | GET | `dashboard/static/` (StaticFiles mount) |
 
