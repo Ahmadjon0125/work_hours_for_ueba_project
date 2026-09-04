@@ -150,7 +150,9 @@ Yodda tutiladigan istisnolar: `incidents` da ID maydoni `employee` (boshqalarida
 >
 > Qolgan 16 collection tekshirilgan — ularda yarim tunga tushgan timestamp ulushi 0%, ya'ni hammasi real eventlar.
 
-**`clients` collection'idan faqat 3 ta maydon kerak:** `_id` (ObjectId), `hostname`, `disabled`. Boshqa maydonlar (`firstName`, `username` va h.k.) ataylab e'tiborsiz qoldiriladi — qaror #10. `disabled` maydoni optional: umuman bo'lmasa ham client **active** hisoblanadi.
+**`clients` collection'idan 5 ta maydon o'qiladi:** `_id` (ObjectId), `hostname`, `disabled`, hamda ko'rsatish uchun `fullName` / `firstName` / `lastName`. Asosiy identifikator — **`clientId`**; `hostname` esa ko'rsatish uchun (u 17/17 to'ldirilgan va noyob).
+
+> **Ism maydonlari to'liq emas** (real bazada tekshirilgan): `fullName` 65%, `lastName` 53%, `firstName` 35%, `email`/`department` atigi 6%. Ustiga-ustak `fullName` da takror bor — 5 ta clientda bir xil «user_1», ba'zilarida esa u shunchaki login'ning takrori («rakhmatillo»). Shuning uchun ism **hostname o'rnini bosmaydi**, faqat **qo'shimcha** sifatida ishlatiladi: `display_name()` (§5.5) ism haqiqiy bo'lgandagina uni qaytaradi (login takrori yoki `user_\d+` shaklidagi o'rinbosarlar rad etiladi), aks holda `None`. Dashboard'da «Ism — hostname», ism yo'q bo'lsa faqat hostname ko'rsatiladi. `username` maydoni umuman ishlatilmaydi — qaror #10. `disabled` maydoni optional: umuman bo'lmasa ham client **active** hisoblanadi.
 
 Active client'lar so'rovi (hamma joyda aynan shu):
 
@@ -349,6 +351,8 @@ Kun uchun umumiy og'ish: `z = max(|zStart| yoki 0, |zFinish| yoki 0)` (null'lar 
 **`DAYS_MAP`** = `{0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"}` (Python `weekday()` raqamlari).
 
 **`get_status(z_start, z_finish)`** — §5.4 jadvalini qaytaradi; worker va qo'lda tekshiruvlar uchun yagona manba.
+
+**`display_name(hostname, full_name, first_name, last_name)`** — ko'rsatishga yaroqli ismni qaytaradi, bo'lmasa `None`. Rad etish qoidasi: ism bo'sh; yoki hostname'dagi login bilan bir xil; yoki `user_\d+` shaklidagi umumiy o'rinbosar. `fullName` bo'sh bo'lsa `firstName + lastName` dan yig'iladi. Natija `raw_data_for_train`, `trigger_data`, `baseline`, `results` va job payload'ida `fullName` maydoni sifatida saqlanadi (optional — `None` bo'lishi mumkin).
 
 ---
 

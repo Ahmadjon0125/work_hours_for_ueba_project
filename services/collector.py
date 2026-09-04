@@ -44,6 +44,7 @@ def collect():
     total_days = 0
     for client in clients:
         cid, hostname = client["clientId"], client["hostname"]
+        full_name = client.get("fullName")
         try:
             day_stamps = defaultdict(list)
             for coll_name, stamps in iter_client_timestamps(client, window_start):
@@ -58,7 +59,8 @@ def collect():
                 if agg is None:
                     continue
                 start, finish = agg
-                doc = build_day_doc(cid, hostname, date_str, start, finish, len(tss), now)
+                doc = build_day_doc(cid, hostname, date_str, start, finish, len(tss), now,
+                                    full_name=full_name)
                 raw.update_one({"clientId": cid, "date": date_str}, {"$set": doc}, upsert=True)
                 total_days += 1
 

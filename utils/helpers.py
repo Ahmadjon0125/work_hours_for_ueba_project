@@ -1,4 +1,5 @@
 """Umumiy yordamchilar: 17 collection mapping, vaqt funksiyalari, kunlik agregat, status."""
+import re
 from datetime import datetime, timedelta
 
 from dateutil import parser as date_parser
@@ -120,11 +121,35 @@ def get_status(z_start, z_finish):
     return status, STATUS_COLORS[status]
 
 
-def build_day_doc(client_id, hostname, date_str, start, finish, event_count, now):
+_GENERIC_NAME = re.compile(r"^user[\s_-]*\d*$", re.IGNORECASE)
+
+
+def display_name(hostname, full_name=None, first_name=None, last_name=None):
+    """`clients` dagi ismdan ko'rsatishga yaroqlisini tanlaydi, bo'lmasa None.
+
+    DLP bazasida ism maydonlari to'liq emas va ko'pincha login'ning takrori
+    ("rakhmatillo") yoki umumiy o'rinbosar ("user_1", 5 ta clientda bir xil).
+    Shunday hollarda ism ko'rsatilmaydi — hostname o'zi aniqroq.
+    """
+    name = (full_name or "").strip()
+    if not name:
+        name = " ".join(p for p in [(first_name or "").strip(), (last_name or "").strip()] if p)
+    if not name:
+        return None
+
+    login = (hostname or "").split("@")[0].lstrip("@").strip().lower()
+    if name.lower() == login or _GENERIC_NAME.match(name):
+        return None
+    return name
+
+
+def build_day_doc(client_id, hostname, date_str, start, finish, event_count, now,
+                  full_name=None):
     """raw_data_for_train va trigger_data uchun umumiy kunlik document."""
     return {
         "clientId": client_id,
         "hostname": hostname,
+        "fullName": full_name,
         "date": date_str,
         "dayOfWeek": day_of_week(start),
         "start": start.isoformat(timespec="seconds"),

@@ -42,15 +42,23 @@ def ensure_indexes():
 
 def active_clients():
     """Active client'lar: disabled=false yoki maydon umuman yo'q."""
+    from utils.helpers import display_name
+
     cursor = main_db()["clients"].find(
         {"$or": [{"disabled": False}, {"disabled": {"$exists": False}}]},
-        {"_id": 1, "hostname": 1},
+        {"_id": 1, "hostname": 1, "fullName": 1, "firstName": 1, "lastName": 1},
     )
     clients = []
     for doc in cursor:
         cid = str(doc["_id"])
         hostname = (doc.get("hostname") or "").strip() or cid
-        clients.append({"clientId": cid, "hostname": hostname, "_id": doc["_id"]})
+        clients.append({
+            "clientId": cid,
+            "hostname": hostname,
+            "fullName": display_name(hostname, doc.get("fullName"),
+                                     doc.get("firstName"), doc.get("lastName")),
+            "_id": doc["_id"],
+        })
     return clients
 
 

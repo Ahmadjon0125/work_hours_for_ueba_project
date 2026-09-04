@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 import config
 from mq.rabbitmq import queue_depth
 from services.collector import collect
-from services.mongo import local_db, main_db
+from services.mongo import active_clients, local_db, main_db
 from services.trainer import train
 from utils.logger import get_logger
 
@@ -113,13 +113,17 @@ def clients():
     rows = list(local_db()[config.COL_RESULTS].aggregate([
         {"$group": {"_id": "$clientId",
                     "hostname": {"$last": "$hostname"},
+                    "fullName": {"$last": "$fullName"},
                     "days": {"$sum": 1},
                     "lastDate": {"$max": "$date"}}},
     ]))
 
-    # Asosiy bazada hozir mavjud client'lar (faqat o'qish). Baza yotgan bo'lsa belgilamaymiz.
+    # Asosiy bazadagi tirik client'lar: ism va hostname shu yerdan olinadi (eng yangi manba).
+    # Baza yotgan bo'lsa belgilamaymiz va results dagi qiymatlar bilan cheklanamiz.
     try:
-        live = {str(d["_id"]) for d in main_db()["clients"].find({}, {"_id": 1})}
+        live = {}
+        for c in active_clients():
+            live[c["clientId"]] = c
     except Exception:
         live = None
 
@@ -128,15 +132,19 @@ def clients():
     out = []
     for r in rows:
         cid = r["_id"]
-        hostname = r.get("hostname") or cid
-        label = hostname
+        current = (live or {}).get(cid) or {}
+        hostname = current.get("hostname") or r.get("hostname") or cid
+        full_name = current.get("fullName") or r.get("fullName")
+        # Ism bo'lsa oldiga qo'yiladi: "Azamat Muqumjonov — vtuzzaa@..."
+        label = f"{full_name} — {hostname}" if full_name else hostname
         # Bir xil hostname'li bir nechta yozuv bo'lsa — ajratib ko'rsatamiz
         if seen[hostname] > 1:
             label += f" ({cid[-7:]})"
         stale = live is not None and cid not in live
         if stale:
             label += " — o'chirilgan"
-        out.append({"clientId": cid, "hostname": hostname, "label": label,
+        out.append({"clientId": cid, "hostname": hostname, "fullName": full_name,
+                    "label": label,
                     "days": r["days"], "lastDate": r.get("lastDate"), "stale": stale})
 
     # Mavjudlari birinchi, keyin hostname bo'yicha
