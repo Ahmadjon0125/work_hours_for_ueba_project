@@ -127,18 +127,21 @@ def clients():
     except Exception:
         live = None
 
-    seen = Counter(r.get("hostname") or r["_id"] for r in rows)
+    # Ko'rsatiladigan nom: ism bo'lsa ism, bo'lmasa hostname
+    def shown(cid, r):
+        cur = (live or {}).get(cid) or {}
+        host = cur.get("hostname") or r.get("hostname") or cid
+        name = cur.get("fullName") or r.get("fullName")
+        return host, name, (name or host)
+
+    seen = Counter(shown(r["_id"], r)[2] for r in rows)
 
     out = []
     for r in rows:
         cid = r["_id"]
-        current = (live or {}).get(cid) or {}
-        hostname = current.get("hostname") or r.get("hostname") or cid
-        full_name = current.get("fullName") or r.get("fullName")
-        # Ism bo'lsa oldiga qo'yiladi: "Azamat Muqumjonov — vtuzzaa@..."
-        label = f"{full_name} — {hostname}" if full_name else hostname
-        # Bir xil hostname'li bir nechta yozuv bo'lsa — ajratib ko'rsatamiz
-        if seen[hostname] > 1:
+        hostname, full_name, label = shown(cid, r)
+        # Bir xil nomli bir nechta yozuv bo'lsa — ajratib ko'rsatamiz
+        if seen[label] > 1:
             label += f" ({cid[-7:]})"
         stale = live is not None and cid not in live
         if stale:
@@ -148,7 +151,7 @@ def clients():
                     "days": r["days"], "lastDate": r.get("lastDate"), "stale": stale})
 
     # Mavjudlari birinchi, keyin hostname bo'yicha
-    out.sort(key=lambda c: (c["stale"], c["hostname"].lower()))
+    out.sort(key=lambda c: (c["stale"], c["label"].lower()))
     return out
 
 

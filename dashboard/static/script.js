@@ -24,11 +24,11 @@ let clientList = [];    // [{clientId, hostname, fullName, label}]
 
 /** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
 function personName(row) {
-  const host = row.hostname || row.clientId;
-  // Eski natijalarda ism yo'q — ro'yxatdan qidiramiz
+  // Ism bo'lsa ism, bo'lmasa hostname.
+  // Eski natijalarda ism maydoni yo'q — xodimlar ro'yxatidan qidiramiz.
   const name = row.fullName
     || (clientList.find((c) => c.clientId === row.clientId) || {}).fullName;
-  return name ? `${name} — ${host}` : host;
+  return name || row.hostname || row.clientId;
 }
 
 // ---------------------------------------------------------------- formatlash
