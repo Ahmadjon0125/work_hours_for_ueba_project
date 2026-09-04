@@ -151,5 +151,5 @@ utils/
 3. **Retrain davomida eski baseline ishlayveradi** — yangisi `baseline_tmp` da qurilib, tayyor bo'lgach atomik almashtiriladi.
 4. **Hech narsa yo'qolmaydi va takrorlanmaydi** — trigger cursor bilan ishlaydi, yuborilganini `trigger_data` ga yozib boradi.
 5. **Kunlik agregat qoidasi:** 0 event → kun yo'q; 1 event → `finish = start + 1 soat` (23:59:59 bilan cheklangan); 2+ event → `min/max`. 12 soatlik filtr yo'q.
-6. **Xodim nomi:** asosiy identifikator — `clientId`, ko'rsatish uchun `hostname` (100% to'la va noyob). DLP bazasidagi ism maydonlari to'liq emas (`fullName` 65%, unda 5 ta takroriy «user_1»), shuning uchun ism faqat **haqiqiy bo'lganda** qo'shiladi: «Azamat Muqumjonov — vtuzzaa@...».
+6. **Xodim nomi:** asosiy identifikator — `clientId`, ko'rsatish uchun `hostname` (100% to'la va noyob). DLP bazasidagi ism maydonlari to'liq emas (`fullName` 65%, unda 5 ta takroriy «user_1»), shuning uchun ism faqat **haqiqiy bo'lganda** ishlatiladi. Ekranda: ism bo'lsa ism («Azamat Muqumjonov»), bo'lmasa hostname («sanja@desktop-q46u2et»).
 7. **`activities` collection'i ishlatilmaydi** — u event jurnali emas, kunlik agregat jadvali (`dateTime` doim 00:00). Pipeline 16 ta real event collection'idan foydalanadi.
