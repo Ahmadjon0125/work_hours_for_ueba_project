@@ -42,7 +42,8 @@ def evaluate_job(job, baseline_doc, now=None):
             continue
 
         weekday = day.get("dayOfWeek") or day_of_week(start)
-        z_start, z_finish = _z_scores(weeks.get(weekday), start, finish)
+        week = weeks.get(weekday) or {}
+        z_start, z_finish = _z_scores(week, start, finish)
         status, color = get_status(z_start, z_finish)
 
         docs.append({
@@ -59,6 +60,16 @@ def evaluate_job(job, baseline_doc, now=None):
             "zFinish": z_finish,
             "status": status,
             "statusColor": color,
+            # Qaysi baseline versiyasi bilan baholangani (ARCH-02). Tarixiy
+            # natijalar qayta baholanmaydi — ular o'z versiyasi bilan qoladi.
+            "baselineId": (baseline_doc or {}).get("baselineId"),
+            # Taqqoslash qiymatlari natijaning ichida saqlanadi: shunda natija
+            # o'zi-o'ziga yetarli bo'ladi va dashboard "odatda qachon kelardi" ni
+            # joriy baseline'dan izlamaydi (versiya nomuvofiqligi bo'lmaydi).
+            "usualStart": week.get("meanStart"),
+            "usualFinish": week.get("meanFinish"),
+            "stdStart": week.get("stdStart"),
+            "stdFinish": week.get("stdFinish"),
             "evaluatedAt": now.isoformat(timespec="seconds"),
         })
     return docs

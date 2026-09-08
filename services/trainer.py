@@ -1,11 +1,15 @@
-"""Trainer: raw_data_for_train dan baseline quradi (tmp + atomik swap).
+"""Trainer: raw_data_for_train dan baseline quradi (versiyalab).
 
 Faqat ueba_local bilan ishlaydi — asosiy bazaga bironta ham so'rov yubormaydi.
+
+Har o'qitish run'i yangi `baselineId` oladi va eski versiya o'chirilmaydi
+(ARCH-02): natijalarda qaysi baseline ishlatilgani yozilib qoladi, tarixiy
+natijalar qayta baholanmaydi.
 """
 from collections import defaultdict
 from datetime import datetime
 
-from pymongo import ASCENDING
+from bson import ObjectId
 
 import config
 from services.mongo import local_db
@@ -68,16 +72,18 @@ def train():
         log.warning("raw_data_for_train bo'sh — avval collector ishga tushirilsin")
         return 0
 
-    # Yangi baseline'ni vaqtinchalik collection'da quramiz
-    tmp = db[config.COL_BASELINE_TMP]
-    tmp.drop()
-    tmp.create_index([("clientId", ASCENDING)], unique=True)
+    # Yangi versiya: eski baseline o'chirilmaydi, workerlar swap'gacha undan foydalanadi.
+    # Id string sifatida saqlanadi — natijalar JSON orqali uzatiladi, ObjectId
+    # bo'lsa har joyda konvertatsiya kerak bo'lardi.
+    baseline_id = str(ObjectId())
+    trained_at = now.isoformat(timespec="seconds")
 
     docs = []
     for client_id, entry in per_client.items():
         weeks = {wd: _week_stats(days) for wd, days in entry["weeks"].items()}
         kept = sum(w["count"] for w in weeks.values() if w["meanStart"] is not None)
         docs.append({
+            "baselineId": baseline_id,
             "clientId": client_id,
             "hostname": entry["hostname"],
             "fullName": entry["fullName"],
@@ -85,15 +91,62 @@ def train():
             "minDowSamples": config.MIN_DOW_SAMPLES,
             "totalDays": entry["total"],
             "keptDays": kept,
-            "trainedAt": now.isoformat(timespec="seconds"),
+            "trainedAt": trained_at,
             "weeks": weeks,
         })
-    tmp.insert_many(docs)
-
-    # Atomik swap: shu paytgacha eski baseline joyida turadi, workerlar undan foydalanadi
-    tmp.rename(config.COL_BASELINE, dropTarget=True)
+    db[config.COL_BASELINE].insert_many(docs)
 
     total_days = sum(e["total"] for e in per_client.values())
-    log.info("Trainer tugadi: %d client, %d kun o'qitildi, baseline almashtirildi (%s)",
-             len(docs), total_days, now.strftime("%Y-%m-%d %H:%M:%S"))
+    runs = db[config.COL_BASELINE_RUNS]
+    runs.insert_one({
+        "_id": baseline_id,
+        "trainedAt": trained_at,
+        "windowDays": config.DAYS_WINDOW,
+        "minDowSamples": config.MIN_DOW_SAMPLES,
+        "clientCount": len(docs),
+        "dayCount": total_days,
+        "current": True,
+    })
+    # Avval yangisi joriy qilinadi, keyin eskilari olib tashlanadi — shu tartibda
+    # "joriy versiya yo'q" holati umuman bo'lmaydi (o'quvchi eng yangisini oladi).
+    runs.update_many({"_id": {"$ne": baseline_id}, "current": True},
+                     {"$set": {"current": False}})
+
+    _prune_old_versions(db, baseline_id)
+
+    log.info("Trainer tugadi: %d client, %d kun o'qitildi, yangi baseline versiyasi %s (%s)",
+             len(docs), total_days, baseline_id, now.strftime("%Y-%m-%d %H:%M:%S"))
     return len(docs)
+
+
+def _prune_old_versions(db, keep_current):
+    """Eski baseline versiyalarini o'chiradi (oxirgi BASELINE_KEEP_VERSIONS qoladi)."""
+    runs = db[config.COL_BASELINE_RUNS]
+    baseline = db[config.COL_BASELINE]
+
+    old = list(runs.find({}, {"_id": 1}).sort("trainedAt", -1)
+               .skip(config.BASELINE_KEEP_VERSIONS))
+    stale = [r["_id"] for r in old if r["_id"] != keep_current]
+    if stale:
+        baseline.delete_many({"baselineId": {"$in": stale}})
+        runs.delete_many({"_id": {"$in": stale}})
+        log.info("%d ta eski baseline versiyasi o'chirildi", len(stale))
+
+    # Egasiz hujjatlar: versiyasiz (versiyalashdan oldingi) yoki ro'yxatdan
+    # tushib qolgan versiyaga tegishli. Ular hech qachon ishlatilmaydi.
+    known = [r["_id"] for r in runs.find({}, {"_id": 1})]
+    orphans = baseline.delete_many(
+        {"$or": [{"baselineId": {"$exists": False}},
+                 {"baselineId": {"$nin": known}}]}).deleted_count
+    if orphans:
+        log.info("%d ta egasiz baseline hujjati o'chirildi", orphans)
+
+
+def current_baseline_id(db=None):
+    """Joriy (eng yangi) baseline versiyasining id'si. Baseline yo'q bo'lsa None."""
+    # `db or local_db()` YOZIB BO'LMAYDI: pymongo Database obyekti bool() ni
+    # qo'llab-quvvatlamaydi va NotImplementedError ko'taradi.
+    if db is None:
+        db = local_db()
+    run = db[config.COL_BASELINE_RUNS].find_one({"current": True}, sort=[("trainedAt", -1)])
+    return run["_id"] if run else None

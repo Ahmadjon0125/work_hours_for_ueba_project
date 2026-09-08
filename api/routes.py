@@ -11,7 +11,7 @@ import config
 from mq.rabbitmq import queue_depth
 from services.collector import collect
 from services.mongo import active_clients, local_db, main_db
-from services.trainer import train
+from services.trainer import current_baseline_id, train
 from utils.logger import get_logger
 
 log = get_logger("api")
@@ -168,9 +168,22 @@ def clients():
 
 @router.get("/api/baseline")
 def baseline():
-    """Har client uchun o'rganilgan jadval — dashboard "odatda qachon keladi" ni shundan oladi."""
-    return list(local_db()[config.COL_BASELINE].find(
-        {}, {"_id": 0, "clientId": 1, "hostname": 1, "weeks": 1, "trainedAt": 1}))
+    """JORIY baseline versiyasi — dashboard haftalik rejim grafigini shundan chizadi."""
+    db = local_db()
+    bid = current_baseline_id(db)
+    if bid is None:
+        return []
+    return list(db[config.COL_BASELINE].find(
+        {"baselineId": bid},
+        {"_id": 0, "baselineId": 0}))
+
+
+@router.get("/api/baseline/versions")
+def baseline_versions():
+    """Saqlangan baseline versiyalari (eng yangisi birinchi)."""
+    return [{**r, "baselineId": r.pop("_id")}
+            for r in local_db()[config.COL_BASELINE_RUNS]
+            .find({}).sort("trainedAt", -1)]
 
 
 def _query_results(date_from, date_to, client_id, status, limit, offset):

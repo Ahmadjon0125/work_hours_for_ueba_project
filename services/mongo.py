@@ -41,12 +41,26 @@ def local_db():
 
 
 def ensure_indexes():
-    """4 ta unique indeks — idempotent."""
+    """Indekslar — idempotent."""
     db = local_db()
     db[config.COL_RAW_TRAIN].create_index([("clientId", ASCENDING), ("date", ASCENDING)], unique=True)
     db[config.COL_TRIGGER_DATA].create_index([("clientId", ASCENDING), ("date", ASCENDING)], unique=True)
-    db[config.COL_BASELINE].create_index([("clientId", ASCENDING)], unique=True)
     db[config.COL_RESULTS].create_index([("clientId", ASCENDING), ("date", ASCENDING)], unique=True)
+
+    # Baseline endi versiyalanadi: bitta client uchun bir nechta versiya bo'ladi,
+    # shuning uchun eski `{clientId}` unique indeksi to'g'ri kelmaydi (ARCH-02).
+    baseline = db[config.COL_BASELINE]
+    try:
+        for name, spec in baseline.index_information().items():
+            if spec.get("key") == [("clientId", 1)] and spec.get("unique"):
+                baseline.drop_index(name)
+                log.info("Eski baseline indeksi (%s) olib tashlandi — versiyalash yoqildi", name)
+    except Exception as e:
+        log.warning("Baseline indekslarini tekshirib bo'lmadi: %s", e)
+
+    baseline.create_index([("clientId", ASCENDING), ("baselineId", ASCENDING)], unique=True)
+    baseline.create_index([("baselineId", ASCENDING)])
+    db[config.COL_BASELINE_RUNS].create_index([("trainedAt", -1)])
     log.info("Indekslar tekshirildi (4 ta unique)")
 
 

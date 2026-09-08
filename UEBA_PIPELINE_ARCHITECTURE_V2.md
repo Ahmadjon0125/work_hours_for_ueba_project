@@ -231,7 +231,10 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
 - Vaqt qiymatlari — **00:00 dan boshlab daqiqa** (float). Masalan 09:00 → 540.
 - `weeks` da faqat kamida 1 namunasi bor hafta kunlari bo'ladi. `count < MIN_DOW_SAMPLES(5)` bo'lsa `count` yoziladi, qolgan statlar `null` — bunday kun baholanmaydi.
 - **Indeks:** UNIQUE `{ clientId: 1 }`.
-- **Yangilash — atomik swap** (`delete_many` YO'Q): trainer yangi baseline'ni avval vaqtinchalik **`baseline_tmp`** ga to'liq quradi, so'ng pymongo'da `db.baseline_tmp.rename("baseline", dropTarget=True)` bilan bir amalda almashtiradi. Swap'gacha eski baseline joyida turadi — workerlar uzluksiz ishlayveradi.
+- **Versiyalanadi (ARCH-02):** har o'qitish run'i yangi **`baselineId`** (string) oladi va eski versiya **o'chirilmaydi**. Indeks: UNIQUE `{clientId, baselineId}`.
+- **`baseline_runs`** — versiyalar ro'yxati: `{_id: baselineId, trainedAt, windowDays, minDowSamples, clientCount, dayCount, current}`. Joriy versiya `current: true` bilan belgilanadi; o'quvchi `find_one({current: true}, sort=[("trainedAt", -1)])` qiladi.
+- **Almashtirish tartibi:** avval yangi versiya `current: true` qilinadi, **keyin** eskilari `false` ga o'tkaziladi. Shu tartibda «joriy versiya yo'q» holati umuman bo'lmaydi (bir lahza ikkitasi bo'lsa, o'quvchi eng yangisini oladi). Eski `baseline_tmp` + `rename` usuli bekor.
+- **Saqlash muddati:** oxirgi `BASELINE_KEEP_VERSIONS` (default 5) versiya qoladi, eskilari va egasiz hujjatlar o'chiriladi.
 
 #### `results` — har (client × kun) uchun 1 ta baholash natijasi
 
@@ -257,6 +260,8 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
 - `start`/`finish` bu yerda ko'rsatish uchun `"HH:MM:SS"` string.
 - `zStart`/`zFinish` — 3 xonagacha yaxlitlangan yoki `null`.
 - `status` va `statusColor` — §5.4 qoidalari bo'yicha.
+- **`baselineId`** — qaysi baseline versiyasi bilan baholangani (ARCH-02). Tarixiy natijalar **qayta baholanmaydi**: yangi baseline faqat yangi ishlovga qo'llanadi, eski kunlar o'z versiyasi bilan qoladi.
+- **`usualStart`, `usualFinish`, `stdStart`, `stdFinish`** — baholashda ishlatilgan norma qiymatlari. Ular natijaning ichida saqlanadi, shuning uchun natija **o'zi-o'ziga yetarli**: dashboard «odatda qachon kelardi» ni joriy baseline'dan izlamaydi va versiya nomuvofiqligi bo'lmaydi (aks holda «Baholanmadi» deb yozilgan kun yonida joriy baseline'dan olingan farq ko'rinib qolardi).
 - **Indeks:** UNIQUE `{ clientId: 1, date: 1 }`; yozish upsert — bir kun qayta baholansa yangilanadi, dublikat bo'lmaydi.
 - **Retention:** `RESULTS_RETENTION_DAYS(365)` kundan eski yozuvlar har trigger o'tishida o'chiriladi (§6.3, pruning) — collection cheksiz o'smaydi.
 
@@ -540,7 +545,8 @@ Takroriy job'lardan qo'rqish shart emas: trigger allaqachon dedup qilgan, kelgan
 | `/api/retrain` | POST | Fon thread'ida to'liq zanjir (qaror #13): collector (yangi 60 kun) → trainer (tmp + atomik swap; eski baseline swap'gacha xizmat qiladi) → **202** `{"status": "retraining"}`. Retrain allaqachon ketayotgan bo'lsa → **409** `{"detail": "retrain davom etmoqda"}` |
 | `/api/results` | GET | Filtrlar: `from`, `to` (YYYY-MM-DD), `client_id`, `status` (vergul bilan bir nechta), `limit` (default 100, max 5000), `offset` (default 0). Javob: `{ "total": N, "limit": ..., "offset": ..., "items": [result doc'lari] }`, `date` kamayish tartibida |
 | `/api/results/{client_id}` | GET | Xuddi shu filtrlar, bitta client uchun; client topilmasa **404** |
-| `/api/baseline` | GET | Har client uchun o'rganilgan jadval (`weeks`) — dashboard «odatda qachon kelardi» ni shundan oladi |
+| `/api/baseline` | GET | **Joriy** baseline versiyasi (har client uchun `weeks`) — dashboard haftalik rejim grafigini shundan chizadi |
+| `/api/baseline/versions` | GET | Saqlangan baseline versiyalari, eng yangisi birinchi (`baselineId`, `trainedAt`, `clientCount`, `dayCount`, `current`) |
 | `/api/clients` | GET | Dashboard dropdown'i: `results` dagi client'lar (`clientId`, `hostname`, `label`, `days`, `lastDate`, `stale`). Ro'yxat tarixdan quriladi, shuning uchun **asosiy tizimdan o'chirilgan** client'lar ham chiqadi — ular `stale: true` va label'da «o'chirilgan» deb belgilanadi; **bir xil hostname'li** bir nechta clientId bo'lsa, label'ga qisqa id qo'shiladi. Eski (bekor qilingan) shakli: `results` dagi client'lar `[{clientId, hostname}]` (aggregation: `$group` + `$last: "$hostname"`) |
 | `/api/dashboard` | GET | `dashboard/index.html`; `/` (root) ham shuni qaytaradi |
 | `/static/*` | GET | `dashboard/static/` (StaticFiles mount) |
@@ -614,6 +620,7 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `WATCH_THRESHOLD` | `0.5` | Watch chegarasi |
 | `MIN_DOW_SAMPLES` | `5` | Baseline uchun minimal kun (hafta kuniga) |
 | `SINGLE_EVENT_STAY_HOURS` | `1` | 1 event'li kunda finish = start + shu soat |
+| `BASELINE_KEEP_VERSIONS` | `5` | Nechta baseline versiyasi saqlanadi (ARCH-02) |
 | `RESULTS_RETENTION_DAYS` | `365` | `results` tarixi necha kun saqlanadi (trigger o'tishida eski yozuvlar o'chiriladi) |
 
 > `MAX_DAILY_HOURS` **bo'lmasligi kerak** — eski `.env` da bo'lsa, o'chiriladi (qaror #3).

@@ -7,6 +7,7 @@ import config
 from mq.rabbitmq import connect, declare_queue, publish
 from services.mongo import local_db
 from services.processor import evaluate_job
+from services.trainer import current_baseline_id
 from utils.logger import get_logger
 
 log = get_logger("worker")
@@ -17,7 +18,12 @@ def _handle_job(body):
     job = json.loads(body.decode("utf-8"))
     db = local_db()
 
-    baseline_doc = db[config.COL_BASELINE].find_one({"clientId": job["clientId"]})
+    # Har doim JORIY baseline versiyasi ishlatiladi (ARCH-02)
+    baseline_id = current_baseline_id(db)
+    baseline_doc = None
+    if baseline_id is not None:
+        baseline_doc = db[config.COL_BASELINE].find_one(
+            {"clientId": job["clientId"], "baselineId": baseline_id})
     if baseline_doc is None:
         log.warning("%s uchun baseline yo'q — kunlar 'insufficient' sifatida yoziladi",
                     job["clientId"])

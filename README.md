@@ -118,7 +118,8 @@ Trigger **faqat avtomatik** ishlaydi — qo'lda ishga tushirish yo'li yo'q. Oral
 | `/api/retrain` | POST | Baseline yangilash: collector → trainer |
 | `/api/results` | GET | Natijalar: `from`, `to`, `client_id`, `status`, `limit`, `offset` |
 | `/api/results/{client_id}` | GET | Bitta xodim natijalari |
-| `/api/baseline` | GET | Xodimlarning o'rganilgan odatiy jadvallari |
+| `/api/baseline` | GET | Joriy versiyadagi odatiy jadvallar |
+| `/api/baseline/versions` | GET | Baseline versiyalari tarixi |
 | `/api/clients` | GET | Dashboard dropdown'i: xodimlar (ism bo'lsa qo'shiladi; o'chirilganlari va bir xil nomlilari belgilanadi) |
 | `/api/docs` | GET | Swagger |
 
@@ -162,7 +163,7 @@ utils/
 
 1. **Asosiy baza 100% read-only** — kodda ikkita alohida MongoClient bor, asosiysiga faqat `find()` chaqiriladi.
 2. **Baseline bir marta o'qitiladi** — har 5 soatlik tsiklda qayta qurilmaydi. Yangilash faqat tugma orqali.
-3. **Retrain davomida eski baseline ishlayveradi** — yangisi `baseline_tmp` da qurilib, tayyor bo'lgach atomik almashtiriladi.
+3. **Baseline versiyalanadi** — har o'qitish yangi versiya yaratadi, eskilari saqlanadi (oxirgi 5 tasi). Retrain davomida eski versiya ishlayveradi. Har natijada qaysi versiya bilan baholangani (`baselineId`) yoziladi; tarixiy natijalar qayta baholanmaydi.
 4. **Hech narsa yo'qolmaydi va takrorlanmaydi** — trigger cursor bilan ishlaydi, yuborilganini `trigger_data` ga yozib boradi.
 5. **Kunlik agregat qoidasi:** 0 event → kun yo'q; 1 event → `finish = start + 1 soat` (23:59:59 bilan cheklangan); 2+ event → `min/max`. 12 soatlik filtr yo'q.
 6. **Xodim nomi:** asosiy identifikator — `clientId`, ko'rsatish uchun `hostname` (100% to'la va noyob). DLP bazasidagi ism maydonlari to'liq emas (`fullName` 65%, unda 5 ta takroriy «user_1»), shuning uchun ism faqat **haqiqiy bo'lganda** ishlatiladi. Ekranda: ism bo'lsa ism («Azamat Muqumjonov»), bo'lmasa hostname («sanja@desktop-q46u2et»).

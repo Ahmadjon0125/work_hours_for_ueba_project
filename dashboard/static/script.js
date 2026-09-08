@@ -65,8 +65,19 @@ function hhmmssToMinutes(s) {
 // -------------------------------------------------------- baseline bilan taqqoslash
 /** Bir kun uchun: odatdagi jadval va undan farq. Baseline yo'q bo'lsa null. */
 function compare(row) {
-  const weeks = baselines[row.clientId];
-  const w = weeks && weeks[row.dayOfWeek];
+  // Natija o'zi-o'ziga yetarli: qaysi normaga qarab baholangani uning ichida
+  // saqlanadi. Shunda "baholanmadi" deb yozilgan kun yonida joriy baseline'dan
+  // olingan farq ko'rinib qolmaydi (versiya nomuvofiqligi bo'lmaydi).
+  let w = (row.usualStart !== null && row.usualStart !== undefined)
+    ? { meanStart: row.usualStart, meanFinish: row.usualFinish,
+        stdStart: row.stdStart, stdFinish: row.stdFinish }
+    : null;
+
+  // Eski natijalarda bu maydonlar yo'q — joriy baseline'dan qidiramiz
+  if (!w) {
+    const weeks = baselines[row.clientId];
+    w = weeks && weeks[row.dayOfWeek];
+  }
   if (!w || w.meanStart === null || w.meanStart === undefined) return null;
 
   const startMin = hhmmssToMinutes(row.start);

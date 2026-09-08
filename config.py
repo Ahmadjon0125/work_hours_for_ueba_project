@@ -47,5 +47,8 @@ SEVERE_THRESHOLD = float(os.getenv("SEVERE_THRESHOLD", 1.8))
 COL_RAW_TRAIN = "raw_data_for_train"
 COL_TRIGGER_DATA = "trigger_data"
 COL_BASELINE = "baseline"
-COL_BASELINE_TMP = "baseline_tmp"
+COL_BASELINE_RUNS = "baseline_runs"
 COL_RESULTS = "results"
+
+# Nechta baseline versiyasi saqlanadi (eskilari o'chiriladi)
+BASELINE_KEEP_VERSIONS = int(os.getenv("BASELINE_KEEP_VERSIONS", 5))
