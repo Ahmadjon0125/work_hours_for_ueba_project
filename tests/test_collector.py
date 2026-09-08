@@ -18,6 +18,38 @@ from services.mongo import SourceReadError  # noqa: E402
 
 
 # --- Soxta mahalliy baza -------------------------------------------------
+def _match_value(value, cond):
+    """Bitta maydonni shartga solishtirish (oddiy qiymat yoki $-operatorlar)."""
+    if not isinstance(cond, dict):
+        return value == cond
+    for op, arg in cond.items():
+        if op == "$lt" and not (value is not None and value < arg):
+            return False
+        if op == "$gte" and not (value is not None and value >= arg):
+            return False
+        if op == "$nin" and value in arg:
+            return False
+        if op == "$in" and value not in arg:
+            return False
+    return True
+
+
+def _matches(doc, flt):
+    """Soxta Mongo filtri: $or va maydon shartlari yetarli."""
+    for key, cond in flt.items():
+        if key == "$or":
+            if not any(_matches(doc, sub) for sub in cond):
+                return False
+        elif not _match_value(doc.get(key), cond):
+            return False
+    return True
+
+
+class DeleteResult:
+    def __init__(self, n):
+        self.deleted_count = n
+
+
 class FakeCollection:
     def __init__(self, docs=None):
         self.docs = list(docs or [])
@@ -27,18 +59,19 @@ class FakeCollection:
         self.writes += 1
         doc = {**flt, **update["$set"]}
         for i, d in enumerate(self.docs):
-            if all(d.get(k) == v for k, v in flt.items()):
+            if _matches(d, flt):
                 self.docs[i] = doc
                 return
         if upsert:
             self.docs.append(doc)
 
     def delete_many(self, flt):
-        pass
+        before = len(self.docs)
+        self.docs = [d for d in self.docs if not _matches(d, flt)]
+        return DeleteResult(before - len(self.docs))
 
     def find_one(self, flt):
-        return next((d for d in self.docs
-                     if all(d.get(k) == v for k, v in flt.items())), None)
+        return next((d for d in self.docs if _matches(d, flt)), None)
 
 
 class FakeDB:
@@ -188,6 +221,111 @@ def test_source_respects_window_bounds():
     ])
 
 
+# --- COL-02: arxiv oynaning nusxasi bo'lsin ------------------------------
+def _setup(raw, source, clients):
+    collector_mod.ensure_indexes = lambda: None
+    collector_mod.active_clients = lambda: clients
+    collector_mod.iter_client_timestamps = source
+    collector_mod.local_db = lambda: FakeDB(raw)
+
+
+def _day(days_ago):
+    return (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+
+
+def _row(cid, host, date):
+    return {"clientId": cid, "hostname": host, "date": date,
+            "start": f"{date}T09:00:00", "finish": f"{date}T17:00:00", "eventCount": 10}
+
+
+ACTIVE = [{"clientId": "C1", "hostname": "PC-1", "fullName": None, "_id": "C1"}]
+
+
+def test_inactive_client_rows_removed():
+    """Active ro'yxatda yo'q client (ishdan bo'shagan) arxivdan chiqariladi."""
+    raw = FakeCollection([
+        _row("C1", "PC-1", _day(5)),
+        _row("GONE", "eski-xodim", _day(5)),      # active ro'yxatda yo'q
+        _row("GONE", "eski-xodim", _day(6)),
+    ])
+
+    def source(client, window_start, window_end=None):
+        base = datetime.strptime(_day(5), "%Y-%m-%d")
+        yield "telegrams", [base.replace(hour=9), base.replace(hour=17)]
+
+    _setup(raw, source, ACTIVE)
+    collector_mod.collect()
+
+    print("  COL-02: active bo'lmagan client arxivdan chiqadi")
+    return all([
+        _check("ishdan bo'shagan xodim yozuvlari o'chdi",
+               raw.find_one({"clientId": "GONE"}) is None),
+        _check("active client yozuvi joyida", raw.find_one({"clientId": "C1"}) is not None),
+    ])
+
+
+def test_inactive_cleanup_skipped_when_run_failed():
+    """Run to'liq bajarilmasa, o'chirish qilinmaydi (manba buzilgan bo'lishi mumkin)."""
+    raw = FakeCollection([_row("GONE", "eski-xodim", _day(5))])
+
+    def failing(client, window_start, window_end=None):
+        raise SourceReadError("manba yotdi")
+        yield  # pragma: no cover
+
+    _setup(raw, failing, ACTIVE)
+    result = collector_mod.collect()
+
+    print("  COL-02: xatoli run'da tozalash qilinmaydi (himoya)")
+    return all([
+        _check("client failed ro'yxatida", len(result["failed"]) == 1),
+        _check("arxiv qirilmadi", raw.find_one({"clientId": "GONE"}) is not None),
+    ])
+
+
+def test_stale_day_removed():
+    """Oynada bor, lekin manbadan kelmagan kun arxivdan o'chiriladi."""
+    raw = FakeCollection([
+        _row("C1", "PC-1", _day(5)),    # manbada bor
+        _row("C1", "PC-1", _day(6)),    # manbadan yo'qolgan
+    ])
+
+    def source(client, window_start, window_end=None):
+        base = datetime.strptime(_day(5), "%Y-%m-%d")
+        yield "telegrams", [base.replace(hour=9), base.replace(hour=17)]
+
+    _setup(raw, source, ACTIVE)
+    collector_mod.collect()
+
+    print("  COL-02: manbadan yo'qolgan kun o'chadi")
+    return all([
+        _check("manbadagi kun qoldi", raw.find_one({"date": _day(5)}) is not None),
+        _check("yo'qolgan kun o'chdi", raw.find_one({"date": _day(6)}) is None),
+    ])
+
+
+def test_old_rows_age_out_even_for_unvisited_clients():
+    """Collector bormaydigan client yozuvlari ham sana bo'yicha eskiradi."""
+    old = (datetime.now() - timedelta(days=config.DAYS_WINDOW + 10)).strftime("%Y-%m-%d")
+    raw = FakeCollection([
+        _row("C1", "PC-1", old),
+        _row("GONE", "eski-xodim", old),
+        _row("C1", "PC-1", datetime.now().strftime("%Y-%m-%d")),  # bugungi chala kun
+    ])
+
+    def source(client, window_start, window_end=None):
+        yield "telegrams", []
+
+    _setup(raw, source, ACTIVE)
+    collector_mod.collect()
+
+    print("  COL-02: eski yozuvlar hammaga birdek eskiradi")
+    return all([
+        _check("oynadan eski yozuvlar o'chdi", raw.find_one({"date": old}) is None),
+        _check("bugungi chala kun o'chdi",
+               raw.find_one({"date": datetime.now().strftime("%Y-%m-%d")}) is None),
+    ])
+
+
 # --- Qayta urinish mexanizmi --------------------------------------------
 class _RetryColl:
     def __init__(self, fail_times):
@@ -245,6 +383,10 @@ if __name__ == "__main__":
         test_source_failure_keeps_existing_day(),
         test_window_covers_only_complete_days(),
         test_source_respects_window_bounds(),
+        test_inactive_client_rows_removed(),
+        test_inactive_cleanup_skipped_when_run_failed(),
+        test_stale_day_removed(),
+        test_old_rows_age_out_even_for_unvisited_clients(),
         test_retry(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "

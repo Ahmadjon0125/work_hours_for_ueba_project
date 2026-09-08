@@ -80,12 +80,15 @@ def collect():
                 raw.update_one({"clientId": cid, "date": date_str}, {"$set": doc}, upsert=True)
                 total_days += 1
 
-            # Pruning: oynadan tashqaridagi kunlar — ikkala chetdan ham.
-            # Yuqori chegara ham kerak: eski (tuzatishdan oldingi) run'lar bugungi
-            # tugallanmagan kunni yozib qo'ygan bo'lishi mumkin.
-            raw.delete_many({"clientId": cid,
-                             "$or": [{"date": {"$lt": first_date}},
-                                     {"date": {"$gte": today_str}}]})
+            # Bu client uchun oyna ichidagi arxiv endi manbaning aynan nusxasi
+            # bo'lishi kerak: manbadan kelmagan kunlar o'chiriladi (COL-02).
+            stale = raw.delete_many({
+                "clientId": cid,
+                "date": {"$gte": first_date, "$lt": today_str, "$nin": list(day_stamps)},
+            }).deleted_count
+            if stale:
+                log.info("%s (%s): manbadan yo'qolgan %d kun arxivdan o'chirildi",
+                         cid, hostname, stale)
             log.info("%s (%s): %d kun yozildi", cid, hostname, len(day_stamps))
         except Exception as e:
             # Hech narsa yozilmadi: o'qish yozishdan oldin to'liq bajariladi,
@@ -93,6 +96,30 @@ def collect():
             failed.append({"clientId": cid, "hostname": hostname, "error": str(e)})
             log.error("%s (%s): ma'lumoti YANGILANMADI, eskisi saqlanib qoldi — %s",
                       cid, hostname, e)
+
+    # --- Arxivni oynaning nusxasiga keltirish (COL-02) --------------------
+    # 1) Sana bo'yicha — BARCHA clientlar uchun, sikldan tashqarida.
+    #    Sikl ichida bo'lganda collector bormaydigan client (o'chirilgan yoki
+    #    disabled) hech qachon eskirmasdi — yozuvlari abadiy qolib ketardi.
+    aged = raw.delete_many({"$or": [{"date": {"$lt": first_date}},
+                                    {"date": {"$gte": today_str}}]}).deleted_count
+    if aged:
+        log.info("Oynadan tashqaridagi %d yozuv o'chirildi", aged)
+
+    # 2) Active ro'yxatda yo'q clientlar — ular yangi baseline'ga kirmasligi kerak.
+    #    Ikkita himoya: run to'liq muvaffaqiyatli bo'lsagina va ro'yxat bo'sh
+    #    bo'lmasagina o'chiramiz — manba buzilib qisqa ro'yxat qaytarsa,
+    #    butun arxiv qirilib ketmasin. Arxiv hosila ma'lumot: kerak bo'lsa
+    #    keyingi run manbadan qayta olib keladi.
+    if not failed:
+        active_ids = [c["clientId"] for c in clients]
+        gone = raw.delete_many({"clientId": {"$nin": active_ids}}).deleted_count
+        if gone:
+            log.info("Active bo'lmagan clientlarning %d yozuvi o'chirildi "
+                     "(dashboard'ga ta'sir qilmaydi — natijalar `results` da qoladi)", gone)
+    else:
+        log.warning("Active bo'lmagan clientlar tozalanmadi: run to'liq bajarilmadi "
+                    "(%d client o'tkazib yuborilgan)", len(failed))
 
     if failed:
         log.error("Collector tugadi: %d client, %d kun yozildi, %d client O'TKAZIB YUBORILDI: %s",

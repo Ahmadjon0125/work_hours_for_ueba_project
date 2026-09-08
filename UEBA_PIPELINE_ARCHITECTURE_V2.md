@@ -403,8 +403,19 @@ Masalan 8-sentabr kuni ishga tushirilsa (soat nechada bo'lishidan qat'i nazar): 
 4. Timestamp'lar kun (`YYYY-MM-DD`) bo'yicha guruhlanib, har kun uchun `build_day_agg` (§5.1) qo'llanadi.
 5. Har kun `raw_data_for_train` ga replacement upsert qilinadi:
    `update_one({clientId, date}, {$set: {hostname, start, finish, dayOfWeek, durationMin, eventCount, updatedAt}}, upsert=True)`.
-6. Pruning: o'sha client uchun oynadan tashqaridagi documentlar **ikkala chetdan ham** o'chiriladi — `date < window_start` yoki `date >= window_end`. Yuqori chegara ham kerak: eski run'lar bugungi tugallanmagan kunni yozib qo'ygan bo'lishi mumkin, u arxivda qolib ketmasin.
-7. Xulosa log: jami clientlar, kunlar, yozilgan documentlar. O'tkazib yuborilgan client bo'lsa exit code 1.
+6. **Shu client uchun** manbadan kelmagan kunlar o'chiriladi: oyna ichida arxivda bor, lekin bu run'da hisoblanmagan sanalar (manbadan yo'qolgan kun arxivda qolib ketmasin).
+7. **Sikldan keyin, barcha clientlar uchun** (COL-02):
+   - **Sana bo'yicha:** `date < window_start` yoki `date >= window_end` bo'lgan hamma yozuv o'chiriladi. Bu **sikldan tashqarida** bo'lishi shart: avval sikl ichida edi, shuning uchun collector bormaydigan client (o'chirilgan yoki `disabled`) hech qachon eskirmasdi — yozuvlari abadiy qolib, har retrain'da yangi baseline'ga kirib ketardi.
+   - **Active bo'lmagan clientlar:** active ro'yxatda yo'q `clientId` larning barcha yozuvlari o'chiriladi — ishdan bo'shagan xodim keyingi retrain'da darrov baseline'dan chiqadi (60 kun kutilmaydi).
+8. Xulosa log: jami clientlar, kunlar, yozilgan documentlar. O'tkazib yuborilgan client bo'lsa exit code 1.
+
+**Arxiv — oynaning nusxasi (COL-02).** `raw_data_for_train` "collector qachondir yozgan hamma narsa" emas, **oxirgi 60 to'liq kunning aynan nusxasi** bo'lishi kerak. Yuqoridagi 6–7-qadamlar shuni ta'minlaydi.
+
+Active bo'lmagan clientlarni o'chirishda **ikkita himoya** bor: (a) run **to'liq muvaffaqiyatli** bo'lsagina (COL-04 dagi `failed` bo'sh), (b) active ro'yxat bo'sh bo'lmasagina. Manba vaqtincha buzilib qisqa ro'yxat qaytarsa, arxiv qirilib ketmasligi kerak.
+
+> **Dashboard'ga ta'siri yo'q.** Arxiv — faqat trainer o'qiydigan xom ma'lumot. Dashboard `results` dan o'qiydi (365 kun saqlanadi), shuning uchun ishdan bo'shagan xodimning ishlagan kunlari, grafigi va jadvali bir yil davomida ko'rinaveradi — dropdown'da «o'chirilgan» deb belgilanadi, xolos.
+>
+> Arxiv **hosila ma'lumot**: hammasi `alpha-demo` da turibdi, kerak bo'lsa keyingi run qayta olib keladi. Shuning uchun o'chirish xavfsiz.
 
 O'qish har doim **batched streaming** usulida (§6.3.1) — katta hajm ham xotirani to'ldirmaydi.
 
@@ -759,6 +770,7 @@ Kodda `main_client` ustida yozma metod chaqirig'i bo'lishi **mumkin emas**. Ikki
 | 3 | `incidents` da ID maydoni `employee` (boshqalarida `clientId`) | §4.1 jadvaliga aynan rioya |
 | 4 | `hostname` bo'sh yoki yo'q | o'rniga `str(_id)` |
 | 5 | Vaqt maydoni parse bo'lmasa | `None` → o'sha document skip, xato tashlanmaydi (bu — *ma'lumot yaroqsiz*, *o'qib bo'lmadi* emas) |
+| 3a | **Xodim ishdan bo'shasa** (`disabled: true` yoki `clients` dan o'chirilsa) | Active ro'yxatga tushmaydi → arxiv yozuvlari o'chiriladi → keyingi baseline'ga kirmaydi. `results` dagi tarixi qoladi (dashboard'da «o'chirilgan» belgisi bilan ko'rinadi). `disabled` kechikib qo'yilsa ham muammo yo'q: eventlari kelmagach kunlari 60 kunlik oynadan o'z-o'zidan chiqib ketadi |
 | 4a | **Kun to'liq tugamagan bo'lsa** (ishga tushirilgan kun) | O'qitish oynasiga **kirmaydi** — oyna `[bugungi 00:00 − 60 kun, bugungi 00:00)`. Baholanishda esa qatnashadi (§6.3). COL-01 |
 | 5a | **Manba collection'ini o'qib bo'lmasa** (tarmoq uzildi, baza yotdi) | 2 marta qayta urinish → baribir bo'lmasa `SourceReadError`; **shu client umuman yozilmaydi**, eski ma'lumoti saqlanadi, `failed` ro'yxatiga tushadi, job `partial` bo'ladi (§6.1, COL-04) |
 | 6 | Vaqt son bo'lsa (sec/ms) | `parse_to_datetime` qoidasi (§5.5) |
