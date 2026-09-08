@@ -66,7 +66,7 @@ def test_source_failure_keeps_existing_day():
         "start": f"{day}T08:00:00", "finish": f"{day}T18:00:00", "eventCount": 42,
     }])
 
-    def failing_source(client, window_start):
+    def failing_source(client, window_start, window_end=None):
         # 1-collection ishladi: kun o'rtasidagi ikkita event
         yield "telegrams", [base.replace(hour=12), base.replace(hour=13)]
         # 2-collection xato: aynan 08:00 va 18:00 shu yerda edi
@@ -98,7 +98,7 @@ def test_all_sources_ok_writes_day():
     base = datetime.strptime(day, "%Y-%m-%d")
     raw = FakeCollection()
 
-    def good_source(client, window_start):
+    def good_source(client, window_start, window_end=None):
         yield "telegrams", [base.replace(hour=12), base.replace(hour=13)]
         yield "activewindows", [base.replace(hour=8), base.replace(hour=18)]
 
@@ -117,6 +117,74 @@ def test_all_sources_ok_writes_day():
         _check("kun yozildi (08:00-18:00)", span == ("08:00", "18:00"), f"{span}"),
         _check("4 ta event sanaldi", stored["eventCount"] == 4),
         _check("failed bo'sh", not result["failed"]),
+    ])
+
+
+# --- COL-01: o'qitishga faqat to'liq kunlar kirsin -----------------------
+def test_window_covers_only_complete_days():
+    """Ishga tushirilgan kun kirmaydi; oyna soatga bog'liq emas."""
+    raw = FakeCollection()
+    seen = {}
+
+    def source(client, window_start, window_end=None):
+        seen["start"], seen["end"] = window_start, window_end
+        # Chegaralarni iter_client_timestamps qo'llaydi (alohida sinov bor),
+        # bu yerda collect() to'g'ri oyna uzatishini tekshiramiz
+        yield "telegrams", [window_start + timedelta(hours=7)]
+
+    collector_mod.ensure_indexes = lambda: None
+    collector_mod.active_clients = lambda: [
+        {"clientId": "C1", "hostname": "PC-1", "fullName": None, "_id": "C1"}]
+    collector_mod.iter_client_timestamps = source
+    collector_mod.local_db = lambda: FakeDB(raw)
+    collector_mod.collect()
+
+    midnight = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    expected_start = midnight - timedelta(days=config.DAYS_WINDOW)
+    oldest = raw.find_one({"date": expected_start.strftime("%Y-%m-%d")})
+
+    print("  COL-01: collect() to'liq kunlar oynasini uzatadi")
+    return all([
+        _check("oyna 00:00 dan boshlanadi", seen["start"] == expected_start,
+               f"{seen['start']}"),
+        _check(f"oyna {config.DAYS_WINDOW} kunlik",
+               (seen["end"] - seen["start"]).days == config.DAYS_WINDOW),
+        _check("yuqori chegara = bugungi 00:00 (ishga tushirilgan kun kirmaydi)",
+               seen["end"] == midnight, f"{seen['end']}"),
+        _check("eng eski kun ertalabdan boshlandi",
+               oldest is not None and oldest["start"][11:16] == "07:00",
+               f"{oldest['start'][11:16] if oldest else 'yo‘q'}"),
+    ])
+
+
+def test_source_respects_window_bounds():
+    """iter_client_timestamps ikkala chegarani ham qo'llaydi."""
+    start = datetime(2026, 7, 10, 0, 0)
+    end = datetime(2026, 9, 8, 0, 0)
+    docs = [
+        {"dateTime": datetime(2026, 7, 9, 23, 59)},   # oynadan oldin
+        {"dateTime": datetime(2026, 7, 10, 0, 0)},    # aynan chegarada — kiradi
+        {"dateTime": datetime(2026, 8, 1, 12, 0)},    # o'rtada
+        {"dateTime": datetime(2026, 9, 7, 23, 59)},   # oxirgi to'liq kun
+        {"dateTime": datetime(2026, 9, 8, 0, 0)},     # ishga tushirilgan kun — chiqadi
+    ]
+
+    class Coll:
+        def find(self, q, p):
+            return _RetryCursor(docs)   # so'rov filtri emas, kod filtri sinaladi
+
+    mongo_mod.main_db = lambda: FakeDB(Coll())
+    mongo_mod.COLLECTIONS = {"telegrams": ("clientId", ["dateTime"])}
+    out = list(mongo_mod.iter_client_timestamps(
+        {"clientId": "C1", "_id": "C1"}, start, end))
+    got = sorted(out[0][1])
+
+    print("  COL-01: manba o'qishda oyna chegaralari")
+    return all([
+        _check("3 ta timestamp qoldi", len(got) == 3, f"{len(got)} ta"),
+        _check("oynadan oldingisi chiqarildi", datetime(2026, 7, 9, 23, 59) not in got),
+        _check("chegaradagi 00:00 kiritildi", datetime(2026, 7, 10, 0, 0) in got),
+        _check("ishga tushirilgan kun chiqarildi", datetime(2026, 9, 8, 0, 0) not in got),
     ])
 
 
@@ -175,6 +243,8 @@ if __name__ == "__main__":
     results = [
         test_all_sources_ok_writes_day(),
         test_source_failure_keeps_existing_day(),
+        test_window_covers_only_complete_days(),
+        test_source_respects_window_bounds(),
         test_retry(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "

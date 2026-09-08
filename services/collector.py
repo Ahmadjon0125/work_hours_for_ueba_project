@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 import config
 from services.mongo import active_clients, ensure_indexes, iter_client_timestamps, local_db
-from utils.helpers import build_day_agg, build_day_doc, date_str_days_ago, day_of_week
+from utils.helpers import build_day_agg, build_day_doc, day_of_week
 from utils.logger import get_logger
 
 log = get_logger("collector")
@@ -36,7 +36,14 @@ def collect():
     """
     ensure_indexes()
     now = datetime.now()
-    window_start = now - timedelta(days=config.DAYS_WINDOW)
+    # Oyna faqat TO'LIQ tugagan kunlardan iborat (COL-04 emas, COL-01):
+    # yuqori chegara — bugungi 00:00, ya'ni ishga tushirilgan kun kirmaydi;
+    # quyi chegara — undan 60 kun oldingi 00:00. Soat nechada ishga
+    # tushirilganidan qat'i nazar oyna bir xil bo'ladi.
+    window_end = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    window_start = window_end - timedelta(days=config.DAYS_WINDOW)
+    first_date = window_start.strftime("%Y-%m-%d")
+    today_str = window_end.strftime("%Y-%m-%d")   # oynaga kirmaydigan birinchi kun
     db = local_db()
     raw = db[config.COL_RAW_TRAIN]
 
@@ -45,8 +52,9 @@ def collect():
         log.warning("Active client topilmadi — collector bo'sh tugadi")
         return {"clients": 0, "days": 0, "failed": []}
 
-    log.info("Collector boshlandi: %d active client, oyna %s dan",
-             len(clients), window_start.strftime("%Y-%m-%d"))
+    log.info("Collector boshlandi: %d active client, oyna %s — %s (%d to'liq kun)",
+             len(clients), first_date,
+             (window_end - timedelta(days=1)).strftime("%Y-%m-%d"), config.DAYS_WINDOW)
 
     total_days = 0
     failed = []
@@ -55,7 +63,7 @@ def collect():
         full_name = client.get("fullName")
         try:
             day_stamps = defaultdict(list)
-            for coll_name, stamps in iter_client_timestamps(client, window_start):
+            for coll_name, stamps in iter_client_timestamps(client, window_start, window_end):
                 if not stamps:
                     continue
                 _log_weekday_report(cid, coll_name, stamps)
@@ -72,9 +80,12 @@ def collect():
                 raw.update_one({"clientId": cid, "date": date_str}, {"$set": doc}, upsert=True)
                 total_days += 1
 
-            # Pruning: oynadan tashqaridagi eski kunlar
+            # Pruning: oynadan tashqaridagi kunlar — ikkala chetdan ham.
+            # Yuqori chegara ham kerak: eski (tuzatishdan oldingi) run'lar bugungi
+            # tugallanmagan kunni yozib qo'ygan bo'lishi mumkin.
             raw.delete_many({"clientId": cid,
-                             "date": {"$lt": date_str_days_ago(now, config.DAYS_WINDOW)}})
+                             "$or": [{"date": {"$lt": first_date}},
+                                     {"date": {"$gte": today_str}}]})
             log.info("%s (%s): %d kun yozildi", cid, hostname, len(day_stamps))
         except Exception as e:
             # Hech narsa yozilmadi: o'qish yozishdan oldin to'liq bajariladi,

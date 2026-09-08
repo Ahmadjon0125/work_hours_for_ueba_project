@@ -362,6 +362,19 @@ Kun uchun umumiy og'ish: `z = max(|zStart| yoki 0, |zFinish| yoki 0)` (null'lar 
 
 **Nima qiladi:** `alpha-demo` dan 60 kunlik tarixni yig'ib `raw_data_for_train` ni to'ldiradi.
 
+**Oyna — faqat TO'LIQ tugagan kunlar (COL-01).** Chegaralar soatga emas, **kunga** bog'lanadi:
+
+```
+window_end   = bugungi 00:00          ← ishga tushirilgan kun oynaga KIRMAYDI
+window_start = window_end − 60 kun    ← eng eski kun 00:00 dan boshlanadi
+```
+
+Masalan 8-sentabr kuni ishga tushirilsa (soat nechada bo'lishidan qat'i nazar): oyna `[10-iyul 00:00 … 8-sentabr 00:00)` — ya'ni **10-iyul … 7-sentabr**, roppa-rosa 60 to'liq kun. Soat 02:40 da ham, 23:40 da ham natija bir xil.
+
+> Nima uchun: avval oyna `now − 60 kun` edi, ya'ni vaqt bilan. Soat 15:20 da ishga tushirilsa eng eski kun 15:20 dan boshlanardi (ertalabki qismi yo'q) va bugungi kun ham chala bo'lardi — ikkalasi soxta kelish/ketish vaqti berib, baseline'ni buzardi.
+>
+> Bugungi kun **baholanishda davom etadi** — u boshqa yo'ldan keladi (trigger → `results`, §6.3), faqat **o'qitishga** kirmaydi.
+
 **Qachon ishlaydi:** faqat train/retrain paytida — CLI'dan (`python collector.py`) yoki `/api/train`, `/api/retrain` zanjirining 1-bosqichi sifatida (qaror #13). Normal rejimda ishlamaydi — u paytda trigger o'z ishini qilaveradi, bu arxiv esa tinch turadi.
 
 **Qadamlar (aynan shu tartibda):**
@@ -369,26 +382,28 @@ Kun uchun umumiy og'ish: `z = max(|zStart| yoki 0, |zFinish| yoki 0)` (null'lar 
 1. `ueba_local` da 4 ta unique indeksni yaratish/tekshirish (§4.2).
 2. Active client'lar ro'yxatini olish (§4.1 so'rovi). Ro'yxat bo'sh bo'lsa — ogohlantirish va normal tugash (exit 0). Har client'ning `hostname` i shu yerda olinadi (bo'sh bo'lsa `str(_id)`).
 3. **Har bir client uchun** (client → collection tartibida, ketma-ket; bitta client xato bersa qolganlari davom etadi):
-   - 15 ta oddiy collection so'rovi (`T` — vaqt maydoni, `ID` — ID maydoni, `W = now − 60 kun`):
+   - 15 ta oddiy collection so'rovi (`T` — vaqt maydoni, `ID` — ID maydoni, `W1 = window_start`, `W2 = window_end`):
      ```json
-     find( { "ID": <clientId>, "T": { "$gte": W } },
+     find( { "ID": <clientId>, "T": { "$gte": W1, "$lt": W2 } },
            { "ID": 1, "T": 1, "_id": 0 } )
      ```
    - `rdps` uchun alohida (ikkala vaqt maydonidan biri oynada bo'lsa document olinadi):
      ```json
      find( { "clientId": <clientId>,
-             "$or": [ { "connectTime":    { "$gte": W } },
-                      { "disconnectTime": { "$gte": W } } ] },
+             "$or": [ { "connectTime":    { "$gte": W1, "$lt": W2 } },
+                      { "disconnectTime": { "$gte": W1, "$lt": W2 } } ] },
            { "clientId": 1, "connectTime": 1, "disconnectTime": 1, "_id": 0 } )
      ```
-     Har documentdan `connectTime` va `disconnectTime` **alohida** parse qilinadi, `>= W` bo'lganlari olinadi.
+     Har documentdan `connectTime` va `disconnectTime` **alohida** parse qilinadi va har biri alohida oynaga solishtiriladi (document oynaga tushgani bilan uning ikkala vaqti ham oynada bo'lishi shart emas).
+
+   > `window_end` — **ixtiyoriy** parametr. Collector uni beradi (faqat to'liq kunlar), trigger esa **bermaydi** — unga bugungi tugallanmagan kun ham kerak (§6.3).
    - Barcha timestamp'lar `parse_to_datetime` dan o'tadi; parse bo'lmagani skip.
    - **Hafta kuni bo'yicha hisobot** (faqat log uchun, data'ga ta'sir qilmaydi): olingan timestamp'lar hafta kuni bo'yicha guruhlanib konsol + log faylga yoziladi:
      `{clientId} | {collection} | {weekday} | firstDoc=YYYY-MM-DD HH:MM:SS | lastDoc=YYYY-MM-DD HH:MM:SS | docs=N`
 4. Timestamp'lar kun (`YYYY-MM-DD`) bo'yicha guruhlanib, har kun uchun `build_day_agg` (§5.1) qo'llanadi.
 5. Har kun `raw_data_for_train` ga replacement upsert qilinadi:
    `update_one({clientId, date}, {$set: {hostname, start, finish, dayOfWeek, durationMin, eventCount, updatedAt}}, upsert=True)`.
-6. Pruning: o'sha client uchun `date < (now − 60 kun)` bo'lgan eski documentlar `delete_many` bilan o'chiriladi.
+6. Pruning: o'sha client uchun oynadan tashqaridagi documentlar **ikkala chetdan ham** o'chiriladi — `date < window_start` yoki `date >= window_end`. Yuqori chegara ham kerak: eski run'lar bugungi tugallanmagan kunni yozib qo'ygan bo'lishi mumkin, u arxivda qolib ketmasin.
 7. Xulosa log: jami clientlar, kunlar, yozilgan documentlar. O'tkazib yuborilgan client bo'lsa exit code 1.
 
 O'qish har doim **batched streaming** usulida (§6.3.1) — katta hajm ham xotirani to'ldirmaydi.
@@ -744,6 +759,7 @@ Kodda `main_client` ustida yozma metod chaqirig'i bo'lishi **mumkin emas**. Ikki
 | 3 | `incidents` da ID maydoni `employee` (boshqalarida `clientId`) | §4.1 jadvaliga aynan rioya |
 | 4 | `hostname` bo'sh yoki yo'q | o'rniga `str(_id)` |
 | 5 | Vaqt maydoni parse bo'lmasa | `None` → o'sha document skip, xato tashlanmaydi (bu — *ma'lumot yaroqsiz*, *o'qib bo'lmadi* emas) |
+| 4a | **Kun to'liq tugamagan bo'lsa** (ishga tushirilgan kun) | O'qitish oynasiga **kirmaydi** — oyna `[bugungi 00:00 − 60 kun, bugungi 00:00)`. Baholanishda esa qatnashadi (§6.3). COL-01 |
 | 5a | **Manba collection'ini o'qib bo'lmasa** (tarmoq uzildi, baza yotdi) | 2 marta qayta urinish → baribir bo'lmasa `SourceReadError`; **shu client umuman yozilmaydi**, eski ma'lumoti saqlanadi, `failed` ro'yxatiga tushadi, job `partial` bo'ladi (§6.1, COL-04) |
 | 6 | Vaqt son bo'lsa (sec/ms) | `parse_to_datetime` qoidasi (§5.5) |
 | 7 | Shu hafta kuni uchun baseline yo'q yoki statlar null | z = null; ikkala z null bo'lsa status `insufficient` |

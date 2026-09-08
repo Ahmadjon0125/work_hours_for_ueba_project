@@ -72,8 +72,12 @@ def active_clients():
     return clients
 
 
-def iter_client_timestamps(client, window_start):
-    """Bitta client uchun 17 collection'dan window_start dan keyingi timestamp'larni oqim bilan o'qiydi.
+def iter_client_timestamps(client, window_start, window_end=None):
+    """Bitta client uchun barcha collection'lardan oynadagi timestamp'larni oqim bilan o'qiydi.
+
+    Oyna: `[window_start, window_end)`. `window_end` berilmasa yuqori chegara yo'q
+    (trigger shunday ishlatadi — bugungi tugallanmagan kun ham baholanishi kerak).
+    Collector esa `window_end` beradi: o'qitishga faqat to'liq kunlar kiradi (COL-01).
 
     Har collection uchun (collection_nomi, [datetime, ...]) qaytaradi.
     O'qish BATCH_SIZE (100) documentlik partiyalarda — limit/paginatsiya emas, streaming cursor.
@@ -89,11 +93,15 @@ def iter_client_timestamps(client, window_start):
         for tf in time_fields:
             projection[tf] = 1
 
+        bounds = {"$gte": window_start}
+        if window_end is not None:
+            bounds["$lt"] = window_end
+
         if len(time_fields) == 1:
-            query = {id_field: {"$in": id_values}, time_fields[0]: {"$gte": window_start}}
+            query = {id_field: {"$in": id_values}, time_fields[0]: dict(bounds)}
         else:
             query = {id_field: {"$in": id_values},
-                     "$or": [{tf: {"$gte": window_start}} for tf in time_fields]}
+                     "$or": [{tf: dict(bounds)} for tf in time_fields]}
 
         # Qayta urinishlar: tarmoq uzilishlari ko'pincha o'tkinchi bo'ladi.
         # Baribir bo'lmasa xato YUQORIGA UZATILADI — "o'qib bo'lmadi" ni
@@ -106,8 +114,13 @@ def iter_client_timestamps(client, window_start):
                 for doc in cursor:
                     for tf in time_fields:
                         dt = parse_to_datetime(doc.get(tf))
-                        if dt is not None and dt >= window_start:
-                            stamps.append(dt)
+                        # rdps'da ikkita vaqt maydoni bor — biri oynada bo'lsa
+                        # document keladi, shuning uchun har birini alohida tekshiramiz
+                        if dt is None or dt < window_start:
+                            continue
+                        if window_end is not None and dt >= window_end:
+                            continue
+                        stamps.append(dt)
                 break
             except Exception as e:
                 last_error = e
