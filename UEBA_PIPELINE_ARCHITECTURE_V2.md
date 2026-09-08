@@ -389,9 +389,19 @@ Kun uchun umumiy og'ish: `z = max(|zStart| yoki 0, |zFinish| yoki 0)` (null'lar 
 5. Har kun `raw_data_for_train` ga replacement upsert qilinadi:
    `update_one({clientId, date}, {$set: {hostname, start, finish, dayOfWeek, durationMin, eventCount, updatedAt}}, upsert=True)`.
 6. Pruning: o'sha client uchun `date < (now − 60 kun)` bo'lgan eski documentlar `delete_many` bilan o'chiriladi.
-7. Xulosa log: jami clientlar, kunlar, yozilgan documentlar. Xatolik bo'lsa exit code 1.
+7. Xulosa log: jami clientlar, kunlar, yozilgan documentlar. O'tkazib yuborilgan client bo'lsa exit code 1.
 
 O'qish har doim **batched streaming** usulida (§6.3.1) — katta hajm ham xotirani to'ldirmaydi.
+
+**Manba o'qishdagi xato — fail-closed (COL-04).** «O'qib bo'lmadi» va «hech narsa yo'q» — ikki boshqa holat, ular aralashtirilmaydi:
+
+- Har collection o'qishda `SOURCE_READ_RETRIES` (default **2**) marta qayta urinish bo'ladi (o'tkinchi tarmoq uzilishlari uchun; qisman o'qilgan natija tashlanadi).
+- Baribir bo'lmasa **`SourceReadError`** ko'tariladi — xato yutilmaydi.
+- Collector shu client'ning **hech qanday kunini yozmaydi**; uning eski (to'g'ri) yozuvlari arxivda o'z holicha qoladi. Client `failed` ro'yxatiga tushadi, qolgan clientlar normal yig'iladi.
+- `collect()` natijasi: `{"clients": N, "days": N, "failed": [{clientId, hostname, error}]}`.
+- Retrain zanjiri o'qitishni **davom ettiradi** (qolgan clientlar ma'lumoti to'liq), lekin job holati `finished` emas, **`partial`** bo'ladi va `failedClients` ro'yxati bilan UI'da ogohlantirish ko'rsatiladi.
+
+> Nima uchun: yozish **replacement upsert** ($set) bo'lgani uchun chala ma'lumot eski to'g'ri qiymatni almashtirib yuboradi. Masalan kun `08:00–18:00` edi; o'sha eventlar turgan collection xato bersa, boshqasidan kelgan 12:00/13:00 bilan kun `12:00–13:00` bo'lib qayta yozilar va retrain «muvaffaqiyatli» deb hisobot berardi.
 
 ### 6.2 Trainer (`trainer.py`)
 
@@ -571,6 +581,8 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `TRIGGER_INTERVAL_HOURS` | `5` | Trigger oralig'i |
 | `LOOKBACK_HOURS` | `5` | Faqat birinchi o'tish oynasi (cursor bo'lmaganda) |
 | `BATCH_SIZE` | `100` | DB o'qish partiyasi |
+| `SOURCE_READ_RETRIES` | `2` | Manba collection'ini o'qishda qayta urinishlar soni (§6.1, COL-04) |
+| `SOURCE_READ_RETRY_DELAY` | `2` | Qayta urinishlar orasidagi kutish (soniya) |
 | `Z_THRESHOLD` | `1.2` | Anomaliya chegarasi |
 | `SEVERE_THRESHOLD` | `1.8` | Jiddiy chegara |
 | `WATCH_THRESHOLD` | `0.5` | Watch chegarasi |
@@ -731,7 +743,8 @@ Kodda `main_client` ustida yozma metod chaqirig'i bo'lishi **mumkin emas**. Ikki
 | 2 | `rdps` da 2 ta vaqt maydoni | `$or` so'rov; har maydon alohida parse + hisob |
 | 3 | `incidents` da ID maydoni `employee` (boshqalarida `clientId`) | §4.1 jadvaliga aynan rioya |
 | 4 | `hostname` bo'sh yoki yo'q | o'rniga `str(_id)` |
-| 5 | Vaqt maydoni parse bo'lmasa | `None` → skip, xato tashlanmaydi |
+| 5 | Vaqt maydoni parse bo'lmasa | `None` → o'sha document skip, xato tashlanmaydi (bu — *ma'lumot yaroqsiz*, *o'qib bo'lmadi* emas) |
+| 5a | **Manba collection'ini o'qib bo'lmasa** (tarmoq uzildi, baza yotdi) | 2 marta qayta urinish → baribir bo'lmasa `SourceReadError`; **shu client umuman yozilmaydi**, eski ma'lumoti saqlanadi, `failed` ro'yxatiga tushadi, job `partial` bo'ladi (§6.1, COL-04) |
 | 6 | Vaqt son bo'lsa (sec/ms) | `parse_to_datetime` qoidasi (§5.5) |
 | 7 | Shu hafta kuni uchun baseline yo'q yoki statlar null | z = null; ikkala z null bo'lsa status `insufficient` |
 | 8 | Client'da baseline umuman yo'q (yangi client) | result **baribir yoziladi**: z'lar `null`, status `insufficient` (kulrang) — kun dashboardda ko'rinadi, ma'lumot yo'qolmaydi; retrain'dan keyingi yangi kunlar normal baholanadi |

@@ -2,6 +2,8 @@
 
 Ajratish ataylab: asosiy bazaga yozma amal kod darajasida imkonsiz bo'lsin.
 """
+import time
+
 from pymongo import ASCENDING, MongoClient
 
 import config
@@ -9,6 +11,14 @@ from utils.helpers import COLLECTIONS
 from utils.logger import get_logger
 
 log = get_logger("mongo")
+
+
+class SourceReadError(Exception):
+    """Asosiy bazadan o'qib bo'lmadi.
+
+    Bo'sh natijadan farqli: bo'sh natija — "bu yerda hech narsa yo'q", bu esa
+    "ma'lumot noma'lum". Chaqiruvchi shu client'ni yozmasligi kerak.
+    """
 
 _main_client = None
 _local_client = None
@@ -85,16 +95,30 @@ def iter_client_timestamps(client, window_start):
             query = {id_field: {"$in": id_values},
                      "$or": [{tf: {"$gte": window_start}} for tf in time_fields]}
 
-        stamps = []
-        try:
-            cursor = db[coll_name].find(query, projection).batch_size(config.BATCH_SIZE)
-            for doc in cursor:
-                for tf in time_fields:
-                    dt = parse_to_datetime(doc.get(tf))
-                    if dt is not None and dt >= window_start:
-                        stamps.append(dt)
-        except Exception as e:
-            log.warning("%s | %s o'qishda xato: %s", client["clientId"], coll_name, e)
-            continue
+        # Qayta urinishlar: tarmoq uzilishlari ko'pincha o'tkinchi bo'ladi.
+        # Baribir bo'lmasa xato YUQORIGA UZATILADI — "o'qib bo'lmadi" ni
+        # "hech narsa yo'q" deb qabul qilish mumkin emas (COL-04).
+        last_error = None
+        for attempt in range(config.SOURCE_READ_RETRIES + 1):
+            stamps = []  # qisman o'qilgani tashlanadi, yarim natija ishlatilmaydi
+            try:
+                cursor = db[coll_name].find(query, projection).batch_size(config.BATCH_SIZE)
+                for doc in cursor:
+                    for tf in time_fields:
+                        dt = parse_to_datetime(doc.get(tf))
+                        if dt is not None and dt >= window_start:
+                            stamps.append(dt)
+                break
+            except Exception as e:
+                last_error = e
+                if attempt < config.SOURCE_READ_RETRIES:
+                    log.warning("%s | %s o'qishda xato (%d/%d urinish), qayta urinaman: %s",
+                                client["clientId"], coll_name, attempt + 1,
+                                config.SOURCE_READ_RETRIES, e)
+                    time.sleep(config.SOURCE_READ_RETRY_DELAY)
+        else:
+            raise SourceReadError(
+                f"{coll_name} o'qib bo'lmadi ({config.SOURCE_READ_RETRIES + 1} urinish): "
+                f"{type(last_error).__name__}: {last_error}") from last_error
 
         yield coll_name, stamps

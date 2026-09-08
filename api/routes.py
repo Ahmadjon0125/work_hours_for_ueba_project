@@ -40,15 +40,26 @@ def _retrain_chain(mode):
     try:
         _state["lastRetrain"] = {"status": "running", "stage": "collecting", "mode": mode,
                                  "startedAt": datetime.now().isoformat(timespec="seconds")}
-        days = collect()
+        collected = collect()
+        days, failed = collected["days"], collected["failed"]
 
         _state["lastRetrain"] = {**_state["lastRetrain"], "stage": "training", "days": days}
+        # Muvaffaqiyatsiz clientlar bo'lsa ham o'qitamiz: qolganlarining ma'lumoti
+        # to'liq, o'tkazib yuborilganlarniki esa eski (to'g'ri) holicha turibdi.
         clients = train()
 
-        _state["lastRetrain"] = {**_state["lastRetrain"], "status": "finished",
-                                 "stage": "finished", "clients": clients,
+        # Bironta client tushib qolgan bo'lsa "hammasi joyida" deb ko'rsatilmaydi
+        status = "partial" if failed else "finished"
+        _state["lastRetrain"] = {**_state["lastRetrain"], "status": status,
+                                 "stage": status, "clients": clients,
+                                 "failedClients": [{"hostname": f["hostname"],
+                                                    "error": f["error"]} for f in failed],
                                  "finishedAt": datetime.now().isoformat(timespec="seconds")}
-        log.info("%s zanjiri tugadi: %d kun, %d client", mode, days, clients)
+        if failed:
+            log.error("%s zanjiri qisman bajarildi: %d kun, %d client o'qitildi, "
+                      "%d client o'tkazib yuborildi", mode, days, clients, len(failed))
+        else:
+            log.info("%s zanjiri tugadi: %d kun, %d client", mode, days, clients)
     except Exception as e:
         log.error("%s zanjirida xato: %s", mode, e)
         _state["lastRetrain"] = {**_state["lastRetrain"], "status": "error",

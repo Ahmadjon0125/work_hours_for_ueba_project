@@ -26,7 +26,14 @@ def _log_weekday_report(client_id, coll_name, stamps):
 
 
 def collect():
-    """60 kunlik tarixni yig'ib raw_data_for_train ni to'ldiradi. Yozilgan kunlar sonini qaytaradi."""
+    """60 kunlik tarixni yig'ib raw_data_for_train ni to'ldiradi.
+
+    Natija: {"clients": N, "days": N, "failed": [{clientId, hostname, error}, ...]}
+
+    Manbadan o'qishda xato bo'lsa, o'sha client BUTUNLAY o'tkazib yuboriladi —
+    uning eski (to'g'ri) yozuvlari saqlanib qoladi. Chala ma'lumot bilan
+    yozish qilinmaydi (COL-04).
+    """
     ensure_indexes()
     now = datetime.now()
     window_start = now - timedelta(days=config.DAYS_WINDOW)
@@ -36,12 +43,13 @@ def collect():
     clients = active_clients()
     if not clients:
         log.warning("Active client topilmadi — collector bo'sh tugadi")
-        return 0
+        return {"clients": 0, "days": 0, "failed": []}
 
     log.info("Collector boshlandi: %d active client, oyna %s dan",
              len(clients), window_start.strftime("%Y-%m-%d"))
 
     total_days = 0
+    failed = []
     for client in clients:
         cid, hostname = client["clientId"], client["hostname"]
         full_name = client.get("fullName")
@@ -69,7 +77,16 @@ def collect():
                              "date": {"$lt": date_str_days_ago(now, config.DAYS_WINDOW)}})
             log.info("%s (%s): %d kun yozildi", cid, hostname, len(day_stamps))
         except Exception as e:
-            log.error("%s client'ida xato (qolganlari davom etadi): %s", cid, e)
+            # Hech narsa yozilmadi: o'qish yozishdan oldin to'liq bajariladi,
+            # shuning uchun bu client'ning eski ma'lumoti o'z holicha qoladi.
+            failed.append({"clientId": cid, "hostname": hostname, "error": str(e)})
+            log.error("%s (%s): ma'lumoti YANGILANMADI, eskisi saqlanib qoldi — %s",
+                      cid, hostname, e)
 
-    log.info("Collector tugadi: %d client, %d kun yozildi", len(clients), total_days)
-    return total_days
+    if failed:
+        log.error("Collector tugadi: %d client, %d kun yozildi, %d client O'TKAZIB YUBORILDI: %s",
+                  len(clients), total_days, len(failed),
+                  ", ".join(f["hostname"] for f in failed))
+    else:
+        log.info("Collector tugadi: %d client, %d kun yozildi", len(clients), total_days)
+    return {"clients": len(clients), "days": total_days, "failed": failed}

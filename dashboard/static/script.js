@@ -561,17 +561,22 @@ function pollRetrain() {
   retrainTimer = setInterval(async () => {
     const h = await loadHealth();
     const r = (h && h.lastRetrain) || {};
+    const skipped = (r.failedClients || []).length;
     $('retrainStatus').textContent = {
       collecting: "Ma'lumot yig'ilmoqda...",
       training: "Odatiy jadvallar hisoblanmoqda...",
       finished: 'Yangilandi ✓',
+      // Ba'zi xodimlarning ma'lumoti olinmadi — ularniki eski holicha qoldi
+      partial: `Yangilandi, lekin ${skipped} ta xodim ma'lumoti olinmadi (eskisi saqlandi)`,
       error: 'Xato: ' + (r.error || '').slice(0, 60),
     }[r.stage] || '';
+    $('retrainStatus').style.color = r.stage === 'partial' ? 'var(--yellow)'
+      : (r.stage === 'error' ? 'var(--red)' : '');
 
-    if (r.status === 'finished' || r.status === 'error') {
+    if (['finished', 'partial', 'error'].includes(r.status)) {
       clearInterval(retrainTimer);
       $('retrain').disabled = false;
-      if (r.status === 'finished') { loadBaselines().then(loadResults); loadClients(); }
+      if (r.status !== 'error') { loadBaselines().then(loadResults); loadClients(); }
     }
   }, 5000);
 }

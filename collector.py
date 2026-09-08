@@ -8,7 +8,11 @@ log = get_logger("cli")
 
 if __name__ == "__main__":
     try:
-        collect()
+        result = collect()
     except Exception as e:
         log.error("Collector xatosi: %s", e)
+        sys.exit(1)
+
+    # Bir nechta client o'tkazib yuborilgan bo'lsa ham muvaffaqiyat deb hisoblamaymiz
+    if result["failed"]:
         sys.exit(1)
