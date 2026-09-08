@@ -120,6 +120,7 @@ Trigger **faqat avtomatik** ishlaydi — qo'lda ishga tushirish yo'li yo'q. Oral
 | `/api/results/{client_id}` | GET | Bitta xodim natijalari |
 | `/api/baseline` | GET | Joriy versiyadagi odatiy jadvallar |
 | `/api/baseline/versions` | GET | Baseline versiyalari tarixi |
+| `/api/jobs` | GET | O'qitish job'lari tarixi va holati |
 | `/api/clients` | GET | Dashboard dropdown'i: xodimlar (ism bo'lsa qo'shiladi; o'chirilganlari va bir xil nomlilari belgilanadi) |
 | `/api/docs` | GET | Swagger |
 

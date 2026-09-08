@@ -49,6 +49,7 @@ COL_TRIGGER_DATA = "trigger_data"
 COL_BASELINE = "baseline"
 COL_BASELINE_RUNS = "baseline_runs"
 COL_RESULTS = "results"
+COL_TRAINING_JOBS = "training_jobs"
 
 # Nechta baseline versiyasi saqlanadi (eskilari o'chiriladi)
 BASELINE_KEEP_VERSIONS = int(os.getenv("BASELINE_KEEP_VERSIONS", 5))

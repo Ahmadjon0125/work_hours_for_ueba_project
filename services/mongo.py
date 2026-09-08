@@ -61,6 +61,15 @@ def ensure_indexes():
     baseline.create_index([("clientId", ASCENDING), ("baselineId", ASCENDING)], unique=True)
     baseline.create_index([("baselineId", ASCENDING)])
     db[config.COL_BASELINE_RUNS].create_index([("trainedAt", -1)])
+
+    # Bir vaqtda faqat BITTA o'qitish ketishi kerak (ARCH-01). Buni unique
+    # partial indeks kafolatlaydi: `status: "running"` hujjat faqat bitta
+    # bo'la oladi. threading.Lock dan farqli — ko'p protsessda ham ishlaydi.
+    jobs = db[config.COL_TRAINING_JOBS]
+    jobs.create_index([("status", ASCENDING)], unique=True,
+                      partialFilterExpression={"status": "running"},
+                      name="one_running_job")
+    jobs.create_index([("startedAt", -1)])
     log.info("Indekslar tekshirildi (4 ta unique)")
 
 

@@ -13,7 +13,7 @@ import config
 from api.app import create_app
 from api.routes import set_trigger_state
 from mq.worker import start_workers
-from services import trigger
+from services import jobs, trigger
 from services.mongo import ensure_indexes
 from utils.logger import get_logger
 
@@ -45,6 +45,9 @@ def _startup():
     global _scheduler
     try:
         ensure_indexes()
+        # Protsess job o'rtasida to'xtagan bo'lsa, hujjat "running" holicha qolib
+        # keyingi barcha o'qitishlarni bloklab qo'yardi (ARCH-01).
+        jobs.recover_stale()
     except Exception as e:
         # Mongo hozir yotgan bo'lsa ham dastur ko'tariladi: /api/health xatoni ko'rsatadi,
         # indekslar keyingi trigger o'tishida yaratiladi.

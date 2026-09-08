@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 
 import config
 from mq.rabbitmq import queue_depth
+from services import jobs
 from services.collector import collect
 from services.mongo import active_clients, local_db, main_db
 from services.trainer import current_baseline_id, train
@@ -19,12 +20,8 @@ router = APIRouter()
 
 DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard")
 
-# Fon amallarining holati (/api/health da ko'rinadi)
-_state = {
-    "lastTrigger": {"status": "idle"},
-    "lastRetrain": {"status": "idle"},
-}
-_retrain_lock = threading.Lock()
+# Trigger holati — hozircha xotirada (u job emas, har 5 soatlik avtomatik o'tish)
+_state = {"lastTrigger": {"status": "idle"}}
 
 
 def set_trigger_state(**kwargs):
@@ -35,26 +32,26 @@ def get_state():
     return _state
 
 
-def _retrain_chain(mode):
-    """collector -> trainer zanjiri (fon thread'ida). Baseline swap'gacha eskisi ishlaydi."""
+def _retrain_chain(mode, job_id):
+    """collector -> trainer zanjiri (fon thread'ida). Bosqichlar job hujjatiga yoziladi."""
     try:
-        _state["lastRetrain"] = {"status": "running", "stage": "collecting", "mode": mode,
-                                 "startedAt": datetime.now().isoformat(timespec="seconds")}
+        jobs.set_stage(job_id, "collecting")
         collected = collect()
         days, failed = collected["days"], collected["failed"]
 
-        _state["lastRetrain"] = {**_state["lastRetrain"], "stage": "training", "days": days}
+        jobs.set_stage(job_id, "training",
+                       **{"stats.days": days, "stats.clientsRead": collected["clients"]})
         # Muvaffaqiyatsiz clientlar bo'lsa ham o'qitamiz: qolganlarining ma'lumoti
         # to'liq, o'tkazib yuborilganlarniki esa eski (to'g'ri) holicha turibdi.
         clients = train()
 
         # Bironta client tushib qolgan bo'lsa "hammasi joyida" deb ko'rsatilmaydi
         status = "partial" if failed else "finished"
-        _state["lastRetrain"] = {**_state["lastRetrain"], "status": status,
-                                 "stage": status, "clients": clients,
-                                 "failedClients": [{"hostname": f["hostname"],
-                                                    "error": f["error"]} for f in failed],
-                                 "finishedAt": datetime.now().isoformat(timespec="seconds")}
+        jobs.finish(job_id, status,
+                    baselineId=current_baseline_id(),
+                    **{"stats.clients": clients,
+                       "stats.failedClients": [{"hostname": f["hostname"],
+                                                "error": f["error"]} for f in failed]})
         if failed:
             log.error("%s zanjiri qisman bajarildi: %d kun, %d client o'qitildi, "
                       "%d client o'tkazib yuborildi", mode, days, clients, len(failed))
@@ -62,17 +59,17 @@ def _retrain_chain(mode):
             log.info("%s zanjiri tugadi: %d kun, %d client", mode, days, clients)
     except Exception as e:
         log.error("%s zanjirida xato: %s", mode, e)
-        _state["lastRetrain"] = {**_state["lastRetrain"], "status": "error",
-                                 "stage": "error", "error": str(e),
-                                 "finishedAt": datetime.now().isoformat(timespec="seconds")}
-    finally:
-        _retrain_lock.release()
+        jobs.finish(job_id, "error", error=str(e))
 
 
 def _start_chain(mode):
-    if not _retrain_lock.acquire(blocking=False):
+    """Job ochib fon thread'ini yuboradi. Band bo'lsa 409."""
+    try:
+        job_id = jobs.create(mode)
+    except jobs.JobAlreadyRunning:
         raise HTTPException(status_code=409, detail="retrain davom etmoqda")
-    threading.Thread(target=_retrain_chain, args=(mode,), daemon=True).start()
+    threading.Thread(target=_retrain_chain, args=(mode, job_id), daemon=True).start()
+    return job_id
 
 
 @router.get("/api/health")
@@ -92,7 +89,28 @@ def health():
         "queue_depth": depth,
         "workers": config.WORKER_COUNT,
         "lastTrigger": _state["lastTrigger"],
-        "lastRetrain": _state["lastRetrain"],
+        # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
+        "lastRetrain": _job_as_state(jobs.latest()),
+    }
+
+
+def _job_as_state(job):
+    """Job hujjatini eski `lastRetrain` shakliga keltiradi (dashboard buzilmasin)."""
+    if not job:
+        return {"status": "idle"}
+    stats = job.get("stats") or {}
+    return {
+        "jobId": job["_id"],
+        "mode": job.get("type"),
+        "status": job.get("status"),
+        "stage": job.get("stage"),
+        "startedAt": job.get("startedAt"),
+        "finishedAt": job.get("finishedAt"),
+        "days": stats.get("days"),
+        "clients": stats.get("clients"),
+        "failedClients": stats.get("failedClients", []),
+        "baselineId": job.get("baselineId"),
+        "error": job.get("error"),
     }
 
 
@@ -101,15 +119,28 @@ def train_endpoint():
     """Birinchi o'qitish: collector -> trainer."""
     if local_db()[config.COL_BASELINE].count_documents({}, limit=1):
         raise HTTPException(status_code=409, detail="baseline mavjud, /api/retrain ishlatiling")
-    _start_chain("train")
-    return {"status": "training"}
+    return {"status": "training", "jobId": _start_chain("train")}
 
 
 @router.post("/api/retrain", status_code=202)
 def retrain_endpoint():
-    """Baseline yangilash: collector (yangi 60 kun) -> trainer (tmp + atomik swap)."""
-    _start_chain("retrain")
-    return {"status": "retraining"}
+    """Baseline yangilash: collector (yangi 60 kun) -> trainer (yangi versiya)."""
+    return {"status": "retraining", "jobId": _start_chain("retrain")}
+
+
+@router.get("/api/jobs")
+def list_jobs(limit: int = Query(20, ge=1, le=200)):
+    """O'qitish job'lari tarixi — yangisi birinchi."""
+    return jobs.recent(limit)
+
+
+@router.get("/api/jobs/{job_id}")
+def get_job(job_id: str):
+    """Bitta job'ning holati — UI bosqichni shundan kuzatadi."""
+    job = local_db()[config.COL_TRAINING_JOBS].find_one({"_id": job_id})
+    if job is None:
+        raise HTTPException(status_code=404, detail="job topilmadi")
+    return job
 
 
 @router.get("/api/clients")
