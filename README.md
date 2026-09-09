@@ -342,29 +342,202 @@ hodisalarni tekshirish shart emas.
 
 ### 3-qadam — darajasi qanday?
 
+Chetlanish borligini bildik. Endi **qanchaligini** o'lchash kerak — 0 dan
+100 gacha raqam.
+
+Bizda `zOut` bor: chetlanish xodimning o'z og'ishiga (σ) nisbatan qanchalik
+katta. Lekin u chegaralanmagan — 1.0 dan cheksizgacha bo'lishi mumkin.
+Uni 0–100 shkalasiga o'tkazish kerak.
+
+#### Formula qayerdan kelib chiqadi
+
+Bu **min-max normalizatsiya** — bir oraliqdagi qiymatni belgilangan
+shkalaga o'tkazishning standart usuli:
+
 ```
-zOut = max(zStart, zFinish)                     faqat oynadan CHIQARUVCHI tomon
-ball = 100 · (zOut − T) / (ZFULL − T)           ZFULL = ANOMALY_Z_FULL_SCALE (3.0)
+ball = 100 · (qiymat − eng_past) / (eng_yuqori − eng_past)
 ```
 
-| zOut | 1.0 | 1.5 | 2.0 | 2.5 | ≥ 3.0 | σ = 0 |
-|---|---|---|---|---|---|---|
-| **ball** | 1 | 25 | 50 | 75 | **100** | **100** |
+`eng_past` da 0, `eng_yuqori` da 100 chiqadi, oradagilar chiziqli
+taqsimlanadi. Bizda ikkala chekka `.env` dan keladi:
 
-Daraja **daqiqada emas, xodimning o'z σ birligida** o'lchanadi. Bir xil
-30 daqiqalik chiqish har kuni aniq 09:00 da keladigan xodim uchun
-favqulodda holat, jadvali beqaror xodim uchun esa oddiy tebranish.
-Daqiqa bu farqni ko'rmaydi, z ko'radi.
+```
+eng_past   = ANOMALY_Z_THRESHOLD  = 1.0     chetlanish shu yerdan boshlanadi
+eng_yuqori = ANOMALY_Z_FULL_SCALE = 3.0     shu yerda maksimal deb hisoblaymiz
+```
 
-Chetlanish bo'lgan kun hech qachon 0 ball olmaydi (minimal 1) — aks holda
-«chetlanish, lekin ball 0» degan ziddiyat chiqardi.
+Shundan:
 
-**Matematik ayniyat:** `lo = meanStart − T·σ` bo'lgani uchun «oynadan
-tashqarida» aynan «`zOut > T`» degani. Bu 85 ta natijada tekshirilgan —
-birorta istisno yo'q. Qaror **oyna bilan** qilinadi, chunki u `σ = 0`
-bo'lganda ham ishlaydi (z esa nolga bo'linardi).
+```
+zOut = max(zStart, zFinish)                 faqat oynadan CHIQARUVCHI tomon
 
-E'tibor bering — **modul emas, ishorali**:
+ball = 100 · (zOut − 1.0) / (3.0 − 1.0)  =  100 · (zOut − 1) / 2
+                             └────┬────┘
+                        oraliq kengligi = 2
+```
+
+`2` — sehrli raqam emas, `3.0 − 1.0` ning natijasi. `.env` da
+`ANOMALY_Z_FULL_SCALE=4.0` qilsangiz bo'luvchi `3` bo'ladi.
+
+#### Ko'rinishi
+
+```
+ball
+100 │                              ╭────────────────  3.0 dan keyin tekis
+    │                          ╱
+ 75 │                      ╱
+ 50 │                  ╱              to'g'ri chiziq
+ 25 │              ╱
+  1 │          ╱
+  0 │──────────┤
+    └──────────┼──────┼──────┼──────┼──────────────  zOut
+              1.0    1.5    2.0    2.5    3.0
+           chegara                      to'liq shkala
+```
+
+| zOut | 0.99 | 1.0 | 1.2 | 1.5 | 2.0 | 2.5 | ≥ 3.0 | σ = 0 |
+|---|---|---|---|---|---|---|---|---|
+| **ball** | 0 | 1 | 10 | 25 | 50 | 75 | **100** | **100** |
+
+#### Nega shkala 1.0 dan boshlanadi, 0 dan emas
+
+Bu eng muhim nuqta.
+
+`zOut < 1.0` — bu **chetlanish emas**, faollik oyna ichida, ball 0.
+
+Agar `ball = 100 · zOut / 3` deb yozganimizda, arang chegaradan chiqqan kun
+**33 ball** olardi. Ya'ni olti daqiqalik chiqish «uchdan bir maksimal xavf»
+bo'lib ko'rinardi — bu yolg'on.
+
+Shuning uchun shkala **chegaradan boshlanadi**. U «o'rtachadan qancha uzoq»
+emas, **«chegaradan qancha o'tib ketdi»** degan savolga javob beradi:
+
+```
+zOut = 1.048   →   chegaradan atigi 0.048 σ o'tdi   →    2 ball
+zOut = 1.475   →   chegaradan 0.475 σ o'tdi         →   24 ball
+zOut = 3.000   →   chegaradan 2 σ o'tdi             →  100 ball
+```
+
+#### Nega 3.0 da to'xtaydi
+
+Ma'lum bir nuqtadan keyin «ko'proq» degani qarorni o'zgartirmaydi. Xodim
+o'z odatiy oynasidan **2σ nariga** chiqqan bo'lsa, u allaqachon «butunlay
+boshqa vaqtda ishlagan». 3σ va 8σ orasidagi farq amaliy ahamiyatga ega
+emas — ikkalasi ham bir xil xulosaga olib keladi.
+
+Shuning uchun `min(1, ...)` bilan cheklanadi. Lekin **xom qiymat
+yo'qolmaydi** — `details.zOut` va `details.outsideMin` da saqlanadi, ya'ni
+100 ball olgan kunlarni ham bir-biridan ajratib saralash mumkin.
+
+#### `max(1, ...)` nima uchun
+
+Chegaradan bir daqiqa o'tgan kun `100 · 0.0001 / 2 = 0.005` beradi,
+yaxlitlanib **0** bo'lardi. Natijada «chetlanish, lekin ball 0» degan
+ziddiyat chiqardi. Shuning uchun chetlanish bo'lgan kun kamida **1** ball
+oladi.
+
+Kodda ([scoring.py](services/detectors/scoring.py)):
+
+```python
+ball = max(1, round_half_up(100.0 * min(1.0, (z_out - t) / (full - t))))
+```
+
+`round()` o'rniga `round_half_up()` — Python'ning o'zi «bankir
+yaxlitlashi» qiladi (`round(24.5) == 24`).
+
+#### Uchta haqiqiy misol
+
+Bir xodim, `sanja@desktop-q46u2et`:
+
+**5-sentabr, shanba → 2 ball**
+
+```
+Baseline (shanba):  ketish 17:04,  σ = 125 daqiqa
+Oyna:               14:55 – 19:10
+Haqiqat:            16:33 – 19:16
+
+19:16 oynadan 6 daqiqa keyin
+zFinish = 6 / 125 + 1.0 = 1.048
+
+ball = 100 · (1.048 − 1) / 2 = 2.4  →  2
+```
+
+**15-avgust, shanba → 3 ball**
+
+```
+Oyna:      14:55 – 19:10       (o'sha shanba normasi)
+Haqiqat:   14:52 – 15:06
+
+14:52 oynadan 2.6 daqiqa oldin
+zStart = 2.6 / 51 + 1.0 = 1.052
+
+ball = 100 · (1.052 − 1) / 2 = 2.6  →  3
+```
+
+**14-avgust, juma → 24 ball**
+
+```
+Baseline (juma):  kelish 09:09,  σ = 283 daqiqa
+Oyna:             04:26 – 21:22
+Haqiqat:          02:12 – 21:10
+
+02:12 oynadan 134.5 daqiqa oldin
+zStart = 134.5 / 283 + 1.0 = 1.475
+
+ball = 100 · (1.475 − 1) / 2 = 23.75  →  24
+```
+
+#### Nega raqamlar past chiqdi
+
+E'tibor bering: 134 daqiqa erta kelish atigi **24 ball** oldi. Sabab —
+ball daqiqada emas, **xodimning o'z σ birligida** o'lchanadi:
+
+| Hafta kuni | Kelish σ | Ma'nosi |
+|---|---|---|
+| Shanba | 51 daqiqa | nisbatan barqaror |
+| Juma | **283 daqiqa** | ±4.7 soat tebranish |
+
+Jumada 134 daqiqa erta kelish — bu uning odatiy tebranishining **yarmidan
+kam**. Tizim buni halol ko'rsatyapti: bu xodim uchun g'ayrioddiy emas.
+
+Solishtiring: agar xodim har kuni aniq 09:00 da kelsa (`σ = 10 daqiqa`),
+o'sha 134 daqiqalik chiqish `zOut = 14.4` berardi va ball **100** bo'lardi.
+
+Aynan shu narsa daqiqa bilan o'lchashdan afzalligi: bir xil 30 daqiqalik
+chiqish barqaror xodim uchun favqulodda holat, beqaror xodim uchun oddiy
+tebranish. Daqiqa bu farqni ko'rmaydi, σ ko'radi.
+
+#### Ball 100 ga qachon yetadi
+
+```
+zOut ≥ 3.0    →    oynadan 2σ dan ko'proq chiqish
+```
+
+Yuqoridagi xodimning jumasi uchun: `283 × 2 = 566 daqiqa` ≈ **9.5 soat**
+oynadan tashqarida. Ya'ni deyarli butun kunni g'ayrioddiy vaqtda
+o'tkazish kerak.
+
+#### Ikkita sozlama nimani o'zgartiradi
+
+| Sozlama | Kattalashtirsangiz | Kichraytirsangiz |
+|---|---|---|
+| `ANOMALY_Z_THRESHOLD` | oyna kengayadi → chetlanish **kamayadi** | ko'proq kun chetlanish bo'ladi |
+| `ANOMALY_Z_FULL_SCALE` | ballar **pasayadi** (100 ga yetish qiyinlashadi) | ballar ko'tariladi |
+
+Masalan `ANOMALY_Z_FULL_SCALE=1.5` bo'lsa bo'luvchi `0.5` bo'lib qoladi va
+yuqoridagi uch kun **10, 10, 95** ball olardi.
+
+#### Matematik ayniyat
+
+`lo = meanStart − T·σ` bo'lgani uchun «oynadan tashqarida» aynan
+«`zOut > T`» degani. Bu 85 ta natijada tekshirilgan — birorta istisno yo'q.
+
+Qaror **oyna bilan** qilinadi, chunki u `σ = 0` bo'lganda ham ishlaydi
+(z esa nolga bo'linardi). Bunday holatda har qanday chiqish 100 ball oladi:
+xodim har kuni sekundma-sekund bir xil kelgan bo'lsa, har qanday og'ish
+cheksiz uzoq.
+
+#### Modul emas, ishorali
 
 | | z ishorasi | Oynaga nisbatan |
 |---|---|---|
@@ -374,7 +547,7 @@ E'tibor bering — **modul emas, ishorali**:
 | `zFinish < −T` | erta ketish | **ichida** |
 
 `abs()` ishlatilganda kech kelish va erta ketish ham chetlanish bo'lib
-qolardi.
+qolardi — bu esa 2-qadamdagi qaror bilan ziddiyatga kirardi.
 
 ### 4-qadam — umumiy risk
 
