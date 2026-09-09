@@ -12,13 +12,13 @@ Ma'lumot manbai — DataGaze DLP tizimining MongoDB'si: xodim kompyuterlaridan k
 
 Natijalar statistika tilida emas, oddiy tilda ko'rsatiladi — «5 soat 18 daqiqa kech keldi, keldi 18:00, odatda payshanbalarda 12:43».
 
-![Dashboard: xulosa, e'tibor talab qiladigan kunlar va kunlik ish vaqti grafigi](image.png)
+![Dashboard: bitta xodim — xulosa, chetlanishli kunlar, odatiy oraliq grafigi va jadval](image.png)
 
-*Yuqorida: filtrlar, bir jumlalik xulosa, chetlanishli kunlar kartalari va kunlik ish vaqti grafigi (X — kunlar, Y — sutka soatlari; ustun kelishdan ketishgacha, yashil yo'lak — odatiy oraliq).*
+*Yuqorida: bitta xodim tanlangan holat. Grafikda X — kunlar, Y — sutka soatlari; kulrang fon — o'sha kunning ish oynasi; ikkita nuqta — birinchi va oxirgi faollik (oyna ichida yashil, tashqarida qizil, baseline yo'q bo'lsa kulrang).*
 
-![Haftalik odatiy rejim grafigi va kunlar jadvali](image-1.png)
+![Barcha xodimlar: umumiy manzara matritsasi](image-1.png)
 
-*Yuqorida: haftalik odatiy rejim (X — hafta kunlari, yashil yo'lak — o'rganilgan norma, nuqtalar — haqiqiy kunlar) va to'liq jadval: kelgan/ketgan vaqt, odatdagi vaqt va farq.*
+*Yuqorida: xodim tanlanmagan holat — qatorlar xodimlar, ustunlar kunlar. Har katak rangi o'sha kunning holati.*
 
 ---
 
@@ -39,23 +39,103 @@ alpha-demo (DLP bazasi, faqat o'qish)
 1. **Collector** — 60 kunlik tarixni yig'ib kunlik agregatlarga aylantiradi (faqat train paytida ishlaydi).
 2. **Trainer** — har xodim uchun **har hafta kuni alohida** o'rtacha kelish/ketish vaqti va standart og'ishni hisoblaydi. Shanba faqat shanbalar bilan solishtiriladi.
 3. **Trigger** — har 5 soatda faqat **yangi** ma'lumotni oladi (qayerda to'xtaganini `trigger_data` cursor'idan biladi) va navbatga yuboradi.
-4. **Worker** (3 ta) — kunlarni baseline bilan solishtirib z-score hisoblaydi.
+4. **Worker** (3 ta) — kunlarni detectorlardan o'tkazib ball va `riskScore` hisoblaydi.
 5. **Dashboard** — natijalarni **oddiy tilda** ko'rsatadi: «5 soat 18 daqiqa kech keldi — keldi 18:00, odatda payshanbalarda 12:43». Z-score ichkarida qoladi, ekranda ko'rinmaydi.
 
-### Z-score va statuslar
+### Anomaliya qoidasi: ish oynasidan tashqaridagi faollik
+
+Baseline har hafta kuni uchun bitta **ish oynasini** beradi:
 
 ```
-zStart  = (meanStart − start)   / stdStart      erta kelish  → musbat
-zFinish = (finish − meanFinish) / stdFinish     kech ketish  → musbat
+lo = usualStart  − T·σ(start)        oynaning quyi cheti
+hi = usualFinish + T·σ(finish)       oynaning yuqori cheti      T = ANOMALY_Z_THRESHOLD (1.0)
 ```
 
-| \|z\| | Status | Rang |
+Masalan `usualStart 09:00 (σ=10 daq)`, `usualFinish 16:00 (σ=20 daq)` → oyna **08:50 – 16:20**.
+
+```
+start  < lo   ->  oynadan OLDIN faollik   ->  shubhali
+finish > hi   ->  oynadan KEYIN faollik   ->  shubhali
+ikkalasi ham oyna ichida                  ->  shubha YO'Q
+```
+
+Bu **aniq** ishlaydi: kunning barcha eventlari `start` va `finish` orasida yotadi,
+shuning uchun `start ≥ lo` va `finish ≤ hi` bo'lsa o'sha kunning **hamma** faolligi
+oyna ichida bo'ladi — alohida eventlarni tekshirish shart emas.
+
+> **Kech kelish va erta ketish shubhali EMAS.** Odatda 09:00 da keladigan xodim
+> 13:00 da kelsa — 13:00 oyna ichida, hech narsa chiqmaydi. Tizim intizomni emas,
+> **ish vaqtidan tashqaridagi faollikni** kuzatadi.
+
+**1-qadam — chetlanishmi?** Ikkilik qaror: oynadan tashqarida bo'lgan **har qanday**
+faollik chetlanish, hatto 1 daqiqa bo'lsa ham.
+
+```
+isAnomaly = tashqarida > 0
+```
+
+**2-qadam — darajasi qanday?** `anomalyScore` ni z-score beradi: chetlanish
+xodimning **o'z og'ishi (σ)** birligida qanchalik katta ekanini o'lchaydi.
+
+```
+zOut = max(zStart, zFinish)          faqat oynadan CHIQARUVCHI tomon
+ball = 100 · min(1, (zOut − T) / (ANOMALY_Z_FULL_SCALE − T))        T = 1.0
+```
+
+| zOut | 1.0 | 1.5 | 2.0 | 2.5 | ≥ 3.0 |
+|---|---|---|---|---|---|
+| **ball** | 1 | 25 | 50 | 75 | **100** |
+
+Chetlanish bo'lgan kun hech qachon 0 ball olmaydi (minimal 1). σ = 0 bo'lsa
+(xodim sekundma-sekund bir xil keladi) har qanday chiqish 100 ball oladi.
+
+> **Nega z, daqiqa emas.** Bir xil 30 daqiqalik chiqish har kuni aniq 09:00 da
+> keladigan xodim uchun favqulodda holat, jadvali beqaror xodim uchun esa oddiy
+> tebranish. z-score ayni shu farqni hisobga oladi — daqiqa hisobga olmaydi.
+
+**Muhim matematik ayniyat:** oyna `mean ± T·σ` bo'lgani uchun «oynadan tashqarida»
+degani aynan «`zOut > T`» degani. Ikkalasi bir xil qoidaning ikki ko'rinishi.
+Qaror oyna bilan qilinadi, chunki u `σ = 0` bo'lganda ham ishlaydi.
+
+E'tibor bering: bu **modul emas, ishorali** taqqoslash. `zStart > 1` — erta kelish
+(oynadan tashqarida), `zStart < −1` esa kech kelish (oyna **ichida**, shubhali emas).
+
+| Shart | `status` | Rang |
 |---|---|---|
-| < 0.5 | normal | yashil |
-| 0.5 – 1.2 | watch | sariq |
-| 1.2 – 1.8 | anomaly | to'q sariq |
-| ≥ 1.8 | severe | qizil |
-| baseline yo'q | insufficient | kulrang |
+| oynadan tashqarida faollik bor | `anomaly` | qizil |
+| hamma faollik oyna ichida | `normal` | yashil |
+| baseline yo'q | `insufficient` | kulrang |
+
+`zStart`/`zFinish` hisoblanishda davom etadi, lekin **baholashda ishlatilmaydi** —
+ular faqat jadvaldagi «odatdagidan 3 soat erta keldi» kabi izohlar uchun.
+
+### Detectorlar va `riskScore`
+
+Har bir detector bitta signalni **bir xil 0–100 shkalaga** o'giradi. Hozir bitta
+detector bor — `workingHours` (ish vaqti). Yangi detector qo'shish:
+`services/detectors/` ga bitta fayl yozib, `registry.py` ro'yxatiga qo'shish
+kifoya — `processor.py` o'zgarmaydi.
+
+Umumiy xavf barcha detectorlar balidan **vazn** bilan yig'iladi:
+
+```
+toza_qolish = ∏(1 − ball_i/100 · vazn_i)
+riskScore   = 100 · (1 − toza_qolish)
+```
+
+Ma'nosi: har bir detector "toza qolish" ehtimolini kamaytiradi. Bitta kuchli
+signal ham, ko'p kichik signal ham riskni oshiradi, lekin 100 dan oshmaydi.
+
+**Vazn** = shu detector yakka o'zi berishi mumkin bo'lgan eng yuqori risk.
+Vazn 1.0 → bali to'liq o'tadi; 0.4 → yakka o'zi 40 dan yuqori risk bera olmaydi;
+0 → "soya rejim" (ishlaydi, natijaga yoziladi, riskka ta'sir qilmaydi).
+`.env` dan sozlanadi, kodga tegilmaydi:
+
+```
+DETECTOR_WEIGHT_WORKING_HOURS=0.4
+```
+
+Bitta detector va vazn 1.0 bo'lganda `riskScore == anomalyScore`.
 
 ---
 
@@ -116,7 +196,7 @@ Trigger **faqat avtomatik** ishlaydi — qo'lda ishga tushirish yo'li yo'q. Oral
 | `/api/health` | GET | Mongo, RabbitMQ, navbat, oxirgi trigger/retrain holati |
 | `/api/train` | POST | Birinchi o'qitish (baseline mavjud bo'lsa 409) |
 | `/api/retrain` | POST | Baseline yangilash: collector → trainer |
-| `/api/results` | GET | Natijalar: `from`, `to`, `client_id`, `status`, `limit`, `offset` |
+| `/api/results` | GET | Natijalar: `from`, `to`, `client_id`, `status`, `is_anomaly`, `min_risk`, `trigger`, `limit`, `offset` |
 | `/api/results/{client_id}` | GET | Bitta xodim natijalari |
 | `/api/baseline` | GET | Joriy versiyadagi odatiy jadvallar |
 | `/api/baseline/versions` | GET | Baseline versiyalari tarixi |

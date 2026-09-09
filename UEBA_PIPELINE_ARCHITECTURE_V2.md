@@ -251,15 +251,52 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
   "eventCount": 42,
   "zStart": 1.892,
   "zFinish": -0.266,
+  "usualStart": 540.0,
+  "usualFinish": 1020.0,
+  "stdStart": 30.0,
+  "stdFinish": 45.0,
+  "windowStart": 510.0,
+  "windowFinish": 1065.0,
+
+  "isAnomaly": true,
+  "anomalyScore": 50,
+  "riskScore": 50,
   "status": "anomaly",
-  "statusColor": "darkyellow",
+  "statusColor": "red",
+
+  "triggers": { "workingHours": true },
+  "triggeredDetectors": ["workingHours"],
+  "detectors": {
+    "workingHours": {
+      "triggered": true, "score": 50, "weight": 1.0, "evaluated": true,
+      "reason": "ish oynasidan (08:30–17:45) 30 daqiqa oldin faollik",
+      "details": { "zOut": 2.0, "outsideMin": 30.0, "beforeMin": 30.0,
+                   "afterMin": 15.0, "windowStart": 510.0, "windowFinish": 1065.0 }
+    }
+  },
+
+  "baselineId": "68be1f3c9a...",
   "evaluatedAt": "2026-08-26T14:00:01"
 }
 ```
 
 - `start`/`finish` bu yerda ko'rsatish uchun `"HH:MM:SS"` string.
 - `zStart`/`zFinish` — 3 xonagacha yaxlitlangan yoki `null`.
-- `status` va `statusColor` — §5.4 qoidalari bo'yicha.
+- `status` va `statusColor` — §5.4 qoidalari bo'yicha (3 holat: `anomaly`/`normal`/`insufficient`).
+- **`isAnomaly`, `anomalyScore`, `riskScore`** — §5.4 va §5.4.1. Baholanmagan kunda
+  ikkala ball ham `null`.
+- **`windowStart`, `windowFinish`** — shu kunning ish oynasi (daqiqada). Dashboard
+  kulrang fonni va nuqta ranglarini shulardan chizadi, brauzerda qayta hisoblamaydi.
+- **`triggers`** — `{detector_nomi: true/false}`, tez tekshirish uchun. Baholanmagan
+  detector ham `false` bo'lib turadi; farqni `detectors.<nom>.evaluated` ko'rsatadi.
+- **`triggeredDetectors`** — massiv. Massiv bo'lgani uchun **bitta** multikey indeks
+  barcha detectorlar bo'yicha filtrni qoplaydi (map bo'lsa har nom uchun alohida
+  indeks kerak bo'lardi).
+- **`detectors`** — har detectorning bali, vazni, sababi va `details` i.
+- **Qo'shimcha indekslar:** `{isAnomaly: 1, date: -1}` va multikey `{triggeredDetectors: 1}`.
+- **Eski yozuvlar:** yangi maydonlar faqat yangi baholashlarda paydo bo'ladi.
+  Mavjud natijalarni bir martalik `scripts/backfill_scores.py` to'ldiradi (hujjatning
+  o'zidagi `zStart`/`zFinish` asosida, baseline qayta o'qilmaydi).
 - **`baselineId`** — qaysi baseline versiyasi bilan baholangani (ARCH-02). Tarixiy natijalar **qayta baholanmaydi**: yangi baseline faqat yangi ishlovga qo'llanadi, eski kunlar o'z versiyasi bilan qoladi.
 - **`usualStart`, `usualFinish`, `stdStart`, `stdFinish`** — baholashda ishlatilgan norma qiymatlari. Ular natijaning ichida saqlanadi, shuning uchun natija **o'zi-o'ziga yetarli**: dashboard «odatda qachon kelardi» ni joriy baseline'dan izlamaydi va versiya nomuvofiqligi bo'lmaydi (aks holda «Baholanmadi» deb yozilgan kun yonida joriy baseline'dan olingan farq ko'rinib qolardi).
 - **Indeks:** UNIQUE `{ clientId: 1, date: 1 }`; yozish upsert — bir kun qayta baholansa yangilanadi, dublikat bo'lmaydi.
@@ -324,22 +361,127 @@ E'tibor bering: `zStart` formulasida ayirish tartibi teskari — bu ataylab, bel
 
 `std = 0` yoki `None`, yoki shu hafta kuni uchun baseline yo'q → tegishli z = `null`.
 
-### 5.4 Status va ranglar
+### 5.4 Anomaliya qoidasi, ball va status
 
-Kun uchun umumiy og'ish: `z = max(|zStart| yoki 0, |zFinish| yoki 0)` (null'lar 0 deb olinadi):
+Eski 4 pog'onali sxema (`normal`/`watch`/`anomaly`/`severe`) **bekor qilindi**.
+Undan keyingi z-asosidagi ball ham **bekor qilindi**: anomaliya endi "o'rtachadan
+chetlanish" emas, **ish oynasidan tashqaridagi faollik**.
+
+**Ish oynasi** (`detectors/working_hours.window_bounds`):
+
+```
+lo = usualStart  − T·stdStart          T = ANOMALY_Z_THRESHOLD (default 1.0)
+hi = usualFinish + T·stdFinish
+```
+
+**Qoida:**
+
+```
+start  < lo   ->  oynadan OLDIN faollik   ->  shubhali
+finish > hi   ->  oynadan KEYIN faollik   ->  shubhali
+ikkalasi ham oyna ichida                  ->  shubha YO'Q
+```
+
+Nega bu aniq ishlaydi: kunning barcha eventlari `start` va `finish` orasida yotadi,
+demak `start >= lo` va `finish <= hi` bo'lsa o'sha kunning HAMMA faolligi oyna
+ichida bo'ladi. Alohida eventlarni o'qish shart emas — `build_day_agg` beradigan
+ikkita chekka qiymat yetarli.
+
+> **Qaror #16 — kech kelish va erta ketish shubhali EMAS.** Ular oyna ichida
+> qoladi. Tizim intizomni emas, ish vaqtidan tashqaridagi faollikni kuzatadi
+> (DLP konteksti: tunda ishlagan odam shubhali, kech kelgan odam esa kadrlar
+> masalasi). Bu ataylab qilingan tanlov, kamchilik emas.
+
+**1-qadam — chetlanishmi (ikkilik, balldan mustaqil):**
+
+```
+isAnomaly = tashqarida > 0        oynadan bir daqiqa chiqish ham chetlanish
+```
+
+Qaror **oyna chegarasi** bilan qilinadi, z bilan emas — chunki oyna `σ = 0`
+bo'lganda ham ishlaydi (z esa nolga bo'linib ketardi). Buni
+`DetectorResult.is_anomaly` bayrog'i tashiydi.
+
+**2-qadam — darajasi (`detectors/scoring.severity_score`):**
+
+```
+zOut = max(zStart, zFinish)        faqat oynadan CHIQARUVCHI tomon
+ball = max(1, round_half_up(100 · min(1, (zOut − T) / (ZFULL − T))))
+       T = ANOMALY_Z_THRESHOLD (1.0),  ZFULL = ANOMALY_Z_FULL_SCALE (3.0)
+```
+
+| zOut | 1.0 | 1.5 | 2.0 | 2.5 | ≥ 3.0 | σ = 0 |
+|---|---|---|---|---|---|---|
+| **ball** | 1 | 25 | 50 | 75 | **100** | **100** |
+
+**Matematik ayniyat.** `lo = meanStart − T·σ` bo'lgani uchun `start < lo` aynan
+`zStart > T` degani. Ya'ni 1- va 2-qadam bir xil qoidaning ikki ko'rinishi:
+chetlanish `zOut > T` da boshlanadi, ball esa aynan o'sha nuqtadan o'sib boradi.
+Real ma'lumotda tekshirilgan: 85 ta natijada «oynadan tashqarida» va `zOut > 1`
+to'liq mos keldi, birorta istisno yo'q.
+
+E'tibor bering — **modul emas, ishorali**: `zStart > T` erta kelish (tashqarida),
+`zStart < −T` esa kech kelish (oyna ichida, shubhali emas). `abs()` ishlatilganda
+kech kelish va erta ketish ham chetlanish bo'lib qolardi (qaror #16 ga zid).
+
+> **Qaror #18 — daraja daqiqada emas, σ birligida.** Avvalgi loyihada ball
+> `tashqarida / 180 daqiqa` edi. Bunda 30 daqiqalik chiqish har kuni aniq 09:00 da
+> keladigan xodim uchun ham, jadvali butunlay beqaror xodim uchun ham bir xil ball
+> berardi. z-score bu farqni hisobga oladi: barqaror xodimda 20 daqiqalik chiqish
+> 100 ball, σ = 5 soat bo'lgan xodimda 71 daqiqalik chiqish atigi 12 ball.
+> Xom daqiqa `details.outsideMin` da saqlanib qoladi.
 
 | Shart | `status` | `statusColor` | hex |
 |---|---|---|---|
-| ikkala z ham `null` | `insufficient` | `gray` | `#95a5a6` |
-| `z >= SEVERE_THRESHOLD (1.8)` | `severe` | `red` | `#e74c3c` |
-| `1.2 <= z < 1.8` (`Z_THRESHOLD`) | `anomaly` | `darkyellow` | `#d99a06` |
-| `0.5 <= z < 1.2` (`WATCH_THRESHOLD`) | `watch` | `yellow` | `#f1c40f` |
-| `z < 0.5` | `normal` | `green` | `#2ecc71` |
+| hech bir detector baholay olmadi | `insufficient` | `gray` | `#95a5a6` |
+| bironta detector chetlanish berdi | `anomaly` | `red` | `#e74c3c` |
+| baholandi, chetlanish yo'q | `normal` | `green` | `#2ecc71` |
 
-**Tekshiruv misoli.** Baseline (Tuesday): `meanStart=540` (09:00), `stdStart=30`, `meanFinish=1020` (17:00), `stdFinish=45`.
+**`zStart`/`zFinish` (§5.3) hisoblanishda davom etadi, lekin BAHOLASHDA
+ISHLATILMAYDI** — ular faqat dashboard jadvalidagi «odatdagidan 3 soat erta
+keldi» kabi ma'lumot ustunlari uchun saqlanadi.
 
-- **Kun A:** 08:00 kelib 18:00 ketdi → `zStart=(540−480)/30=+2.0`, `zFinish=(1080−1020)/45=+1.33` → z=2.0 → **severe** (erta kelgan + kech ketgan).
-- **Kun B:** 09:30 kelib 16:00 ketdi → `zStart=−1.0`, `zFinish=−1.33` → z=1.33 → **anomaly** (kech kelgan + erta ketgan).
+**Tekshiruv misoli.** Baseline (Tuesday): `meanStart=540` (09:00), `stdStart=30`,
+`meanFinish=1020` (17:00), `stdFinish=45` → oyna **08:30 – 17:45**.
+
+- **Kun A:** 08:00 – 18:00 → `zStart=2.0`, `zFinish=1.33` → `zOut=2.0` → ball **50** → `anomaly`.
+- **Kun B:** 09:15 – 17:00 → ikkalasi oyna ichida → ball **0** → `normal`.
+- **Kun C:** 13:00 – 17:00 (4 soat kech kelgan) → oyna ichida → ball **0** → `normal`.
+- **Kun D:** 03:00 – 23:00 → `zOut=12.0` → ball **100** → `anomaly`.
+- **Kun E:** 08:29 – 17:00 → `zOut=1.03` → ball **2** → `anomaly` (1 daqiqa ham chetlanish).
+
+### 5.4.1 Detectorlar va `riskScore`
+
+Har bir detector bitta signalni **bir xil 0–100 shkalaga** o'giradi va
+`DetectorResult` qaytaradi. Umumiy xavf vazn bilan birlashtiriladi (noisy-OR):
+
+```
+toza_qolish = KO'PAYTMA(1 − ball_i/100 · vazn_i)
+riskScore   = round_half_up(100 · (1 − toza_qolish))
+```
+
+Xossalari:
+
+- bitta detector va vazn `1.0` → `riskScore == anomalyScore` (test bilan qulflangan);
+- bitta kuchli signal ham, ko'p kichik signal ham riskni oshiradi;
+- hech qachon 100 dan oshmaydi;
+- yangi detector qo'shilsa formula o'zgarmaydi — faqat vazn beriladi.
+
+**Vazn** = shu detector yakka o'zi berishi mumkin bo'lgan eng yuqori risk
+(`ball=100`, `vazn=0.6` → yakka o'zi risk 60). `[0, 1]` oralig'iga siqiladi.
+Vazn `0` — "soya rejim": detector ishlaydi va natijaga yoziladi, lekin riskka
+ta'sir qilmaydi (yangi detectorni jonli ma'lumotda sinash uchun).
+
+Vazn kodda default (`Detector.default_weight`), `.env` ustidan yozadi:
+`DETECTOR_WEIGHT_WORKING_HOURS=0.4` (`config.detector_weight()`).
+
+`anomalyScore` — baholangan detectorlarning **eng yuqori** bali (vaznsiz);
+`riskScore` — ularning vazn bilan birlashmasi. Baholangan detector bo'lmasa
+ikkalasi ham `null` (0 emas — aks holda baholanmagan kun "ideal" bo'lib ko'rinardi).
+
+**Yangi detector qo'shish:** `services/detectors/` ga bitta fayl (`base.Detector`
+dan meros) + `registry.py` ro'yxatiga qo'shish. `processor.py` o'zgarmaydi.
+Detectorlar **holatsiz** bo'lishi shart — 3 ta worker thread bir vaqtda chaqiradi.
 
 ### 5.5 Yordamchi funksiyalar
 
@@ -505,7 +647,7 @@ Har client × collection so'rovi **streaming cursor** sifatida o'qiladi (`find(.
 
 ### 6.4 Worker / Processor (`services/processor.py` + `mq/worker.py`)
 
-**Nima qiladi:** navbatdan job olib, kunlarini `baseline` bilan solishtirib z-score hisoblaydi, natijani `results` ga yozadi. `main.py` boot'ida `WORKER_COUNT` (default 3) ta **alohida thread** ishga tushadi; har thread'ning **o'z** `pika.BlockingConnection` i bo'ladi (pika talabi: bir connection — bir thread).
+**Nima qiladi:** navbatdan job olib, kunlarini `baseline` bilan solishtiradi va **detectorlardan** o'tkazib ball/`riskScore` hisoblaydi, natijani `results` ga yozadi. Baholash mantig'i `services/detectors/` da; `processor.py` faqat `DayContext` quradi va hujjat yig'adi — yangi detector qo'shilganda u o'zgarmaydi. `main.py` boot'ida `WORKER_COUNT` (default 3) ta **alohida thread** ishga tushadi; har thread'ning **o'z** `pika.BlockingConnection` i bo'ladi (pika talabi: bir connection — bir thread).
 
 Worker `alpha-demo` ga ham, `raw_data_for_train` ga ham, `trigger_data` ga ham **umuman tegmaydi**. Faqat `baseline` ni o'qiydi, faqat `results` ga yozadi.
 
@@ -525,7 +667,9 @@ Worker `alpha-demo` ga ham, `raw_data_for_train` ga ham, `trigger_data` ga ham *
 3. Har (date, agregat) juftligi uchun:
    - `week = baseline.weeks.get(dayOfWeek)` (`dayOfWeek` `date` dan hisoblanadi);
    - §5.3 formulalari bilan `zStart`/`zFinish` (shartlar bajarilmasa `null`);
-   - §5.4 bo'yicha status;
+   - §5.4 bo'yicha `anomalyScore`, `isAnomaly`, `status`; §5.4.1 bo'yicha `riskScore`;
+   - har detectorning xatosi alohida ushlanadi (`registry.run`) — bitta detector
+     yiqilsa ham kun yo'qolmaydi, aks holda job 3 marta qayta urinilib tashlanardi;
    - `results` ga upsert (`{clientId, date}` kalit, `evaluatedAt = now`).
 4. `basic_ack`.
 
@@ -581,8 +725,9 @@ Statuslar ham oddiy so'zlarda:
 3. **E'tibor talab qiladigan kunlar** — chetlanishli kunlar kartalar ko'rinishida, jiddiylik bo'yicha tartiblangan. Har karta: xodim nomi, sana o'zbekcha («20-avgust, payshanba»), nima bo'lgani («5 soat 18 daqiqa kech keldi») va dalil («Keldi 18:00 · Odatda payshanbalarda 12:43»).
 4. **Ikkita grafik.** Ikkalasida ham **Y o'qi — sutka soatlari (00:00–24:00)**; xodim yuqoridagi ro'yxatdan tanlanadi (sahifa ochilganda eng ko'p ma'lumotli xodim avtomatik tanlanadi, grafik darrov to'la ko'rinsin).
 
-   - **Asosiy grafik — «Kunlik ish vaqti»:** X o'qi — kalendar kunlari. Har kun bitta ustun: pastki uchi kelgan vaqti, yuqorigi uchi ketgan vaqti; ustun rangi status bo'yicha. Orqa fonda yashil yo'lak — shu hafta kunining odatiy kelish/ketish oralig'i (`mean ± σ`). Hover'da to'liq ma'lumot.
-   - **Ikkinchi grafik — «Haftalik odatiy rejim»:** X o'qi — 7 hafta kuni. Yashil yo'lak = o'rganilgan odatiy oraliq, nuqtalar = haqiqiy kunlar (ko'k — kelish, sariq — ketish, halqasi status rangida). Bu grafik baseline'ning o'zini ko'rinadigan qiladi. Tarixi kam hafta kunida yo'lak o'rniga «tarix kam» yoziladi.
+   - **Yagona grafik.** Xodim tanlanganda — «Odatiy oraliq va haqiqiy vaqtlar»: X o'qi kalendar kunlari, Y o'qi sutka soatlari. Kulrang fon — o'sha kunning ish oynasi (`windowStart`–`windowFinish`). Ikkita nuqta — birinchi va oxirgi faollik; oynadan tashqarida bo'lsa qizil, ichida bo'lsa yashil, baseline yo'q bo'lsa kulrang. Rang qoidasi fonga to'g'ridan-to'g'ri mos keladi: qizil nuqta doim kulrang zonadan tashqarida turadi.
+   - Xodim tanlanmaganda o'sha joyda **«Umumiy manzara»** matritsasi chiziladi: qatorlar xodimlar, ustunlar kunlar, katak rangi status.
+   - Eski ikkita grafik («Kunlik ish vaqti» ustunli va «Haftalik odatiy rejim» nuqtali) **olib tashlandi**.
    - Xodim tanlanmagan bo'lsa (**«Barcha xodimlar»**), ikkinchi grafik o'rniga **umumiy manzara matritsasi** chiziladi: qatorlar xodimlar, ustunlar kunlar, katak rangi holat — kimda muammo borligini bir qarashda ko'rsatadi.
 
 5. **Jadval** — ustunlar: `Sana | Xodim | Keldi | Odatda kelardi | Farq | Ketdi | Odatda ketardi | Farq | Xulosa`. Farq ustunlari «*1 soat 47 daqiqa erta*» ko'rinishida, 5 daqiqadan kichik farq «deyarli bir xil» deb yoziladi.
@@ -617,15 +762,15 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `BATCH_SIZE` | `100` | DB o'qish partiyasi |
 | `SOURCE_READ_RETRIES` | `2` | Manba collection'ini o'qishda qayta urinishlar soni (§6.1, COL-04) |
 | `SOURCE_READ_RETRY_DELAY` | `2` | Qayta urinishlar orasidagi kutish (soniya) |
-| `Z_THRESHOLD` | `1.2` | Anomaliya chegarasi |
-| `SEVERE_THRESHOLD` | `1.8` | Jiddiy chegara |
-| `WATCH_THRESHOLD` | `0.5` | Watch chegarasi |
+| `ANOMALY_Z_THRESHOLD` | `1.0` | Ish oynasi kengligi: `mean ± T·σ` (§5.4). ≤ 0 berilsa 1.0 ga qaytadi |
+| `ANOMALY_Z_FULL_SCALE` | `3.0` | `zOut` shu qiymatga yetganda ball 100 (§5.4). Chegaradan kichik berilsa `T+2` ga qaytadi |
+| `DETECTOR_WEIGHT_<NOM>` | detector defaulti | Detector vazni, `[0,1]` (§5.4.1). Masalan `DETECTOR_WEIGHT_WORKING_HOURS` |
 | `MIN_DOW_SAMPLES` | `5` | Baseline uchun minimal kun (hafta kuniga) |
 | `SINGLE_EVENT_STAY_HOURS` | `1` | 1 event'li kunda finish = start + shu soat |
 | `BASELINE_KEEP_VERSIONS` | `5` | Nechta baseline versiyasi saqlanadi (ARCH-02) |
 | `RESULTS_RETENTION_DAYS` | `365` | `results` tarixi necha kun saqlanadi (trigger o'tishida eski yozuvlar o'chiriladi) |
 
-> `MAX_DAILY_HOURS` **bo'lmasligi kerak** — eski `.env` da bo'lsa, o'chiriladi (qaror #3).
+> `MAX_DAILY_HOURS` **bo'lmasligi kerak** — eski `.env` da bo'lsa, o'chiriladi (qaror #3).\n> `Z_THRESHOLD`, `SEVERE_THRESHOLD`, `WATCH_THRESHOLD` ham **bekor qilindi** — eski\n> `.env` da qolsa jimgina e'tiborsiz qoladi, shuning uchun o'chirilsin.
 
 Barcha qiymatlar `config.py` da o'qiladi (default'lari yuqoridagilar); har kirish nuqtasida `load_dotenv()`.
 
@@ -643,6 +788,11 @@ ueba/
 ├── requirements.txt            # yangi ro'yxat
 ├── services/
 │   ├── __init__.py
+│   ├── detectors/             # signal -> 0-100 ball karkasi (§5.4.1)
+│   │   ├── scoring.py         # ball, noisy-OR riskScore, status — chegaralar FAQAT shu yerda
+│   │   ├── base.py            # DayContext, DetectorResult, Detector bazasi
+│   │   ├── working_hours.py   # ish vaqti detectori (eski _z_scores shu yerda)
+│   │   └── registry.py        # ro'yxat + natijalarni birlashtirish
 │   ├── mongo.py                # 2 ta MongoClient (main RO + local RW), ensure_indexes()
 │   ├── collector.py            # §6.1 logikasi
 │   ├── trainer.py              # §6.2 logikasi (tmp'da qurish + atomik swap)
@@ -665,6 +815,7 @@ ueba/
 ├── utils/
 │   ├── __init__.py
 │   ├── helpers.py              # §5 funksiyalari + COLLECTIONS mapping (16 ta) + DAYS_MAP
+│                               # (status/ball bu yerda EMAS — detectors/scoring.py da)
 │   └── logger.py               # konsol INFO + logs/ueba.log (RotatingFileHandler, 5MB x 3)
 └── logs/                       # runtime'da yaratiladi
 ```
