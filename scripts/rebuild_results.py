@@ -70,7 +70,7 @@ def main():
         per_client[cid][doc["date"]] = {
             "start": doc["start"], "finish": doc["finish"],
             "eventCount": doc.get("eventCount"), "dayOfWeek": doc.get("dayOfWeek"),
-            "durationMin": doc.get("durationMin"),
+            "durationMin": doc.get("durationMin"), "activeMin": doc.get("activeMin"),
         }
         meta.setdefault(cid, {"hostname": doc.get("hostname"),
                               "fullName": doc.get("fullName")})

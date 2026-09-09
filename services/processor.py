@@ -40,6 +40,7 @@ def evaluate_job(job, baseline_doc, now=None):
             start=start,
             finish=finish,
             duration_min=day.get("durationMin"),
+            active_min=day.get("activeMin"),
             event_count=day.get("eventCount"),
             day=day,
             baseline=baseline,
@@ -56,7 +57,10 @@ def evaluate_job(job, baseline_doc, now=None):
             "dayOfWeek": weekday,
             "start": start.strftime("%H:%M:%S"),
             "finish": finish.strftime("%H:%M:%S"),
+            # Kun uzunligi: birinchi hodisadan oxirgisigacha
             "durationMin": day.get("durationMin"),
+            # Sof ish vaqti: tanaffuslar chiqarib tashlangan (services/workday.py)
+            "activeMin": day.get("activeMin"),
             "eventCount": day.get("eventCount"),
             # Detectorlarning ustki darajaga chiqaradigan maydonlari:
             # zStart, zFinish, usualStart, usualFinish, stdStart, stdFinish.

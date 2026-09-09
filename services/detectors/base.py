@@ -24,7 +24,8 @@ class DayContext:
     day_of_week: str          # "Monday".."Sunday"
     start: datetime
     finish: datetime
-    duration_min: float | None
+    duration_min: float | None     # kun uzunligi (birinchi hodisadan oxirgisigacha)
+    active_min: float | None       # sof ish vaqti (tanaffuslarsiz), bo'lmasa None
     event_count: int | None
     day: dict                 # job dagi xom kun hujjati
     baseline: dict            # butun baseline hujjati (bo'sh bo'lishi mumkin)

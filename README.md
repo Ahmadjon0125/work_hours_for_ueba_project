@@ -2,7 +2,7 @@
 
 Xodimlarning **ishga kelish** va **ketish** vaqtlarini kuzatib, har birining o'z odatiy jadvalidan chetlanishini **z-score** bilan aniqlaydigan tizim.
 
-Ma'lumot manbai — DataGaze DLP tizimining MongoDB'si: xodim kompyuterlaridan keladigan aktivlik yozuvlari (email, Telegram, fayl operatsiyalari, sayt tashriflari va h.k.). Har kundagi **eng birinchi event = kelish vaqti**, **eng oxirgi event = ketish vaqti**.
+Ma'lumot manbai — DataGaze DLP tizimining MongoDB'sidagi **`agentsessionstatuses`** collection'i: agent yuboradigan hozirlik qaydlari (tizimga kirish/chiqish, ekranni ochish/qulflash, masofadan ulanish). Har kundagi **eng birinchi hodisa = kelish vaqti**, **eng oxirgi hodisa = ketish vaqti**.
 
 > To'liq arxitektura spetsifikatsiyasi: [UEBA_PIPELINE_ARCHITECTURE_V2.md](UEBA_PIPELINE_ARCHITECTURE_V2.md)
 
@@ -44,17 +44,8 @@ alpha-demo (DLP bazasi, faqat o'qish)
 
 ### Ish kuni qayerdan olinadi
 
-`.env` dagi `WORKDAY_SOURCE` ikkita manbadan birini tanlaydi:
-
-| | `activity` (default) | `session` |
-|---|---|---|
-| Manba | 16 ta faollik collection'i | `agentsessionstatuses` |
-| So'rov soni | har client uchun **16 ta** | har client uchun **1 ta** |
-| Kun boshi/oxiri | birinchi va oxirgi **event** | birinchi va oxirgi **hozirlik hodisasi** |
-| Sof ish vaqti | hisoblab bo'lmaydi | **`activeMin`** — tanaffuslarsiz |
-| Kamchiligi | faollikdan xulosa: fon jarayoni kunni cho'zadi | agent hodisalarni to'liq yuborishi shart |
-
-`session` manbasidagi 6 ta status uch juftlik hosil qiladi:
+Yagona manba — **`agentsessionstatuses`**: agentning o'z hozirlik qaydlari.
+Olti xil status uch juftlik hosil qiladi:
 
 ```
 LOGON          <-> LOGOFF               tizimga kirish / chiqish
@@ -62,22 +53,26 @@ UNLOCK         <-> LOCK                 ekranni ochish / qulflash
 REMOTE_CONNECT <-> REMOTE_DISCONNECT    masofadan ulanish / uzilish
 ```
 
-Kun boshi — birinchi hodisa, oxiri — oxirgi hodisa. Bundan tashqari
-**`activeMin`** hisoblanadi: ochilish va qulflanish oralig'idagi sof ish
-daqiqalari, tanaffuslar chiqarib tashlangan holda. Bu faollik manbasida
-prinsipial ravishda mumkin emas.
+`clientId` bevosita `clients._id` ga bog'lanadi. Kun boshi — birinchi hodisa,
+oxiri — oxirgi hodisa.
 
-> **Manbani almashtirgandan keyin baseline qayta o'qitilishi shart.** Ikkala
-> manba tizimli farq qiladi — `session` qisqaroq kun beradi. Aks holda yangi
-> kunlar eski manbadagi normaga solishtirilib, hamma narsa chetlanish bo'lib
-> chiqadi. Har kunlik hujjatda `source` maydoni saqlanadi, shuning uchun
-> aralash ma'lumotni keyin aniqlab olish mumkin.
+**`activeMin` — sof ish vaqti.** Ochilish va qulflanish oralig'idagi
+daqiqalar yig'indisi, tanaffuslar chiqarib tashlangan holda:
 
-```bash
-# .env:
-WORKDAY_SOURCE=session
-# keyin:  dashboarddagi «Odatiy jadvallarni yangilash» tugmasi
 ```
+10:30–22:17   kun uzunligi 707 daqiqa,  sof ish 512 daqiqa,  tanaffus 195 daqiqa
+```
+
+Bu quyi chegara — juftini topmagan hodisalar sanalmaydi (kun `LOCK` bilan
+boshlansa, ya'ni odam kechqurundan beri kirgan bo'lsa, o'sha ochiq oraliq
+hisobga olinmaydi). Sun'iy cho'zib yuborishdan ko'ra kam ko'rsatgan yaxshi.
+
+> Ilgari ish vaqti 16 ta faollik collection'idan (`activewindows`,
+> `webvisitings`, `keyloggers` va h.k.) chiqarilardi: kunning birinchi va
+> oxirgi eventi ish vaqti deb olinardi. Bu **xulosa** edi — fon jarayoni ham
+> event bergani uchun kun sun'iy cho'zilardi, tanaffusni esa umuman ko'rib
+> bo'lmasdi. Endi agentning o'z qaydlari ishlatiladi: har client uchun
+> 16 ta emas, **bitta so'rov**, va faollikdan taxmin emas — haqiqiy hozirlik.
 
 ### Anomaliya qoidasi: ish oynasidan tashqaridagi faollik
 
@@ -233,7 +228,7 @@ Trigger **faqat avtomatik** ishlaydi — qo'lda ishga tushirish yo'li yo'q. Oral
 | `/api/health` | GET | Mongo, RabbitMQ, navbat, oxirgi trigger/retrain holati |
 | `/api/train` | POST | Birinchi o'qitish (baseline mavjud bo'lsa 409) |
 | `/api/retrain` | POST | Baseline yangilash: collector → trainer |
-| `/api/results` | GET | Natijalar: `from`, `to`, `client_id`, `status`, `is_anomaly`, `min_risk`, `trigger`, `limit`, `offset` |
+| `/api/results` | GET | Natijalar (`durationMin` — kun uzunligi, `activeMin` — sof ish vaqti): `from`, `to`, `client_id`, `status`, `is_anomaly`, `min_risk`, `trigger`, `limit`, `offset` |
 | `/api/results/{client_id}` | GET | Bitta xodim natijalari |
 | `/api/baseline` | GET | Joriy versiyadagi odatiy jadvallar |
 | `/api/baseline/versions` | GET | Baseline versiyalari tarixi |

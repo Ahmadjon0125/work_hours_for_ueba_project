@@ -39,7 +39,7 @@ def _ctx(week=None):
     return DayContext(client_id="C1", hostname="PC-1", full_name=None,
                       date="2026-08-25", day_of_week="Tuesday",
                       start=datetime(2026, 8, 25, 8, 0), finish=datetime(2026, 8, 25, 18, 0),
-                      duration_min=600, event_count=10, day={},
+                      duration_min=600, active_min=480, event_count=10, day={},
                       baseline=BASELINE, week=week if week is not None else BASELINE["weeks"]["Tuesday"],
                       now=datetime(2026, 8, 25, 20, 0))
 

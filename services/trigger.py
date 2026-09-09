@@ -64,7 +64,7 @@ def run():
             try:
                 window_start = _window_start(trigger_col, cid, now)
 
-                day_stamps, _ = collect_client_days(client, window_start)
+                day_stamps = collect_client_days(client, window_start)
                 total_events += sum(len(v["stamps"]) for v in day_stamps.values())
 
                 days_payload, day_docs = {}, []
@@ -93,6 +93,7 @@ def run():
                         "eventCount": doc["eventCount"],
                         "dayOfWeek": doc["dayOfWeek"],
                         "durationMin": doc["durationMin"],
+                        "activeMin": doc["activeMin"],
                     }
                     day_docs.append(doc)
 

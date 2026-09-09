@@ -1,6 +1,7 @@
-"""Umumiy yordamchilar: 16 collection mapping, vaqt funksiyalari, kunlik agregat.
+"""Umumiy yordamchilar: vaqt funksiyalari, kunlik agregat, ism tanlash.
 
 Status va ball hisobi bu yerda EMAS — u siyosat, `services/detectors/scoring.py` da.
+Ish kuni qaysi manbadan olinishi ham bu yerda emas — `services/workday.py` da.
 """
 import re
 from datetime import datetime, timedelta
@@ -8,31 +9,6 @@ from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 
 import config
-
-# Aktivlik collectionlari: nom -> (ID maydoni, [vaqt maydonlari])
-#
-# `activities` ATAYLAB YO'Q. U event jurnali emas — kunlik agregat jadvali:
-# dateTime doim 00:00:00 (tekshirilgan: 155/155 yozuv), ichida allActiveTime,
-# efficiencyWebTime kabi kunlik yig'indilar. Uni qo'shsak har kunning `start` i
-# soxta 00:00 ga tushib, "ishga kelish vaqti" signali butunlay yo'qoladi.
-COLLECTIONS = {
-    "activewindows": ("clientId", ["datetime"]),
-    "rdps":          ("clientId", ["connectTime", "disconnectTime"]),
-    "screenshots":   ("clientId", ["dateTime"]),
-    "keyloggers":    ("clientId", ["dateTime"]),
-    "webvisitings":  ("clientId", ["dateTime"]),
-    "telegrams":     ("clientId", ["dateTime"]),
-    "whatsapps":     ("clientId", ["dateTime"]),
-    "emails":        ("clientId", ["dateTime"]),
-    "websearches":   ("clientId", ["dateTime"]),
-    "websniffs":     ("clientId", ["dateTime"]),
-    "usbmonitors":   ("clientId", ["dateTime"]),
-    "usbsniffs":     ("clientId", ["dateTime"]),
-    "filemonitors":  ("clientId", ["dateTime"]),
-    "clipboards":    ("clientId", ["dateTime"]),
-    "prints":        ("clientId", ["dateTime"]),
-    "incidents":     ("employee", ["time"]),
-}
 
 DAYS_MAP = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday",
             4: "Friday", 5: "Saturday", 6: "Sunday"}
@@ -122,15 +98,12 @@ def display_name(hostname, full_name=None, first_name=None, last_name=None):
 
 
 def build_day_doc(client_id, hostname, date_str, start, finish, event_count, now,
-                  full_name=None, source=None, active_min=None):
+                  full_name=None, active_min=None):
     """raw_data_for_train va trigger_data uchun umumiy kunlik document.
 
-    `source` — kun qaysi manbadan olingani ("activity" yoki "session").
-    Ikkala manba tizimli farq qilgani uchun bu har kunda saqlanadi: aralash
-    ma'lumot ustida qurilgan baseline'ni keyin aniqlab olish mumkin bo'lsin.
-
-    `active_min` — sof ish daqiqalari (tanaffuslarsiz). Faqat session
-    manbasida ma'lumotli, faollik manbasida `None`.
+    `active_min` — sof ish daqiqalari: ochilish va qulflanish oralig'idagi
+    vaqt, tanaffuslar chiqarib tashlangan. `durationMin` esa kunning to'liq
+    uzunligi (boshidan oxirigacha), tanaffuslar bilan birga.
     """
     return {
         "clientId": client_id,
@@ -142,7 +115,6 @@ def build_day_doc(client_id, hostname, date_str, start, finish, event_count, now
         "finish": finish.isoformat(timespec="seconds"),
         "durationMin": duration_minutes(start, finish),
         "eventCount": event_count,
-        "source": source or config.WORKDAY_SOURCE,
         "activeMin": active_min,
         "updatedAt": now.isoformat(timespec="seconds"),
     }

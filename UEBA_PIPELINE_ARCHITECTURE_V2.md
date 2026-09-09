@@ -150,7 +150,7 @@ Yodda tutiladigan istisnolar: `incidents` da ID maydoni `employee` (boshqalarida
 >
 > Qolgan 16 collection tekshirilgan — ularda yarim tunga tushgan timestamp ulushi 0%, ya'ni hammasi real eventlar.
 
-**`agentsessionstatuses` — muqobil manba (`WORKDAY_SOURCE=session`).**
+**`agentsessionstatuses` — ish kunining YAGONA manbasi.**
 Agentning hozirlik qaydlari. Maydonlar: `clientId`(ObjectId, `clients._id` ga
 bog'lanadi), `computerId`, `status`(String), `dateTime`(Date), `info`(String —
 ba'zan RDP tafsilotlari). 6 ta status uch juftlik hosil qiladi:
@@ -163,6 +163,13 @@ topmagan hodisalar sanalmaydi.
 
 Ustunligi: har client uchun **16 ta emas, 1 ta so'rov**, va faollikdan xulosa
 emas — haqiqiy hozirlik. Sharti: agent hodisalarni to'liq yuborishi kerak.
+
+> **Qaror #19 — 16 ta faollik collection'i butunlay olib tashlandi.** Ilgari
+> kun `activewindows`, `webvisitings`, `keyloggers` va boshqa 13 ta
+> collection'ning birinchi/oxirgi eventidan chiqarilardi. Bu xulosa edi:
+> fon jarayoni ham event bergani uchun kun sun'iy cho'zilardi, tanaffusni
+> esa ko'rib bo'lmasdi. `COLLECTIONS` mapping'i, `iter_client_timestamps`
+> va `WORKDAY_SOURCE` sozlamasi olib tashlandi.
 **Indeks:** `{clientId: 1, computerId: 1}` — `dateTime` indekslanmagan, hajm
 o'sganda DLP jamoasidan `{clientId: 1, dateTime: -1}` so'rash kerak bo'ladi.
 
@@ -198,6 +205,7 @@ Har client × har kun = 1 document:
   "start": "2026-08-26T08:54:00",
   "finish": "2026-08-26T17:12:30",
   "durationMin": 498.5,
+  "activeMin": 421.0,
   "eventCount": 42,
   "updatedAt": "2026-08-26T14:00:00"
 }
@@ -264,6 +272,7 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
   "start": "08:54:00",
   "finish": "17:12:30",
   "durationMin": 498.5,
+  "activeMin": 421.0,
   "eventCount": 42,
   "zStart": 1.892,
   "zFinish": -0.266,
@@ -301,6 +310,8 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
 - `status` va `statusColor` — §5.4 qoidalari bo'yicha (3 holat: `anomaly`/`normal`/`insufficient`).
 - **`isAnomaly`, `anomalyScore`, `riskScore`** — §5.4 va §5.4.1. Baholanmagan kunda
   ikkala ball ham `null`.
+- **`durationMin`** — kun uzunligi (birinchi hodisadan oxirgisigacha), **`activeMin`** —
+  sof ish vaqti (tanaffuslar chiqarib tashlangan). Ikkalasining farqi — tanaffus.
 - **`windowStart`, `windowFinish`** — shu kunning ish oynasi (daqiqada). Dashboard
   kulrang fonni va nuqta ranglarini shulardan chizadi, brauzerda qayta hisoblamaydi.
 - **`triggers`** — `{detector_nomi: true/false}`, tez tekshirish uchun. Baholanmagan
@@ -778,7 +789,6 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `BATCH_SIZE` | `100` | DB o'qish partiyasi |
 | `SOURCE_READ_RETRIES` | `2` | Manba collection'ini o'qishda qayta urinishlar soni (§6.1, COL-04) |
 | `SOURCE_READ_RETRY_DELAY` | `2` | Qayta urinishlar orasidagi kutish (soniya) |
-| `WORKDAY_SOURCE` | `activity` | Ish kuni manbasi: `activity` (16 collection) yoki `session` (`agentsessionstatuses`). Noto'g'ri qiymat `activity` ga qaytadi. Almashtirilgandan keyin baseline qayta o'qitilishi SHART |
 | `ANOMALY_Z_THRESHOLD` | `1.0` | Ish oynasi kengligi: `mean ± T·σ` (§5.4). ≤ 0 berilsa 1.0 ga qaytadi |
 | `ANOMALY_Z_FULL_SCALE` | `3.0` | `zOut` shu qiymatga yetganda ball 100 (§5.4). Chegaradan kichik berilsa `T+2` ga qaytadi |
 | `DETECTOR_WEIGHT_<NOM>` | detector defaulti | Detector vazni, `[0,1]` (§5.4.1). Masalan `DETECTOR_WEIGHT_WORKING_HOURS` |
@@ -810,7 +820,7 @@ ueba/
 │   │   ├── base.py            # DayContext, DetectorResult, Detector bazasi
 │   │   ├── working_hours.py   # ish vaqti detectori (eski _z_scores shu yerda)
 │   │   └── registry.py        # ro'yxat + natijalarni birlashtirish
-│   ├── workday.py              # ish kuni manbasi: activity | session (§4.1)
+│   ├── workday.py              # kun boshi/oxiri + sof ish vaqti (§4.1)
 │   ├── mongo.py                # 2 ta MongoClient (main RO + local RW), ensure_indexes()
 │   ├── collector.py            # §6.1 logikasi
 │   ├── trainer.py              # §6.2 logikasi (tmp'da qurish + atomik swap)
@@ -832,7 +842,7 @@ ueba/
 │       └── script.js
 ├── utils/
 │   ├── __init__.py
-│   ├── helpers.py              # §5 funksiyalari + COLLECTIONS mapping (16 ta) + DAYS_MAP
+│   ├── helpers.py              # §5 funksiyalari + DAYS_MAP (COLLECTIONS olib tashlandi)
 │                               # (status/ball bu yerda EMAS — detectors/scoring.py da)
 │   └── logger.py               # konsol INFO + logs/ueba.log (RotatingFileHandler, 5MB x 3)
 └── logs/                       # runtime'da yaratiladi

@@ -1,4 +1,4 @@
-"""Collector: alpha-demo dan 60 kunlik tarixni yig'ib raw_data_for_train ga yozadi.
+"""Collector: manbadan 60 kunlik tarixni yig'ib raw_data_for_train ga yozadi.
 
 Faqat train/retrain paytida ishlaydi (CLI yoki /api/train, /api/retrain zanjiri).
 """
@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 import config
-from services.mongo import active_clients, ensure_indexes, local_db
+from services.mongo import SESSION_COLLECTION, active_clients, ensure_indexes, local_db
 from services.workday import collect_client_days
 from utils.helpers import build_day_agg, build_day_doc, day_of_week
 from utils.logger import get_logger
@@ -53,8 +53,8 @@ def collect():
         log.warning("Active client topilmadi — collector bo'sh tugadi")
         return {"clients": 0, "days": 0, "failed": []}
 
-    log.info("Collector boshlandi: %d active client, manba=%s, oyna %s — %s (%d to'liq kun)",
-             len(clients), config.WORKDAY_SOURCE, first_date,
+    log.info("Collector boshlandi: %d active client, oyna %s — %s (%d to'liq kun)",
+             len(clients), first_date,
              (window_end - timedelta(days=1)).strftime("%Y-%m-%d"), config.DAYS_WINDOW)
 
     total_days = 0
@@ -63,10 +63,10 @@ def collect():
         cid, hostname = client["clientId"], client["hostname"]
         full_name = client.get("fullName")
         try:
-            day_stamps, manbalar = collect_client_days(client, window_start, window_end)
-            for coll_name, stamps in manbalar:
-                if stamps:
-                    _log_weekday_report(cid, coll_name, stamps)
+            day_stamps = collect_client_days(client, window_start, window_end)
+            barcha = [ts for kun in day_stamps.values() for ts in kun["stamps"]]
+            if barcha:
+                _log_weekday_report(cid, SESSION_COLLECTION, barcha)
 
             for date_str, kun in day_stamps.items():
                 tss = kun["stamps"]

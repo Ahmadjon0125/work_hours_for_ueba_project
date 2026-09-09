@@ -509,7 +509,7 @@ function renderTable(visible) {
   $('tableInfo').textContent = `— ${visible.length} ta`;
 
   if (!visible.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty">Ko\'rsatadigan kun yo\'q</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty">Ko\'rsatadigan kun yo\'q</td></tr>';
     return;
   }
 
@@ -520,6 +520,15 @@ function renderTable(visible) {
     if (diff === null) return '<td class="dim">—</td>';
     if (Math.abs(diff) < 5) return '<td class="dim">deyarli bir xil</td>';
     return `<td class="dim">${humanMinutes(diff)} ${diff > 0 ? earlyWord : lateWord}</td>`;
+  };
+
+  // Sof ish vaqti: tanaffuslar chiqarib tashlangan (agent hodisalaridan).
+  // Kun uzunligi bilan farqi — tanaffusda o'tgan vaqt.
+  const aktivCell = (r) => {
+    if (typeof r.activeMin !== 'number') return '—';
+    const tanaffus = (r.durationMin || 0) - r.activeMin;
+    return `<span title="Kun uzunligi ${humanMinutes(r.durationMin || 0)}, `
+      + `tanaffus ${humanMinutes(tanaffus)}">${humanMinutes(r.activeMin)}</span>`;
   };
 
   // Daraja ustuni: faqat chetlanish bo'lgan kunlarda ko'rsatiladi
@@ -546,6 +555,7 @@ function renderTable(visible) {
         <td class="time">${r.finish.slice(0, 5)}</td>
         <td class="time dim">${c ? minutesToHHMM(c.usualFinish) : '—'}</td>
         ${diffCell(c ? -c.leaveDiff : null, 'erta', 'kech')}
+        <td class="time dim">${aktivCell(r)}</td>
         <td><span class="badge ${s.css}">${s.label}</span></td>
         <td class="sev-cell">${sevCell(r)}</td>
       </tr>`;

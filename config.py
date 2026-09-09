@@ -38,18 +38,6 @@ SOURCE_READ_RETRY_DELAY = float(os.getenv("SOURCE_READ_RETRY_DELAY", 2))
 SINGLE_EVENT_STAY_HOURS = float(os.getenv("SINGLE_EVENT_STAY_HOURS", 1))
 RESULTS_RETENTION_DAYS = int(os.getenv("RESULTS_RETENTION_DAYS", 365))
 
-# --- Ish kuni manbasi ---
-# activity : 16 ta faollik collection'idan xulosa chiqariladi (eski usul)
-# session  : `agentsessionstatuses` dagi LOGON/UNLOCK/LOCK/LOGOFF hodisalari —
-#            agentning haqiqiy hozirlik qaydlari. Ancha arzon va aniqroq, lekin
-#            agent hodisalarni to'liq yuborayotgan bo'lishi shart.
-# DIQQAT: ikkala manba tizimli farq qiladi (session qisqaroq kun beradi).
-# Manbani almashtirgandan keyin baseline QAYTA O'QITILISHI shart, aks holda
-# yangi kunlar eski manbadagi normaga solishtiriladi.
-WORKDAY_SOURCE = os.getenv("WORKDAY_SOURCE", "activity").strip().lower()
-if WORKDAY_SOURCE not in ("activity", "session"):
-    WORKDAY_SOURCE = "activity"
-
 # --- Anomaliya chegarasi ---
 MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 5))
 # |z| shu chegaradan oshsa — anomaliya. Eski 4 pog'onali sxema (watch/anomaly/
