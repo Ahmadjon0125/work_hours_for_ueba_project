@@ -150,6 +150,22 @@ Yodda tutiladigan istisnolar: `incidents` da ID maydoni `employee` (boshqalarida
 >
 > Qolgan 16 collection tekshirilgan — ularda yarim tunga tushgan timestamp ulushi 0%, ya'ni hammasi real eventlar.
 
+**`agentsessionstatuses` — muqobil manba (`WORKDAY_SOURCE=session`).**
+Agentning hozirlik qaydlari. Maydonlar: `clientId`(ObjectId, `clients._id` ga
+bog'lanadi), `computerId`, `status`(String), `dateTime`(Date), `info`(String —
+ba'zan RDP tafsilotlari). 6 ta status uch juftlik hosil qiladi:
+`LOGON`/`LOGOFF`, `UNLOCK`/`LOCK`, `REMOTE_CONNECT`/`REMOTE_DISCONNECT`.
+
+Kun boshi/oxiri — kunning birinchi va oxirgi hodisasi. Bundan tashqari
+`activeMin` hisoblanadi (`services/workday.active_minutes`): ochilish va
+qulflanish oralig'idagi sof ish daqiqalari. Bu QUYI chegara — juftini
+topmagan hodisalar sanalmaydi.
+
+Ustunligi: har client uchun **16 ta emas, 1 ta so'rov**, va faollikdan xulosa
+emas — haqiqiy hozirlik. Sharti: agent hodisalarni to'liq yuborishi kerak.
+**Indeks:** `{clientId: 1, computerId: 1}` — `dateTime` indekslanmagan, hajm
+o'sganda DLP jamoasidan `{clientId: 1, dateTime: -1}` so'rash kerak bo'ladi.
+
 **`clients` collection'idan 5 ta maydon o'qiladi:** `_id` (ObjectId), `hostname`, `disabled`, hamda ko'rsatish uchun `fullName` / `firstName` / `lastName`. Asosiy identifikator — **`clientId`**; `hostname` esa ko'rsatish uchun (u 17/17 to'ldirilgan va noyob).
 
 > **Ism maydonlari to'liq emas** (real bazada tekshirilgan): `fullName` 65%, `lastName` 53%, `firstName` 35%, `email`/`department` atigi 6%. Ustiga-ustak `fullName` da takror bor — 5 ta clientda bir xil «user_1», ba'zilarida esa u shunchaki login'ning takrori. Shuning uchun ism **hostname o'rnini bosmaydi**, faqat **qo'shimcha** sifatida ishlatiladi: `display_name()` (§5.5) ism haqiqiy bo'lgandagina uni qaytaradi (login takrori yoki `user_\d+` shaklidagi o'rinbosarlar rad etiladi), aks holda `None`. Dashboard'da **ism bo'lsa ism**, bo'lmasa **hostname** ko'rsatiladi. Bir xil nomli bir nechta client bo'lsa, nomga qisqa id qo'shiladi. `username` maydoni umuman ishlatilmaydi — qaror #10. `disabled` maydoni optional: umuman bo'lmasa ham client **active** hisoblanadi.
@@ -762,6 +778,7 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `BATCH_SIZE` | `100` | DB o'qish partiyasi |
 | `SOURCE_READ_RETRIES` | `2` | Manba collection'ini o'qishda qayta urinishlar soni (§6.1, COL-04) |
 | `SOURCE_READ_RETRY_DELAY` | `2` | Qayta urinishlar orasidagi kutish (soniya) |
+| `WORKDAY_SOURCE` | `activity` | Ish kuni manbasi: `activity` (16 collection) yoki `session` (`agentsessionstatuses`). Noto'g'ri qiymat `activity` ga qaytadi. Almashtirilgandan keyin baseline qayta o'qitilishi SHART |
 | `ANOMALY_Z_THRESHOLD` | `1.0` | Ish oynasi kengligi: `mean ± T·σ` (§5.4). ≤ 0 berilsa 1.0 ga qaytadi |
 | `ANOMALY_Z_FULL_SCALE` | `3.0` | `zOut` shu qiymatga yetganda ball 100 (§5.4). Chegaradan kichik berilsa `T+2` ga qaytadi |
 | `DETECTOR_WEIGHT_<NOM>` | detector defaulti | Detector vazni, `[0,1]` (§5.4.1). Masalan `DETECTOR_WEIGHT_WORKING_HOURS` |
@@ -793,6 +810,7 @@ ueba/
 │   │   ├── base.py            # DayContext, DetectorResult, Detector bazasi
 │   │   ├── working_hours.py   # ish vaqti detectori (eski _z_scores shu yerda)
 │   │   └── registry.py        # ro'yxat + natijalarni birlashtirish
+│   ├── workday.py              # ish kuni manbasi: activity | session (§4.1)
 │   ├── mongo.py                # 2 ta MongoClient (main RO + local RW), ensure_indexes()
 │   ├── collector.py            # §6.1 logikasi
 │   ├── trainer.py              # §6.2 logikasi (tmp'da qurish + atomik swap)

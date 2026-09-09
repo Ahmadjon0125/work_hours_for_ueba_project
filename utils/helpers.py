@@ -122,8 +122,16 @@ def display_name(hostname, full_name=None, first_name=None, last_name=None):
 
 
 def build_day_doc(client_id, hostname, date_str, start, finish, event_count, now,
-                  full_name=None):
-    """raw_data_for_train va trigger_data uchun umumiy kunlik document."""
+                  full_name=None, source=None, active_min=None):
+    """raw_data_for_train va trigger_data uchun umumiy kunlik document.
+
+    `source` — kun qaysi manbadan olingani ("activity" yoki "session").
+    Ikkala manba tizimli farq qilgani uchun bu har kunda saqlanadi: aralash
+    ma'lumot ustida qurilgan baseline'ni keyin aniqlab olish mumkin bo'lsin.
+
+    `active_min` — sof ish daqiqalari (tanaffuslarsiz). Faqat session
+    manbasida ma'lumotli, faollik manbasida `None`.
+    """
     return {
         "clientId": client_id,
         "hostname": hostname,
@@ -134,6 +142,8 @@ def build_day_doc(client_id, hostname, date_str, start, finish, event_count, now
         "finish": finish.isoformat(timespec="seconds"),
         "durationMin": duration_minutes(start, finish),
         "eventCount": event_count,
+        "source": source or config.WORKDAY_SOURCE,
+        "activeMin": active_min,
         "updatedAt": now.isoformat(timespec="seconds"),
     }
 

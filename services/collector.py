@@ -6,7 +6,8 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 import config
-from services.mongo import active_clients, ensure_indexes, iter_client_timestamps, local_db
+from services.mongo import active_clients, ensure_indexes, local_db
+from services.workday import collect_client_days
 from utils.helpers import build_day_agg, build_day_doc, day_of_week
 from utils.logger import get_logger
 
@@ -52,8 +53,8 @@ def collect():
         log.warning("Active client topilmadi — collector bo'sh tugadi")
         return {"clients": 0, "days": 0, "failed": []}
 
-    log.info("Collector boshlandi: %d active client, oyna %s — %s (%d to'liq kun)",
-             len(clients), first_date,
+    log.info("Collector boshlandi: %d active client, manba=%s, oyna %s — %s (%d to'liq kun)",
+             len(clients), config.WORKDAY_SOURCE, first_date,
              (window_end - timedelta(days=1)).strftime("%Y-%m-%d"), config.DAYS_WINDOW)
 
     total_days = 0
@@ -62,21 +63,19 @@ def collect():
         cid, hostname = client["clientId"], client["hostname"]
         full_name = client.get("fullName")
         try:
-            day_stamps = defaultdict(list)
-            for coll_name, stamps in iter_client_timestamps(client, window_start, window_end):
-                if not stamps:
-                    continue
-                _log_weekday_report(cid, coll_name, stamps)
-                for ts in stamps:
-                    day_stamps[ts.strftime("%Y-%m-%d")].append(ts)
+            day_stamps, manbalar = collect_client_days(client, window_start, window_end)
+            for coll_name, stamps in manbalar:
+                if stamps:
+                    _log_weekday_report(cid, coll_name, stamps)
 
-            for date_str, tss in day_stamps.items():
+            for date_str, kun in day_stamps.items():
+                tss = kun["stamps"]
                 agg = build_day_agg(tss)
                 if agg is None:
                     continue
                 start, finish = agg
                 doc = build_day_doc(cid, hostname, date_str, start, finish, len(tss), now,
-                                    full_name=full_name)
+                                    full_name=full_name, active_min=kun["activeMin"])
                 raw.update_one({"clientId": cid, "date": date_str}, {"$set": doc}, upsert=True)
                 total_days += 1
 

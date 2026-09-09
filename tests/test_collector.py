@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config  # noqa: E402
 import services.collector as collector_mod  # noqa: E402
 import services.mongo as mongo_mod  # noqa: E402
+import services.workday as workday_mod  # noqa: E402
 from services.mongo import SourceReadError  # noqa: E402
 
 
@@ -108,7 +109,7 @@ def test_source_failure_keeps_existing_day():
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: [
         {"clientId": "C1", "hostname": "PC-1", "fullName": None, "_id": "C1"}]
-    collector_mod.iter_client_timestamps = failing_source
+    workday_mod.iter_client_timestamps = failing_source
     collector_mod.local_db = lambda: FakeDB(raw)
 
     result = collector_mod.collect()
@@ -138,7 +139,7 @@ def test_all_sources_ok_writes_day():
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: [
         {"clientId": "C1", "hostname": "PC-1", "fullName": None, "_id": "C1"}]
-    collector_mod.iter_client_timestamps = good_source
+    workday_mod.iter_client_timestamps = good_source
     collector_mod.local_db = lambda: FakeDB(raw)
 
     result = collector_mod.collect()
@@ -168,7 +169,7 @@ def test_window_covers_only_complete_days():
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: [
         {"clientId": "C1", "hostname": "PC-1", "fullName": None, "_id": "C1"}]
-    collector_mod.iter_client_timestamps = source
+    workday_mod.iter_client_timestamps = source
     collector_mod.local_db = lambda: FakeDB(raw)
     collector_mod.collect()
 
@@ -225,7 +226,7 @@ def test_source_respects_window_bounds():
 def _setup(raw, source, clients):
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: clients
-    collector_mod.iter_client_timestamps = source
+    workday_mod.iter_client_timestamps = source
     collector_mod.local_db = lambda: FakeDB(raw)
 
 

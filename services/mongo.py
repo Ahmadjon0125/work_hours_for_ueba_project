@@ -7,7 +7,7 @@ import time
 from pymongo import ASCENDING, MongoClient
 
 import config
-from utils.helpers import COLLECTIONS
+from utils.helpers import COLLECTIONS, parse_to_datetime
 from utils.logger import get_logger
 
 log = get_logger("mongo")
@@ -102,6 +102,58 @@ def active_clients():
     return clients
 
 
+SESSION_COLLECTION = "agentsessionstatuses"
+
+
+def iter_client_sessions(client, window_start, window_end=None):
+    """Agent hozirlik hodisalari: (collection_nomi, [(datetime, status), ...]).
+
+    `iter_client_timestamps` bilan bir xil shaklda qaytaradi, faqat status ham
+    qo'shiladi — `services/workday.py` undan sof ish daqiqalarini hisoblaydi.
+
+    Bitta so'rov: 16 ta collection aylanib chiqishga qaraganda ancha arzon.
+    Xato yuqoriga uzatiladi — "o'qib bo'lmadi" ni "hech narsa yo'q" deb qabul
+    qilish mumkin emas (COL-04 bilan bir xil qoida).
+    """
+    db = main_db()
+    # ObjectId ham, string ham bo'lishi mumkin — ikkalasini ham qidiramiz
+    id_values = [client["_id"], client["clientId"]]
+
+    bounds = {"$gte": window_start}
+    if window_end is not None:
+        bounds["$lt"] = window_end
+    query = {"clientId": {"$in": id_values}, "dateTime": bounds}
+
+    last_error = None
+    for attempt in range(config.SOURCE_READ_RETRIES + 1):
+        events = []
+        try:
+            cursor = (db[SESSION_COLLECTION]
+                      .find(query, {"_id": 0, "dateTime": 1, "status": 1})
+                      .batch_size(config.BATCH_SIZE))
+            for doc in cursor:
+                dt = parse_to_datetime(doc.get("dateTime"))
+                if dt is None or dt < window_start:
+                    continue
+                if window_end is not None and dt >= window_end:
+                    continue
+                events.append((dt, doc.get("status") or ""))
+            break
+        except Exception as e:
+            last_error = e
+            if attempt < config.SOURCE_READ_RETRIES:
+                log.warning("%s | %s o'qishda xato (%d/%d urinish), qayta urinaman: %s",
+                            client["clientId"], SESSION_COLLECTION, attempt + 1,
+                            config.SOURCE_READ_RETRIES, e)
+                time.sleep(config.SOURCE_READ_RETRY_DELAY)
+    else:
+        raise SourceReadError(
+            f"{SESSION_COLLECTION} o'qib bo'lmadi ({config.SOURCE_READ_RETRIES + 1} urinish): "
+            f"{type(last_error).__name__}: {last_error}") from last_error
+
+    yield SESSION_COLLECTION, events
+
+
 def iter_client_timestamps(client, window_start, window_end=None):
     """Bitta client uchun barcha collection'lardan oynadagi timestamp'larni oqim bilan o'qiydi.
 
@@ -112,8 +164,6 @@ def iter_client_timestamps(client, window_start, window_end=None):
     Har collection uchun (collection_nomi, [datetime, ...]) qaytaradi.
     O'qish BATCH_SIZE (100) documentlik partiyalarda — limit/paginatsiya emas, streaming cursor.
     """
-    from utils.helpers import parse_to_datetime
-
     db = main_db()
     # ObjectId ham, string ham bo'lishi mumkin — ikkalasini ham qidiramiz
     id_values = [client["_id"], client["clientId"]]

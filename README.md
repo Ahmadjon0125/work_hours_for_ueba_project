@@ -42,6 +42,43 @@ alpha-demo (DLP bazasi, faqat o'qish)
 4. **Worker** (3 ta) — kunlarni detectorlardan o'tkazib ball va `riskScore` hisoblaydi.
 5. **Dashboard** — natijalarni **oddiy tilda** ko'rsatadi: «5 soat 18 daqiqa kech keldi — keldi 18:00, odatda payshanbalarda 12:43». Z-score ichkarida qoladi, ekranda ko'rinmaydi.
 
+### Ish kuni qayerdan olinadi
+
+`.env` dagi `WORKDAY_SOURCE` ikkita manbadan birini tanlaydi:
+
+| | `activity` (default) | `session` |
+|---|---|---|
+| Manba | 16 ta faollik collection'i | `agentsessionstatuses` |
+| So'rov soni | har client uchun **16 ta** | har client uchun **1 ta** |
+| Kun boshi/oxiri | birinchi va oxirgi **event** | birinchi va oxirgi **hozirlik hodisasi** |
+| Sof ish vaqti | hisoblab bo'lmaydi | **`activeMin`** — tanaffuslarsiz |
+| Kamchiligi | faollikdan xulosa: fon jarayoni kunni cho'zadi | agent hodisalarni to'liq yuborishi shart |
+
+`session` manbasidagi 6 ta status uch juftlik hosil qiladi:
+
+```
+LOGON          <-> LOGOFF               tizimga kirish / chiqish
+UNLOCK         <-> LOCK                 ekranni ochish / qulflash
+REMOTE_CONNECT <-> REMOTE_DISCONNECT    masofadan ulanish / uzilish
+```
+
+Kun boshi — birinchi hodisa, oxiri — oxirgi hodisa. Bundan tashqari
+**`activeMin`** hisoblanadi: ochilish va qulflanish oralig'idagi sof ish
+daqiqalari, tanaffuslar chiqarib tashlangan holda. Bu faollik manbasida
+prinsipial ravishda mumkin emas.
+
+> **Manbani almashtirgandan keyin baseline qayta o'qitilishi shart.** Ikkala
+> manba tizimli farq qiladi — `session` qisqaroq kun beradi. Aks holda yangi
+> kunlar eski manbadagi normaga solishtirilib, hamma narsa chetlanish bo'lib
+> chiqadi. Har kunlik hujjatda `source` maydoni saqlanadi, shuning uchun
+> aralash ma'lumotni keyin aniqlab olish mumkin.
+
+```bash
+# .env:
+WORKDAY_SOURCE=session
+# keyin:  dashboarddagi «Odatiy jadvallarni yangilash» tugmasi
+```
+
 ### Anomaliya qoidasi: ish oynasidan tashqaridagi faollik
 
 Baseline har hafta kuni uchun bitta **ish oynasini** beradi:

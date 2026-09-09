@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 
 import config
 from mq.rabbitmq import connect, declare_queue, publish
-from services.mongo import active_clients, ensure_indexes, iter_client_timestamps, local_db
+from services.mongo import active_clients, ensure_indexes, local_db
+from services.workday import collect_client_days
 from utils.helpers import build_day_agg, build_day_doc, date_str_days_ago
 from utils.logger import get_logger
 
@@ -63,20 +64,18 @@ def run():
             try:
                 window_start = _window_start(trigger_col, cid, now)
 
-                day_stamps = defaultdict(list)
-                for _, stamps in iter_client_timestamps(client, window_start):
-                    for ts in stamps:
-                        day_stamps[ts.strftime("%Y-%m-%d")].append(ts)
-                total_events += sum(len(v) for v in day_stamps.values())
+                day_stamps, _ = collect_client_days(client, window_start)
+                total_events += sum(len(v["stamps"]) for v in day_stamps.values())
 
                 days_payload, day_docs = {}, []
-                for date_str, tss in sorted(day_stamps.items()):
+                for date_str, kun in sorted(day_stamps.items()):
+                    tss = kun["stamps"]
                     agg = build_day_agg(tss)
                     if agg is None:
                         continue
                     start, finish = agg
                     doc = build_day_doc(cid, hostname, date_str, start, finish, len(tss), now,
-                                        full_name=full_name)
+                                        full_name=full_name, active_min=kun["activeMin"])
 
                     # Dedup: allaqachon yuborilgan va o'zgarmagan kun qayta yuborilmaydi
                     existing = trigger_col.find_one(
