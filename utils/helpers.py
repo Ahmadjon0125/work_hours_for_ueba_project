@@ -106,7 +106,7 @@ def display_name(hostname, full_name=None, first_name=None, last_name=None):
     """`clients` dagi ismdan ko'rsatishga yaroqlisini tanlaydi, bo'lmasa None.
 
     DLP bazasida ism maydonlari to'liq emas va ko'pincha login'ning takrori
-    ("rakhmatillo") yoki umumiy o'rinbosar ("user_1", 5 ta clientda bir xil).
+    (login takrori) yoki umumiy o'rinbosar ("user_1", 5 ta clientda bir xil).
     Shunday hollarda ism ko'rsatilmaydi — hostname o'zi aniqroq.
     """
     name = (full_name or "").strip()

@@ -146,13 +146,13 @@ Yodda tutiladigan istisnolar: `incidents` da ID maydoni `employee` (boshqalarida
 
 > **`activities` ATAYLAB YO'Q (qaror #15).** U event jurnali emas — **kunlik agregat jadvali**: `dateTime` doim `00:00:00` (real ma'lumotda tekshirilgan: 155/155 yozuv), ichida `allActiveTime`, `allWebTime`, `efficiencyProcTime`, `efficiencyWebTime` kabi kunlik yig'indilar. Uni qo'shsak har kunning `start` i soxta `00:00` ga tushib, tizimning asosiy signali — "ishga kelish vaqti" — butunlay yo'qoladi.
 >
-> Real misol (client `rakhmatillo@...`, 2026-07-16): `activities` bilan kun `00:00:00 → 17:41:57` (1062 daqiqa), usiz esa haqiqiy `16:40:47 → 17:41:57` (61 daqiqa).
+> Real misol (bitta client, 2026-07-16): `activities` bilan kun `00:00:00 → 17:41:57` (1062 daqiqa), usiz esa haqiqiy `16:40:47 → 17:41:57` (61 daqiqa).
 >
 > Qolgan 16 collection tekshirilgan — ularda yarim tunga tushgan timestamp ulushi 0%, ya'ni hammasi real eventlar.
 
 **`clients` collection'idan 5 ta maydon o'qiladi:** `_id` (ObjectId), `hostname`, `disabled`, hamda ko'rsatish uchun `fullName` / `firstName` / `lastName`. Asosiy identifikator — **`clientId`**; `hostname` esa ko'rsatish uchun (u 17/17 to'ldirilgan va noyob).
 
-> **Ism maydonlari to'liq emas** (real bazada tekshirilgan): `fullName` 65%, `lastName` 53%, `firstName` 35%, `email`/`department` atigi 6%. Ustiga-ustak `fullName` da takror bor — 5 ta clientda bir xil «user_1», ba'zilarida esa u shunchaki login'ning takrori («rakhmatillo»). Shuning uchun ism **hostname o'rnini bosmaydi**, faqat **qo'shimcha** sifatida ishlatiladi: `display_name()` (§5.5) ism haqiqiy bo'lgandagina uni qaytaradi (login takrori yoki `user_\d+` shaklidagi o'rinbosarlar rad etiladi), aks holda `None`. Dashboard'da **ism bo'lsa ism**, bo'lmasa **hostname** ko'rsatiladi. Bir xil nomli bir nechta client bo'lsa, nomga qisqa id qo'shiladi. `username` maydoni umuman ishlatilmaydi — qaror #10. `disabled` maydoni optional: umuman bo'lmasa ham client **active** hisoblanadi.
+> **Ism maydonlari to'liq emas** (real bazada tekshirilgan): `fullName` 65%, `lastName` 53%, `firstName` 35%, `email`/`department` atigi 6%. Ustiga-ustak `fullName` da takror bor — 5 ta clientda bir xil «user_1», ba'zilarida esa u shunchaki login'ning takrori. Shuning uchun ism **hostname o'rnini bosmaydi**, faqat **qo'shimcha** sifatida ishlatiladi: `display_name()` (§5.5) ism haqiqiy bo'lgandagina uni qaytaradi (login takrori yoki `user_\d+` shaklidagi o'rinbosarlar rad etiladi), aks holda `None`. Dashboard'da **ism bo'lsa ism**, bo'lmasa **hostname** ko'rsatiladi. Bir xil nomli bir nechta client bo'lsa, nomga qisqa id qo'shiladi. `username` maydoni umuman ishlatilmaydi — qaror #10. `disabled` maydoni optional: umuman bo'lmasa ham client **active** hisoblanadi.
 
 Active client'lar so'rovi (hamma joyda aynan shu):
 
