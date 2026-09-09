@@ -27,7 +27,7 @@ Natijalar statistika tilida emas, oddiy tilda ko'rsatiladi — «5 soat 18 daqiq
 ```
 alpha-demo (DLP bazasi, faqat o'qish)
         │
-        ├─── COLLECTOR ──► raw_data_for_train    (60 kunlik arxiv, train uchun)
+        ├─── COLLECTOR ──► raw_data_for_train    (90 kunlik arxiv, train uchun)
         │                        │
         │                   TRAINER ──► baseline  (client × hafta kuni statistikasi)
         │                                  │
@@ -36,7 +36,7 @@ alpha-demo (DLP bazasi, faqat o'qish)
                                                 DASHBOARD
 ```
 
-1. **Collector** — 60 kunlik tarixni yig'ib kunlik agregatlarga aylantiradi (faqat train paytida ishlaydi).
+1. **Collector** — 90 kunlik tarixni yig'ib kunlik agregatlarga aylantiradi (faqat train paytida ishlaydi).
 2. **Trainer** — har xodim uchun **har hafta kuni alohida** o'rtacha kelish/ketish vaqti va standart og'ishni hisoblaydi. Shanba faqat shanbalar bilan solishtiriladi.
 3. **Trigger** — har 5 soatda faqat **yangi** ma'lumotni oladi (qayerda to'xtaganini `trigger_data` cursor'idan biladi) va navbatga yuboradi.
 4. **Worker** (3 ta) — kunlarni detectorlardan o'tkazib ball va `riskScore` hisoblaydi.
@@ -177,7 +177,7 @@ Bitta detector va vazn 1.0 bo'lganda `riskScore == anomalyScore`.
 
 ```bash
 docker compose up -d --build          # mongo + rabbitmq + app
-docker compose exec app python collector.py    # 60 kunlik tarixni yig'ish
+docker compose exec app python collector.py    # 90 kunlik tarixni yig'ish
 docker compose exec app python trainer.py      # baseline qurish
 ```
 
@@ -250,7 +250,7 @@ trainer.py           CLI: baseline qurish
 
 services/
   mongo.py           2 ta alohida ulanish: asosiy (RO) + mahalliy (RW)
-  collector.py       60 kunlik tarixni yig'ish
+  collector.py       90 kunlik tarixni yig'ish
   trainer.py         baseline qurish (tmp + atomik swap)
   trigger.py         cursor + dedup + navbatga yuborish
   processor.py       z-score hisoblash (sof funksiya)

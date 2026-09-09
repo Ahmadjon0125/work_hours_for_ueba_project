@@ -42,6 +42,7 @@ let rows = [];          // joriy filtrdagi natijalar
 let baselines = {};     // clientId -> weeks
 let clientList = [];    // [{clientId, hostname, fullName, label}]
 let zThreshold = 1.0;   // /api/health dan keladi (.env: ANOMALY_Z_THRESHOLD)
+let minDowSamples = 3;  // /api/health dan keladi (.env: MIN_DOW_SAMPLES)
 
 /** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
 function personName(row) {
@@ -212,6 +213,7 @@ async function loadHealth() {
   try {
     const h = await (await fetch('/api/health')).json();
     if (typeof h.anomalyZThreshold === 'number') zThreshold = h.anomalyZThreshold;
+    if (typeof h.minDowSamples === 'number') minDowSamples = h.minDowSamples;
     const bad = [];
     if (h.mongo_main !== 'ok') bad.push('asosiy baza');
     if (h.mongo_local !== 'ok') bad.push('mahalliy baza');
@@ -264,7 +266,7 @@ function renderSummary() {
 
   if (c.insufficient) {
     text += `<span class="note">${c.insufficient} kun baholanmadi: bu xodimning shu hafta kuni bo'yicha
-      hali yetarli tarixi yo'q (baholash uchun kamida 5 ta shunday kun kerak).
+      hali yetarli tarixi yo'q (baholash uchun kamida ${minDowSamples} ta shunday kun kerak).
       Vaqt o'tib ma'lumot to'plangach ular ham baholanadi.</span>`;
   }
   $('summary').innerHTML = text;

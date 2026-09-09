@@ -31,7 +31,7 @@ Muhim qoida: **har hafta kuni mustaqil o'rganiladi**. Shanba faqat shanbalar bil
 
 Butun oqim besh bosqichdan iborat:
 
-1. **Collector** (bir marta, train paytida) — `alpha-demo` dan har bir active client uchun oxirgi 60 kunlik barcha event vaqtlarini olib, kunlik agregatlarga (start/finish) aylantirib `ueba_local.raw_data_for_train` ga yozadi.
+1. **Collector** (bir marta, train paytida) — `alpha-demo` dan har bir active client uchun oxirgi 90 kunlik barcha event vaqtlarini olib, kunlik agregatlarga (start/finish) aylantirib `ueba_local.raw_data_for_train` ga yozadi.
 2. **Trainer** (bir marta, train paytida) — shu arxivdan har client × har hafta kuni uchun o'rtacha va standart og'ishlarni hisoblab `baseline` ga yozadi.
 3. **Trigger** (har 5 soatda, avtomatik) — `alpha-demo` dan **faqat yangi** ma'lumotni oladi (qayerda to'xtaganini `trigger_data` dagi cursor'dan biladi), kunlik agregat qilib RabbitMQ'ga job sifatida yuboradi va nimani yuborganini `trigger_data` ga yozib qo'yadi.
 4. **Worker/Processor** (3 ta parallel thread) — navbatdan job olib, undagi kunlarni `baseline` bilan solishtirib z-score hisoblaydi va `results` ga yozadi.
@@ -45,7 +45,7 @@ flowchart TD
     end
 
     subgraph LOCAL["MAHALLIY MONGODB — ueba_local (O'QISH/YOZISH)"]
-        R["raw_data_for_train (60 kunlik train arxivi)"]
+        R["raw_data_for_train (90 kunlik train arxivi)"]
         B["baseline (client x hafta kuni)"]
         T["trigger_data (yuborilganlar + cursor)"]
         S["results (z-score natijalar)"]
@@ -97,7 +97,7 @@ Quyidagi 15 qaror tasdiqlangan va muhokama qilinmaydi:
 
 | # | Qaror |
 |---|---|
-| 1 | Collector avval **active client'larni** aniqlaydi, keyin **har client × har collection** uchun alohida server-side so'rov yuboradi (oxirgi 60 kun). "Hammasini yuklab olib Python'da filtrlash" usuli bekor. |
+| 1 | Collector avval **active client'larni** aniqlaydi, keyin **har client × har collection** uchun alohida server-side so'rov yuboradi (oxirgi 90 kun). "Hammasini yuklab olib Python'da filtrlash" usuli bekor. |
 | 2 | `alpha-demo` ga **hech qanday yozuv yo'q** — faqat `find()`. Barcha yozuvlar `ueba_local` ga. |
 | 3 | Eski shovqin filtrlari (kuniga ≥5 event, ≤12 soat span) **butunlay bekor**. Yangi yagona qoida — §5.1 dagi kunlik agregat. 12 soatdan uzun kunlar ham saqlanadi va anomaliya sifatida baholanadi. |
 | 4 | Z-score belgilari: **erta kelish → musbat, kech ketish → musbat**; kech kelish va erta ketish → manfiy. |
@@ -109,7 +109,7 @@ Quyidagi 15 qaror tasdiqlangan va muhokama qilinmaydi:
 | 10 | Matematika eski koddan **aynan** ko'chiriladi (§5). **Username umuman ishlatilmaydi** — hamma joyda faqat `hostname` (collector `clients` dan olib yozib qo'yadi). Trainer asosiy MongoDB'ga umuman so'rov yubormaydi. |
 | 11 | Trigger **cursor (checkpoint)** bilan ishlaydi: cursor manbai `trigger_data`, unda faqat MQ'ga muvaffaqiyatli yuborilgan kunlik agregatlar turadi. Dedup ham shu yerda: `(start, finish, eventCount)` o'zgarmagan kun qayta yuborilmaydi. DB'dan o'qish 100 tadan bo'lib (batched). |
 | 12 | Local DB'da **6 ta doimiy collection** (`baseline_runs` — baseline versiyalari ro'yxati ARCH-02, `training_jobs` — o'qitish job'lari ARCH-01) (§2 jadvali; eski `sent_days` bekor — vazifasini `trigger_data` bajaradi). Train jarayonida vaqtincha 5-chisi — `baseline_tmp` — paydo bo'lib, swap bilan yo'qoladi. |
-| 13 | **Retrain — to'liq zanjir:** dashboard'dagi «Baseline yangilash» tugmasi → `POST /api/retrain` → fon thread'ida collector (yangi 60 kun) → trainer. Retrain davomida **eski baseline joyida qoladi** — yangisi `baseline_tmp` da qurilib, tayyor bo'lgach atomik `rename(dropTarget=True)` bilan almashtiriladi; workerlar uchun bo'sh oyna bo'lmaydi. Parallel retrain'ga **409**. Birinchi o'rnatishda CLI (`python collector.py` + `python trainer.py`) ham ishlaydi. |
+| 13 | **Retrain — to'liq zanjir:** dashboard'dagi «Baseline yangilash» tugmasi → `POST /api/retrain` → fon thread'ida collector (yangi 90 kun) → trainer. Retrain davomida **eski baseline joyida qoladi** — yangisi `baseline_tmp` da qurilib, tayyor bo'lgach atomik `rename(dropTarget=True)` bilan almashtiriladi; workerlar uchun bo'sh oyna bo'lmaydi. Parallel retrain'ga **409**. Birinchi o'rnatishda CLI (`python collector.py` + `python trainer.py`) ham ishlaydi. |
 | 14 | **Trigger faqat avtomatik ishlaydi** — uni API orqali ishga tushirish yoki boshqarish yo'q (`/api/trigger` endpointi mavjud emas). Vazifasi — o'zgarish bo'lganda yangi datalarni olib kelish; o'zgarishni tekshirish uchun har `TRIGGER_INTERVAL_HOURS`(5) soatda ishlab turadi — bu shunchaki qiymat, faqat `.env` dan o'zgartiriladi. Takror yubormaslik `trigger_data` dedup'i bilan kafolatlanadi (qaror #11). |
 | 15 | **`activities` collection'i ishlatilmaydi** — u event jurnali emas, kunlik agregat jadvali (§4.1). Pipeline faqat 16 ta real event collection'idan foydalanadi. |
 
@@ -191,7 +191,7 @@ Ulanish: `.env` dan `LOCAL_MONGO_URI` + `LOCAL_DB_NAME=ueba_local`.
 
 Kodda **ikkita alohida `MongoClient`** yaratiladi: biri `alpha-demo` uchun (faqat o'qish), ikkinchisi `ueba_local` uchun (barcha yozuvlar). Bu "asosiy bazaga yozib yuborish" xatosini kod darajasida imkonsiz qiladi (§10).
 
-#### `raw_data_for_train` — 60 kunlik train arxivi
+#### `raw_data_for_train` — 90 kunlik train arxivi
 
 Har client × har kun = 1 document:
 
@@ -239,8 +239,8 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
   "_id": "ObjectId",
   "clientId": "665f2a1b...",
   "hostname": "PC-042",
-  "windowDays": 60,
-  "minDowSamples": 5,
+  "windowDays": 90,
+  "minDowSamples": 3,
   "totalDays": 41,
   "keptDays": 38,
   "trainedAt": "2026-08-26T09:15:00",
@@ -253,7 +253,7 @@ Yozish tartibi qat'iy: **avval MQ'ga publish, muvaffaqiyatdan keyingina bu yerga
 ```
 
 - Vaqt qiymatlari — **00:00 dan boshlab daqiqa** (float). Masalan 09:00 → 540.
-- `weeks` da faqat kamida 1 namunasi bor hafta kunlari bo'ladi. `count < MIN_DOW_SAMPLES(5)` bo'lsa `count` yoziladi, qolgan statlar `null` — bunday kun baholanmaydi.
+- `weeks` da faqat kamida 1 namunasi bor hafta kunlari bo'ladi. `count < MIN_DOW_SAMPLES(3)` bo'lsa `count` yoziladi, qolgan statlar `null` — bunday kun baholanmaydi.
 - **Indeks:** UNIQUE `{ clientId: 1 }`.
 - **Versiyalanadi (ARCH-02):** har o'qitish run'i yangi **`baselineId`** (string) oladi va eski versiya **o'chirilmaydi**. Indeks: UNIQUE `{clientId, baselineId}`.
 - **`baseline_runs`** — versiyalar ro'yxati: `{_id: baselineId, trainedAt, windowDays, minDowSamples, clientCount, dayCount, current}`. Joriy versiya `current: true` bilan belgilanadi; o'quvchi `find_one({current: true}, sort=[("trainedAt", -1)])` qiladi.
@@ -359,7 +359,7 @@ Bu funksiya **collector** va **trigger** da bir xil ishlatiladi. Processor agreg
 
 Har client × har hafta kuni uchun, o'sha kunga tushgan `n` ta kun bo'yicha:
 
-- `n < MIN_DOW_SAMPLES(5)` → barcha statlar `null` (faqat `count: n` yoziladi);
+- `n < MIN_DOW_SAMPLES(3)` → barcha statlar `null` (faqat `count: n` yoziladi);
 - aks holda:
   - `meanStart = round(avg(start_min), 2)`, `stdStart = round(sample_std(start_min), 2)`
   - `meanFinish = round(avg(finish_min), 2)`, `stdFinish = round(sample_std(finish_min), 2)`
@@ -534,18 +534,18 @@ Detectorlar **holatsiz** bo'lishi shart — 3 ta worker thread bir vaqtda chaqir
 
 ### 6.1 Collector (`collector.py`)
 
-**Nima qiladi:** `alpha-demo` dan 60 kunlik tarixni yig'ib `raw_data_for_train` ni to'ldiradi.
+**Nima qiladi:** `alpha-demo` dan 90 kunlik tarixni yig'ib `raw_data_for_train` ni to'ldiradi.
 
 **Oyna — faqat TO'LIQ tugagan kunlar (COL-01).** Chegaralar soatga emas, **kunga** bog'lanadi:
 
 ```
 window_end   = bugungi 00:00          ← ishga tushirilgan kun oynaga KIRMAYDI
-window_start = window_end − 60 kun    ← eng eski kun 00:00 dan boshlanadi
+window_start = window_end − 90 kun    ← eng eski kun 00:00 dan boshlanadi
 ```
 
 Masalan 8-sentabr kuni ishga tushirilsa (soat nechada bo'lishidan qat'i nazar): oyna `[10-iyul 00:00 … 8-sentabr 00:00)` — ya'ni **10-iyul … 7-sentabr**, roppa-rosa 60 to'liq kun. Soat 02:40 da ham, 23:40 da ham natija bir xil.
 
-> Nima uchun: avval oyna `now − 60 kun` edi, ya'ni vaqt bilan. Soat 15:20 da ishga tushirilsa eng eski kun 15:20 dan boshlanardi (ertalabki qismi yo'q) va bugungi kun ham chala bo'lardi — ikkalasi soxta kelish/ketish vaqti berib, baseline'ni buzardi.
+> Nima uchun: avval oyna `now − DAYS_WINDOW kun` edi, ya'ni vaqt bilan. Soat 15:20 da ishga tushirilsa eng eski kun 15:20 dan boshlanardi (ertalabki qismi yo'q) va bugungi kun ham chala bo'lardi — ikkalasi soxta kelish/ketish vaqti berib, baseline'ni buzardi.
 >
 > Bugungi kun **baholanishda davom etadi** — u boshqa yo'ldan keladi (trigger → `results`, §6.3), faqat **o'qitishga** kirmaydi.
 
@@ -580,7 +580,7 @@ Masalan 8-sentabr kuni ishga tushirilsa (soat nechada bo'lishidan qat'i nazar): 
 6. **Shu client uchun** manbadan kelmagan kunlar o'chiriladi: oyna ichida arxivda bor, lekin bu run'da hisoblanmagan sanalar (manbadan yo'qolgan kun arxivda qolib ketmasin).
 7. **Sikldan keyin, barcha clientlar uchun** (COL-02):
    - **Sana bo'yicha:** `date < window_start` yoki `date >= window_end` bo'lgan hamma yozuv o'chiriladi. Bu **sikldan tashqarida** bo'lishi shart: avval sikl ichida edi, shuning uchun collector bormaydigan client (o'chirilgan yoki `disabled`) hech qachon eskirmasdi — yozuvlari abadiy qolib, har retrain'da yangi baseline'ga kirib ketardi.
-   - **Active bo'lmagan clientlar:** active ro'yxatda yo'q `clientId` larning barcha yozuvlari o'chiriladi — ishdan bo'shagan xodim keyingi retrain'da darrov baseline'dan chiqadi (60 kun kutilmaydi).
+   - **Active bo'lmagan clientlar:** active ro'yxatda yo'q `clientId` larning barcha yozuvlari o'chiriladi — ishdan bo'shagan xodim keyingi retrain'da darrov baseline'dan chiqadi (90 kun kutilmaydi).
 8. Xulosa log: jami clientlar, kunlar, yozilgan documentlar. O'tkazib yuborilgan client bo'lsa exit code 1.
 
 **Arxiv — oynaning nusxasi (COL-02).** `raw_data_for_train` "collector qachondir yozgan hamma narsa" emas, **oxirgi 60 to'liq kunning aynan nusxasi** bo'lishi kerak. Yuqoridagi 6–7-qadamlar shuni ta'minlaydi.
@@ -616,7 +616,7 @@ O'qish har doim **batched streaming** usulida (§6.3.1) — katta hajm ham xotir
 5. `hostname` — arxiv documentlaridan olinadi, DB so'rovisiz.
 6. Har client uchun 1 document **`baseline_tmp`** ga yoziladi (boshida qoldiq `baseline_tmp` bo'lsa drop qilinadi va unda UNIQUE `{clientId: 1}` indeks yaratiladi).
 7. **Swap:** hamma clientlar yozilgach `db.baseline_tmp.rename("baseline", dropTarget=True)` — atomik almashtirish. Shu paytgacha eski `baseline` joyida turadi va workerlar undan foydalanaveradi.
-8. **Retrain semantikasi (qaror #13):** retrain = avval collector (yangi 60 kun), so'ng trainer'ning 1–7 qadamlari. Birinchi train ham, retrain ham bir xil tmp+swap yo'lidan o'tadi (CLI rejimda collector alohida buyruq bilan yurgiziladi). Retrain **`results` va `trigger_data` ni tozalamaydi** — eski natijalar tarix sifatida qoladi, yangi kunlar yangi baseline bilan baholanadi.
+8. **Retrain semantikasi (qaror #13):** retrain = avval collector (yangi 90 kun), so'ng trainer'ning 1–7 qadamlari. Birinchi train ham, retrain ham bir xil tmp+swap yo'lidan o'tadi (CLI rejimda collector alohida buyruq bilan yurgiziladi). Retrain **`results` va `trigger_data` ni tozalamaydi** — eski natijalar tarix sifatida qoladi, yangi kunlar yangi baseline bilan baholanadi.
 9. Log: jami/olingan kunlar, clientlar soni, `trainedAt`.
 
 ### 6.3 Trigger (`services/trigger.py`, `main.py` ichida APScheduler)
@@ -659,7 +659,7 @@ O'qish har doim **batched streaming** usulida (§6.3.1) — katta hajm ham xotir
    }
    ```
 6. **`trigger_data` ga yozish — faqat publish muvaffaqiyatidan keyin** (replacement upsert: hostname, start, finish, eventCount, dayOfWeek, durationMin, updatedAt=now). Tartib qat'iy: avval publish, keyin yozuv. RabbitMQ yotgan bo'lsa publish xatosi log'lanadi, yozuv qilinmaydi → cursor orqada qoladi → keyingi o'tishda o'sha kunlar qayta olinib qayta yuboriladi. **Ma'lumot yo'qolmaydi.**
-7. Pruning: har client uchun `trigger_data.delete_many({clientId, date: {$lt: (now − 60 kun)ning "YYYY-MM-DD" stringi}})`. Shu bilan birga `results` dan ham `RESULTS_RETENTION_DAYS(365)` kundan eski yozuvlar o'chiriladi: `results.delete_many({date: {$lt: (now − 365 kun)ning "YYYY-MM-DD" stringi}})` — natijalar tarixi 1 yil saqlanadi, undan keyin o'sib ketmaydi.
+7. Pruning: har client uchun `trigger_data.delete_many({clientId, date: {$lt: (now − DAYS_WINDOW kun)ning "YYYY-MM-DD" stringi}})`. Shu bilan birga `results` dan ham `RESULTS_RETENTION_DAYS(365)` kundan eski yozuvlar o'chiriladi: `results.delete_many({date: {$lt: (now − 365 kun)ning "YYYY-MM-DD" stringi}})` — natijalar tarixi 1 yil saqlanadi, undan keyin o'sib ketmaydi.
 8. Xulosa log: `trigger run: X client, Y yangi event, Z kun yuborildi, N kun skip (bir xil)`.
 
 **Scheduler:** `BackgroundScheduler`, interval = `TRIGGER_INTERVAL_HOURS(5)`, `max_instances=1` (bir o'tish tugamasdan ikkinchisi boshlanmaydi); dastur ishga tushgach **10 soniyadan keyin** birinchi o'tish ham bajariladi (dashboard tezroq to'lsin).
@@ -713,7 +713,7 @@ Takroriy job'lardan qo'rqish shart emas: trigger allaqachon dedup qilgan, kelgan
 |---|---|---|
 | `/api/health` | GET | `{ mongo_main, mongo_local, rabbitmq: "ok"/"error", queue_depth: N, workers: N, lastTrigger: {...}, lastRetrain: {...} }`. `lastRetrain` ichida `stage` maydoni bor: `collecting` / `training` / `finished` / `error` — dashboard jarayonni shundan biladi |
 | `/api/train` | POST | Birinchi o'qitish. Baseline mavjud bo'lsa → **409** `{"detail": "baseline mavjud, /api/retrain ishlatiling"}`. Aks holda fon thread'ida **collector → trainer** zanjiri → **202** `{"status": "training"}` |
-| `/api/retrain` | POST | Fon thread'ida to'liq zanjir (qaror #13): collector (yangi 60 kun) → trainer (tmp + atomik swap; eski baseline swap'gacha xizmat qiladi) → **202** `{"status": "retraining"}`. Retrain allaqachon ketayotgan bo'lsa → **409** `{"detail": "retrain davom etmoqda"}` |
+| `/api/retrain` | POST | Fon thread'ida to'liq zanjir (qaror #13): collector (yangi 90 kun) → trainer (tmp + atomik swap; eski baseline swap'gacha xizmat qiladi) → **202** `{"status": "retraining"}`. Retrain allaqachon ketayotgan bo'lsa → **409** `{"detail": "retrain davom etmoqda"}` |
 | `/api/results` | GET | Filtrlar: `from`, `to` (YYYY-MM-DD), `client_id`, `status` (vergul bilan bir nechta), `limit` (default 100, max 5000), `offset` (default 0). Javob: `{ "total": N, "limit": ..., "offset": ..., "items": [result doc'lari] }`, `date` kamayish tartibida |
 | `/api/results/{client_id}` | GET | Xuddi shu filtrlar, bitta client uchun; client topilmasa **404** |
 | `/api/baseline` | GET | **Joriy** baseline versiyasi (har client uchun `weeks`) — dashboard haftalik rejim grafigini shundan chizadi |
@@ -783,7 +783,7 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `WORKER_COUNT` | `3` | Worker thread'lar soni (2–5) |
 | `API_HOST` | `127.0.0.1` | |
 | `API_PORT` | `8000` | |
-| `DAYS_WINDOW` | `60` | Train oynasi (kun) |
+| `DAYS_WINDOW` | `90` | Train oynasi (kun) |
 | `TRIGGER_INTERVAL_HOURS` | `5` | Trigger oralig'i |
 | `LOOKBACK_HOURS` | `5` | Faqat birinchi o'tish oynasi (cursor bo'lmaganda) |
 | `BATCH_SIZE` | `100` | DB o'qish partiyasi |
@@ -792,7 +792,7 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 | `ANOMALY_Z_THRESHOLD` | `1.0` | Ish oynasi kengligi: `mean ± T·σ` (§5.4). ≤ 0 berilsa 1.0 ga qaytadi |
 | `ANOMALY_Z_FULL_SCALE` | `3.0` | `zOut` shu qiymatga yetganda ball 100 (§5.4). Chegaradan kichik berilsa `T+2` ga qaytadi |
 | `DETECTOR_WEIGHT_<NOM>` | detector defaulti | Detector vazni, `[0,1]` (§5.4.1). Masalan `DETECTOR_WEIGHT_WORKING_HOURS` |
-| `MIN_DOW_SAMPLES` | `5` | Baseline uchun minimal kun (hafta kuniga) |
+| `MIN_DOW_SAMPLES` | `3` | Baseline uchun minimal kun (hafta kuniga) |
 | `SINGLE_EVENT_STAY_HOURS` | `1` | 1 event'li kunda finish = start + shu soat |
 | `BASELINE_KEEP_VERSIONS` | `5` | Nechta baseline versiyasi saqlanadi (ARCH-02) |
 | `RESULTS_RETENTION_DAYS` | `365` | `results` tarixi necha kun saqlanadi (trigger o'tishida eski yozuvlar o'chiriladi) |
@@ -918,7 +918,7 @@ so'ng §9.2 dagi tartib. Bu usulda §9.4 dagi timezone ogohlantirishi **o'z kuch
 source venv/bin/activate
 pip install -r requirements.txt
 
-python collector.py    # 1) 60 kunlik tarix -> raw_data_for_train
+python collector.py    # 1) 90 kunlik tarix -> raw_data_for_train
 python trainer.py      # 2) baseline qurish
 python main.py         # 3) FastAPI + scheduler + 3 worker (uzluksiz)
 ```
@@ -958,8 +958,8 @@ Kodda `main_client` ustida yozma metod chaqirig'i bo'lishi **mumkin emas**. Ikki
 | 3 | `incidents` da ID maydoni `employee` (boshqalarida `clientId`) | §4.1 jadvaliga aynan rioya |
 | 4 | `hostname` bo'sh yoki yo'q | o'rniga `str(_id)` |
 | 5 | Vaqt maydoni parse bo'lmasa | `None` → o'sha document skip, xato tashlanmaydi (bu — *ma'lumot yaroqsiz*, *o'qib bo'lmadi* emas) |
-| 3a | **Xodim ishdan bo'shasa** (`disabled: true` yoki `clients` dan o'chirilsa) | Active ro'yxatga tushmaydi → arxiv yozuvlari o'chiriladi → keyingi baseline'ga kirmaydi. `results` dagi tarixi qoladi (dashboard'da «o'chirilgan» belgisi bilan ko'rinadi). `disabled` kechikib qo'yilsa ham muammo yo'q: eventlari kelmagach kunlari 60 kunlik oynadan o'z-o'zidan chiqib ketadi |
-| 4a | **Kun to'liq tugamagan bo'lsa** (ishga tushirilgan kun) | O'qitish oynasiga **kirmaydi** — oyna `[bugungi 00:00 − 60 kun, bugungi 00:00)`. Baholanishda esa qatnashadi (§6.3). COL-01 |
+| 3a | **Xodim ishdan bo'shasa** (`disabled: true` yoki `clients` dan o'chirilsa) | Active ro'yxatga tushmaydi → arxiv yozuvlari o'chiriladi → keyingi baseline'ga kirmaydi. `results` dagi tarixi qoladi (dashboard'da «o'chirilgan» belgisi bilan ko'rinadi). `disabled` kechikib qo'yilsa ham muammo yo'q: eventlari kelmagach kunlari 90 kunlik oynadan o'z-o'zidan chiqib ketadi |
+| 4a | **Kun to'liq tugamagan bo'lsa** (ishga tushirilgan kun) | O'qitish oynasiga **kirmaydi** — oyna `[bugungi 00:00 − DAYS_WINDOW kun, bugungi 00:00)`. Baholanishda esa qatnashadi (§6.3). COL-01 |
 | 5a | **Manba collection'ini o'qib bo'lmasa** (tarmoq uzildi, baza yotdi) | 2 marta qayta urinish → baribir bo'lmasa `SourceReadError`; **shu client umuman yozilmaydi**, eski ma'lumoti saqlanadi, `failed` ro'yxatiga tushadi, job `partial` bo'ladi (§6.1, COL-04) |
 | 6 | Vaqt son bo'lsa (sec/ms) | `parse_to_datetime` qoidasi (§5.5) |
 | 7 | Shu hafta kuni uchun baseline yo'q yoki statlar null | z = null; ikkala z null bo'lsa status `insufficient` |

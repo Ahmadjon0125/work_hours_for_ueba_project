@@ -91,6 +91,8 @@ def health():
         # Dashboard grafigi shu chegara bo'yicha yo'lak chizadi va nuqtalarni
         # bo'yaydi — kodda qattiq yozilmasin, aks holda .env bilan uzilib qoladi.
         "anomalyZThreshold": config.ANOMALY_Z_THRESHOLD,
+        # Dashboard "kamida N ta kun kerak" matnini shundan oladi
+        "minDowSamples": config.MIN_DOW_SAMPLES,
         "lastTrigger": _state["lastTrigger"],
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
         "lastRetrain": _job_as_state(jobs.latest()),

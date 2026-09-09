@@ -28,7 +28,7 @@ API_HOST = os.getenv("API_HOST", "127.0.0.1")
 API_PORT = int(os.getenv("API_PORT", 8000))
 
 # --- Pipeline ---
-DAYS_WINDOW = int(os.getenv("DAYS_WINDOW", 60))
+DAYS_WINDOW = int(os.getenv("DAYS_WINDOW", 90))
 TRIGGER_INTERVAL_HOURS = float(os.getenv("TRIGGER_INTERVAL_HOURS", 5))
 LOOKBACK_HOURS = float(os.getenv("LOOKBACK_HOURS", 5))
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", 100))
@@ -39,7 +39,7 @@ SINGLE_EVENT_STAY_HOURS = float(os.getenv("SINGLE_EVENT_STAY_HOURS", 1))
 RESULTS_RETENTION_DAYS = int(os.getenv("RESULTS_RETENTION_DAYS", 365))
 
 # --- Anomaliya chegarasi ---
-MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 5))
+MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 3))
 # |z| shu chegaradan oshsa — anomaliya. Eski 4 pog'onali sxema (watch/anomaly/
 # severe) bekor qilindi: bitta chegara + 0-100 ball tushunarliroq va sozlash
 # osonroq. Chegara ball shkalasida aynan 50 ga to'g'ri keladi (detectors/scoring).
