@@ -24,12 +24,33 @@
     <label class="check"><input type="checkbox" id="onlyIssues"> Faqat chetlanishlar</label>
     <button id="refresh">Yangilash</button>
     <span class="spacer"></span>
-    <button id="retrain" class="secondary" title="Oxirgi 60 kunlik ma'lumotni qaytadan yig'ib, odatiy jadvallarni yangilaydi">Odatiy jadvallarni yangilash</button>
+    <button id="retrain" class="secondary" title="Ma'lumotni qaytadan yig'ib, odatiy jadvallarni yangilaydi">Odatiy jadvallarni yangilash</button>
     <span class="retrain-status" id="retrainStatus"></span>
   </section>
 
   <!-- Oddiy tilda xulosa -->
   <section class="summary" id="summary"></section>
+
+  <!-- Kuzatuvdagi xodimlar: to'plangan xavf bo'yicha -->
+  <section class="panel" id="riskPanel">
+    <h2>Kuzatuvdagi xodimlar <span class="muted" id="riskInfo"></span></h2>
+    <p class="hint">Umumiy xavf — tanlangan oraliqdagi kunlik xavf ballarining
+      yig'indisi; chiziq uning kunma-kun to'planishi. Oxirgi xavf — so'nggi
+      kunlardagi yig'indi. Qatorni bosib o'sha xodimga o'tish mumkin.</p>
+    <div class="table-wrap">
+      <table id="riskTable">
+        <thead>
+          <tr>
+            <th>Xodim</th>
+            <th class="num">Oxirgi xavf</th>
+            <th>Umumiy xavf ↓</th>
+            <th class="num">Chetlanish</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
 
   <!-- Diqqat talab qiladigan kunlar -->
   <section class="panel" id="issuesPanel">

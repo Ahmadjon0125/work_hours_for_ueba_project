@@ -104,6 +104,16 @@ def detector_weight(name, default=1.0):
     return min(1.0, max(0.0, weight))
 
 
+# --- Xavf jadvali (kuzatuvdagi xodimlar) ---
+# "Recent risk" ustuni necha kunlik yig'indi. Bitta kun juda beqaror
+# bo'lgani uchun default 7 — hafta davomidagi manzarani ko'rsatadi.
+RISK_RECENT_DAYS = int(os.getenv("RISK_RECENT_DAYS", 7))
+# Sparkline'da nechta nuqta chiziladi (oxirgi shuncha kun)
+RISK_TREND_POINTS = int(os.getenv("RISK_TREND_POINTS", 30))
+# Recent risk shu chegaralardan oshsa xodim belgisi rangi o'zgaradi
+RISK_LEVEL_HIGH = int(os.getenv("RISK_LEVEL_HIGH", 50))     # qizil uchburchak
+RISK_LEVEL_MEDIUM = int(os.getenv("RISK_LEVEL_MEDIUM", 20))  # sariq kvadrat
+
 # --- Daraja yorliqlari (dashboard uchun) ---
 # 0-100 ballik shkalani odam tiliga o'giradigan chegaralar.
 SEVERITY_HIGH = int(os.getenv("SEVERITY_HIGH", 75))       # bundan yuqori: "juda yuqori"

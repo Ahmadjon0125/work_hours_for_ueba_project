@@ -785,7 +785,7 @@ Yaratiladigan indekslar:
 `dashboard/` — **vanilla JS + inline SVG**, tashqi kutubxona yo'q, CDN yo'q.
 Grafiklar brauzerda `document.createElementNS` bilan chiziladi.
 
-### To'rtta panel
+### Beshta panel
 
 **1. Xulosa** — bir jumla:
 
@@ -794,18 +794,35 @@ Grafiklar brauzerda `document.createElementNS` bilan chiziladi.
 
 Baholanmagan kunlar bo'lsa sababi ham yoziladi.
 
-**2. E'tibor talab qiladigan kunlar** — chetlanishli kunlar kartalari,
+**2. Kuzatuvdagi xodimlar** — QRadar uslubidagi kesim, `/api/risk-summary`
+dan keladi:
+
+| Ustun | Ma'nosi |
+|---|---|
+| belgi | ▲ qizil / ■ sariq / ● kulrang — `recentRisk` chegaralari bo'yicha |
+| **Oxirgi xavf** | so'nggi `RISK_RECENT_DAYS` (7) kunlik yig'indi |
+| **Umumiy xavf** | oraliqdagi to'liq yig'indi + kumulyativ chiziq |
+| **Chetlanish** | chetlanishli kunlar soni |
+
+Umumiy xavf bo'yicha kamayish tartibida saralangan — eng yuqorisi tepada.
+Qatorni bosish o'sha xodimga o'tkazadi, qayta bosish tanlovni bekor qiladi.
+
+Chiziq **kumulyativ** bo'lgani uchun doim o'sib boradi: uning tikligi xavf
+qanchalik tez to'planayotganini ko'rsatadi. Tekis chiziq — xodim so'nggi
+paytda xavf to'plamayapti.
+
+**3. E'tibor talab qiladigan kunlar** — chetlanishli kunlar kartalari,
 **daraja bo'yicha saralangan** (eng xavflisi tepada), `DASHBOARD_MAX_ISSUES`
 (20) tagacha. Har kartada daraja yorlig'i: `24 · past`, `56 · yuqori`.
 
-**3. Grafik** — xodim tanlanganiga qarab ikki xil:
+**4. Grafik** — xodim tanlanganiga qarab ikki xil:
 
 | Tanlangan | Grafik |
 |---|---|
 | bitta xodim | «Ish oynasi va faollik vaqtlari» |
 | «Barcha xodimlar» | «Umumiy manzara» matritsasi |
 
-**4. Jadval** — barcha kunlar, 11 ustun: sana, xodim, birinchi/oxirgi
+**5. Jadval** — barcha kunlar, 11 ustun: sana, xodim, birinchi/oxirgi
 faollik, odatdagi vaqtlar, farqlar, sof ish, xulosa, daraja.
 
 ### Asosiy grafik mexanikasi
@@ -945,6 +962,7 @@ Barcha endpointlar `/api/docs` da ham hujjatlashtirilgan (FastAPI avtomatik).
 | `/api/clients` | GET | Xodimlar ro'yxati |
 | `/api/baseline` | GET | Joriy baseline hujjatlari |
 | `/api/baseline/versions` | GET | Baseline versiyalari ro'yxati |
+| `/api/risk-summary` | GET | Kuzatuvdagi xodimlar: to'plangan xavf, tendensiya |
 | `/api/results` | GET | Natijalar (filtrlar quyida) |
 | `/api/results/{client_id}` | GET | Bitta xodim natijalari (yo'q bo'lsa **404**) |
 | `/` va `/api/dashboard` | GET | Dashboard sahifasi |
@@ -968,6 +986,33 @@ Javob konverti:
 ```
 
 Saralash: `date` kamayish, `hostname` o'sish tartibida.
+
+### `GET /api/risk-summary`
+
+Xodimlar kesimi — «kimga birinchi qarash kerak» degan savolga javob.
+Alohida endpoint, chunki `/api/results` bitta xodim tanlanganda faqat
+o'shaning kunlarini qaytaradi, bu jadval esa har doim hammasini talab qiladi.
+
+```json
+[{ "clientId": "...", "hostname": "azam@azam-upc", "fullName": null,
+   "overallRisk": 29,          // oraliqdagi riskScore yig'indisi
+   "recentRisk": 2,            // oxirgi RISK_RECENT_DAYS kunlik yig'indi
+   "evaluatedDays": 7,
+   "anomalyDays": 3,
+   "trend": [24, 27, 27, 27, 27, 27, 29],   // kumulyativ — sparkline uchun
+   "level": "low" }]           // high | medium | low
+```
+
+Parametrlar: `from`, `to`. Saralash — `overallRisk` kamayish tartibida.
+
+- Baholanmagan kunlar (`riskScore: null`) xavfga qo'shilmaydi.
+- `recentRisk` chegarasi **hamma xodim uchun bitta** — oraliq oxiridan
+  hisoblanadi. Aks holda kimningdir «oxirgi 7 kuni» boshqasinikidan
+  boshqa davrga tushib qolardi.
+- `trend` — kumulyativ yig'indi, shuning uchun chiziq doim o'sib boradi.
+  Oxirgi `RISK_TREND_POINTS` nuqta bilan cheklanadi.
+- `level` — `recentRisk` ni `RISK_LEVEL_HIGH` / `RISK_LEVEL_MEDIUM` bilan
+  solishtirish natijasi.
 
 ### `GET /api/health`
 
@@ -1182,7 +1227,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 42 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 46 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1198,6 +1243,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Anomaliya** | `MIN_DOW_SAMPLES`, `ANOMALY_Z_THRESHOLD`, `ANOMALY_Z_FULL_SCALE` |
 | **Detectorlar** | `DETECTOR_WEIGHT_<NOM>` |
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
+| **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
 
 ### Eng ko'p sozlanadigan uchtasi
 
@@ -1346,7 +1392,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_detectors.py` | Ball jadvali, oyna qoidasi, `riskScore`, vazn, xato izolyatsiyasi, nom tekshiruvi | 13 |
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
-| | **Jami** | **41** |
+| `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari | 9 |
+| | **Jami** | **50** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1399,7 +1446,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     41 ta tekshiruv
+tests/                     50 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

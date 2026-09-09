@@ -1,7 +1,7 @@
 """FastAPI endpoint'lari."""
 import os
 import threading
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query
@@ -13,6 +13,7 @@ from services import jobs
 from services.collector import collect
 from services.mongo import active_clients, local_db, main_db
 from services.trainer import current_baseline_id, train
+from utils.helpers import date_str_days_ago
 from utils.logger import get_logger
 
 log = get_logger("api")
@@ -205,6 +206,101 @@ def clients():
     # Mavjudlari birinchi, keyin hostname bo'yicha
     out.sort(key=lambda c: (c["stale"], c["label"].lower()))
     return out
+
+
+def build_risk_summary(rows, date_to=None):
+    """`results` qatorlaridan xodimlar kesimini quradi. DB'ga tegmaydi — sinash oson.
+
+    `rows` sana bo'yicha O'SISH tartibida bo'lishi kutiladi (kumulyativ chiziq
+    uchun muhim).
+    """
+    if not rows:
+        return []
+
+    # Oxirgi davr chegarasi HAMMA xodim uchun bitta bo'lishi kerak, aks holda
+    # kimningdir "oxirgi 7 kuni" boshqasinikidan boshqa oraliqqa tushib qolardi.
+    oxirgi_sana = date_to or max(r["date"] for r in rows)
+    kesim = date_str_days_ago(datetime.strptime(oxirgi_sana, "%Y-%m-%d"),
+                              config.RISK_RECENT_DAYS)
+
+    per = defaultdict(lambda: {"hostname": None, "fullName": None, "kunlar": [],
+                               "overall": 0, "recent": 0, "anomaly": 0})
+    for r in rows:
+        p = per[r["clientId"]]
+        p["hostname"] = r.get("hostname") or p["hostname"]
+        p["fullName"] = r.get("fullName") or p["fullName"]
+        risk = r.get("riskScore")
+        if risk is None:          # baholanmagan kun — xavfga qo'shilmaydi
+            continue
+        p["kunlar"].append(risk)
+        p["overall"] += risk
+        if r["date"] > kesim:
+            p["recent"] += risk
+        if r.get("isAnomaly"):
+            p["anomaly"] += 1
+
+    def daraja(recent):
+        if recent >= config.RISK_LEVEL_HIGH:
+            return "high"
+        if recent >= config.RISK_LEVEL_MEDIUM:
+            return "medium"
+        return "low"
+
+    out = []
+    for cid, p in per.items():
+        if not p["kunlar"]:
+            continue
+        # Sparkline — kumulyativ yig'indi, oxirgi RISK_TREND_POINTS nuqta
+        trend, yigindi = [], 0
+        for risk in p["kunlar"]:
+            yigindi += risk
+            trend.append(yigindi)
+        out.append({
+            "clientId": cid,
+            "hostname": p["hostname"] or cid,
+            "fullName": p["fullName"],
+            "overallRisk": p["overall"],
+            "recentRisk": p["recent"],
+            "evaluatedDays": len(p["kunlar"]),
+            "anomalyDays": p["anomaly"],
+            "trend": trend[-config.RISK_TREND_POINTS:],
+            "level": daraja(p["recent"]),
+        })
+
+    out.sort(key=lambda x: (-x["overallRisk"], -x["recentRisk"]))
+    return out
+
+
+@router.get("/api/risk-summary")
+def risk_summary(date_from: str = Query(None, alias="from"),
+                 date_to: str = Query(None, alias="to")):
+    """Kuzatuvdagi xodimlar: to'plangan xavf, oxirgi davr xavfi va tendensiya.
+
+    Nima uchun alohida endpoint: `/api/results` bitta xodim tanlanganda faqat
+    o'shaning kunlarini qaytaradi, bu jadval esa HAR DOIM barcha xodimlarni
+    talab qiladi.
+
+    Ustunlar:
+      overallRisk  — oraliqdagi `riskScore` yig'indisi (to'plangan xavf)
+      recentRisk   — oxirgi RISK_RECENT_DAYS kunlik yig'indi
+      trend        — kumulyativ yig'indi nuqtalari (sparkline uchun)
+      level        — belgi rangi: high | medium | low
+
+    Baholanmagan kunlar (`riskScore: null`) hisobga olinmaydi.
+    """
+    query = {}
+    if date_from or date_to:
+        query["date"] = {}
+        if date_from:
+            query["date"]["$gte"] = date_from
+        if date_to:
+            query["date"]["$lte"] = date_to
+
+    rows = list(local_db()[config.COL_RESULTS]
+                .find(query, {"_id": 0, "clientId": 1, "hostname": 1, "fullName": 1,
+                              "date": 1, "riskScore": 1, "isAnomaly": 1})
+                .sort("date", 1))
+    return build_risk_summary(rows, date_to)
 
 
 @router.get("/api/baseline")

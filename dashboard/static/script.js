@@ -41,6 +41,7 @@ const MONTH_UZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
 let rows = [];          // joriy filtrdagi natijalar
 let baselines = {};     // clientId -> weeks
 let clientList = [];    // [{clientId, hostname, fullName, label}]
+let riskRows = [];      // /api/risk-summary natijasi
 let zThreshold = 1.0;   // /api/health dan keladi (.env: ANOMALY_Z_THRESHOLD)
 let minDowSamples = 3;  // /api/health dan keladi (.env: MIN_DOW_SAMPLES)
 // Qolgan sozlamalar ham serverdan keladi — bu yerda faqat zaxira qiymatlar.
@@ -213,6 +214,77 @@ async function loadResults() {
   render();
 }
 
+/** Kuzatuvdagi xodimlar jadvali uchun ma'lumot.
+ *
+ *  Alohida so'rov: `/api/results` bitta xodim tanlanganda faqat o'shaning
+ *  kunlarini beradi, bu jadval esa HAR DOIM hammasini talab qiladi.
+ */
+async function loadRiskSummary() {
+  const q = new URLSearchParams();
+  if ($('from').value) q.set('from', $('from').value);
+  if ($('to').value) q.set('to', $('to').value);
+  try {
+    riskRows = await (await fetch('/api/risk-summary?' + q)).json();
+  } catch (e) {
+    riskRows = [];
+  }
+  renderRiskTable();
+}
+
+/** Kumulyativ xavf chizig'i — inline SVG matni sifatida.
+ *
+ *  DIQQAT: bu yerda `el()` ISHLATILMAYDI. U `createElementNS` bilan SVG
+ *  namespace'da element yasaydi — grafiklar uchun to'g'ri, lekin `<tr>`/`<td>`
+ *  uchun emas: ular DOM'da paydo bo'ladi-yu, jadval sifatida chizilmaydi.
+ *  Shuning uchun jadval HTML matn sifatida quriladi.
+ */
+function sparklineSvg(trend, w = 88, h = 26) {
+  if (!trend || trend.length < 2) return `<svg width="${w}" height="${h}" class="risk-spark"></svg>`;
+  const max = Math.max(...trend) || 1;
+  const dx = w / (trend.length - 1);
+  const pts = trend
+    .map((v, i) => `${(i * dx).toFixed(1)},${(h - 3 - (v / max) * (h - 6)).toFixed(1)}`)
+    .join(' ');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" class="risk-spark">
+    <polyline points="${pts}" fill="none" stroke="#4dd0e1" stroke-width="1.6"
+              stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+function renderRiskTable() {
+  const tbody = $('riskTable').querySelector('tbody');
+  const tanlangan = $('client').value;
+  $('riskInfo').textContent = riskRows.length ? `— ${riskRows.length} ta` : '';
+
+  if (!riskRows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Bu oraliqda baholangan kun yo\'q</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = riskRows.map((r) => `
+    <tr data-client="${r.clientId}"${r.clientId === tanlangan ? ' class="active"' : ''}>
+      <td>
+        <i class="risk-mark ${r.level}" title="Oxirgi xavf: ${r.recentRisk}"></i>
+        <span class="risk-name">${r.fullName || r.hostname}</span>
+      </td>
+      <td class="num">${r.recentRisk}</td>
+      <td title="${r.evaluatedDays} ta baholangan kun">
+        ${sparklineSvg(r.trend)}<span class="risk-total">${r.overallRisk}</span>
+      </td>
+      <td class="num">
+        <span class="risk-cases${r.anomalyDays ? ' hit' : ''}">${r.anomalyDays}</span>
+      </td>
+    </tr>`).join('');
+
+  // Qatorni bosish — o'sha xodimga o'tish (qayta bosilsa tanlov bekor qilinadi)
+  for (const tr of tbody.querySelectorAll('tr[data-client]')) {
+    tr.addEventListener('click', () => {
+      const cid = tr.getAttribute('data-client');
+      $('client').value = (cid === $('client').value) ? '' : cid;
+      loadResults();
+    });
+  }
+}
+
 async function loadHealth() {
   try {
     const h = await (await fetch('/api/health')).json();
@@ -240,6 +312,7 @@ function render() {
     ? rows.filter(isAnomalyRow)
     : rows;
   renderSummary();
+  renderRiskTable();
   renderIssues();
   renderChart(visible);
   renderTable(visible);
@@ -625,14 +698,23 @@ async function setDefaultRange() {
 }
 
 async function init() {
-  $('refresh').addEventListener('click', loadResults);
+  $('refresh').addEventListener('click', async () => {
+    await loadRiskSummary();
+    await loadResults();
+  });
   $('retrain').addEventListener('click', startRetrain);
-  for (const id of ['from', 'to', 'client']) $(id).addEventListener('change', loadResults);
+  for (const id of ['from', 'to']) {
+    $(id).addEventListener('change', async () => {
+      await loadRiskSummary();     // oraliq o'zgardi -> xavf jadvali ham
+      await loadResults();
+    });
+  }
+  $('client').addEventListener('change', loadResults);
   $('onlyIssues').addEventListener('change', render);
 
   await loadHealth();
   await setDefaultRange();
-  await Promise.all([loadBaselines(), loadClients()]);
+  await Promise.all([loadBaselines(), loadClients(), loadRiskSummary()]);
   await loadResults();
   // Ochilishida eng ko'p ma'lumotli xodim tanlanadi — grafik darrov to'la ko'rinsin
   if (!$('client').value && rows.length) {
@@ -645,7 +727,11 @@ async function init() {
     }
   }
 
-  setInterval(async () => { await loadHealth(); await loadResults(); }, 5 * 60 * 1000);
+  setInterval(async () => {
+    await loadHealth();
+    await loadRiskSummary();
+    await loadResults();
+  }, 5 * 60 * 1000);
 }
 
 init();

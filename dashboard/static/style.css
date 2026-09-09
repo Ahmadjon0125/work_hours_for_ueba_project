@@ -128,7 +128,9 @@ button.secondary { background: var(--panel); border: 1px solid var(--border); co
 
 /* --- Grafik --- */
 .chart-wrap { overflow-x: auto; }
-svg { display: block; width: 100%; min-width: 560px; }
+/* Faqat ASOSIY grafik cho'ziladi. Ilgari bu qoida `svg` ga edi va BARCHA
+   SVG'ga tegardi — jadvaldagi kichik sparkline ham 560px bo'lib ketardi. */
+#chart { display: block; width: 100%; min-width: 560px; }
 svg text { fill: var(--muted); font-size: 11px; }
 svg .grid { stroke: var(--border); stroke-width: 1; }
 
@@ -195,3 +197,42 @@ tbody tr:hover { background: var(--panel2); }
 }
 .sev-bar i { display: block; height: 100%; background: var(--red); border-radius: 3px; }
 .sev-num { margin-left: 7px; font-size: 12px; color: var(--muted); }
+
+/* --- Kuzatuvdagi xodimlar jadvali --- */
+/* Ustun kengliklari qat'iy: aks holda "Umumiy xavf" ustuni cho'zilib,
+   sparkline sonidan uzoqlashib ketadi. */
+#riskTable { table-layout: fixed; }
+#riskTable th:nth-child(1), #riskTable td:nth-child(1) { width: auto; }
+#riskTable th:nth-child(2), #riskTable td:nth-child(2) { width: 110px; }
+#riskTable th:nth-child(3), #riskTable td:nth-child(3) { width: 190px; }
+#riskTable th:nth-child(4), #riskTable td:nth-child(4) { width: 110px; }
+#riskTable td { vertical-align: middle; white-space: nowrap; }
+#riskTable tbody tr { cursor: pointer; }
+#riskTable tbody tr:hover { background: #1c2430; }
+#riskTable tbody tr.active { background: #1e2a3a; }
+#riskTable .num { text-align: right; }
+
+/* Xavf darajasi belgisi — QRadar uslubida: uchburchak / kvadrat / doira */
+.risk-mark {
+  display: inline-block; width: 14px; height: 14px; margin-right: 9px;
+  vertical-align: middle;
+}
+.risk-mark.high {
+  width: 0; height: 0; margin-right: 9px;
+  border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-bottom: 12px solid var(--red);
+}
+.risk-mark.medium { background: var(--yellow); border-radius: 2px; }
+.risk-mark.low {
+  border: 2px solid var(--muted); border-radius: 50%;
+  width: 10px; height: 10px;
+}
+
+.risk-name { color: var(--link, #6ab7ff); }
+.risk-total { margin-left: 10px; font-weight: 600; vertical-align: middle; }
+.risk-spark { vertical-align: middle; display: inline-block; }
+.risk-cases {
+  display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 10px;
+  background: #2a3240; color: var(--muted); font-size: 12px; text-align: center;
+}
+.risk-cases.hit { background: #4a1f1f; color: #ff8b7e; }
