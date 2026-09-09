@@ -8,8 +8,6 @@ Ma'lumot manbai — DataGaze DLP tizimining MongoDB'sidagi
 **`agentsessionstatuses`** collection'i: agent yuboradigan hozirlik qaydlari
 (tizimga kirish/chiqish, ekranni ochish/qulflash, masofadan ulanish).
 
-> To'liq texnik spetsifikatsiya: [UEBA_PIPELINE_ARCHITECTURE_V2.md](UEBA_PIPELINE_ARCHITECTURE_V2.md)
-
 ---
 
 ## Dashboard
@@ -383,6 +381,126 @@ chaqiradi.
 
 ---
 
+## Ma'lumot tuzilmalari
+
+Mahalliy bazadagi (`ueba_local`) to'rtta collection.
+
+### `raw_data_for_train` — o'qitish arxivi
+
+Har xodim × har kun = 1 hujjat. `trigger_data` ham **aynan shu shaklda**.
+
+```json
+{
+  "clientId": "6a68d16e4abd38577c6314fb",
+  "hostname": "azam@azam-upc",
+  "fullName": null,
+  "date": "2026-08-25",
+  "dayOfWeek": "Tuesday",
+  "start": "2026-08-25T22:17:05",
+  "finish": "2026-08-25T23:17:05",
+  "durationMin": 60.0,
+  "activeMin": 0.0,
+  "eventCount": 1,
+  "updatedAt": "2026-09-09T14:10:43"
+}
+```
+
+- `date` — **string**, `"YYYY-MM-DD"`. Ataylab: ISO string'lar alifbo
+  tartibida solishtirilganda xronologik tartib bilan mos tushadi, shuning
+  uchun `$lt` / `$gte` filtrlar string ustida ham to'g'ri ishlaydi.
+- **Indeks:** UNIQUE `{clientId, date}`. Yozish — replacement upsert, ya'ni
+  qayta yozish har doim xavfsiz.
+
+`trigger_data` ning farqi vazifasida — u uchta savolga javob beradi:
+**nima yuborilgan**, **qayerdan davom etish kerak** (cursor), **takror
+yuborilmayaptimi** (dedup).
+
+### `baseline` — o'rganilgan norma
+
+```json
+{
+  "baselineId": "6aa12294c00c35a67bdbd5c8",
+  "clientId": "6a68d16e4abd38577c6314fb",
+  "hostname": "azam@azam-upc",
+  "windowDays": 90,
+  "minDowSamples": 3,
+  "totalDays": 13,
+  "keptDays": 9,
+  "trainedAt": "2026-09-09T14:10:44",
+  "weeks": {
+    "Tuesday": { "count": 3, "meanStart": 899.8, "stdStart": 760.26,
+                 "meanFinish": 1337.19, "stdFinish": 89.97, "meanDuration": 437.4 }
+  }
+}
+```
+
+Vaqtlar — **kun boshidan daqiqa** (`899.8` = 14:59). Namuna
+`minDowSamples` dan kam bo'lsa faqat `count` yoziladi, qolgan statlar `null`.
+
+`baseline_runs` — versiyalar reyestri, joriysi `current: true` bilan.
+
+### `results` — har (xodim × kun) uchun baholash
+
+```json
+{
+  "clientId": "...", "hostname": "azam@azam-upc", "fullName": null,
+  "date": "2026-08-25", "dayOfWeek": "Tuesday",
+  "start": "22:17:05", "finish": "23:17:05",
+  "durationMin": 60.0, "activeMin": 0.0, "eventCount": 1,
+
+  "usualStart": 899.8,   "usualFinish": 1337.19,
+  "stdStart": 760.26,    "stdFinish": 89.97,
+  "windowStart": 139.5,  "windowFinish": 1427.2,
+  "zStart": -0.575,      "zFinish": 0.666,
+
+  "isAnomaly": false, "anomalyScore": 0, "riskScore": 0,
+  "status": "normal", "statusColor": "green",
+
+  "triggers": { "workingHours": false },
+  "triggeredDetectors": [],
+  "detectors": {
+    "workingHours": {
+      "triggered": false, "score": 0, "weight": 1.0, "evaluated": true,
+      "reason": "faollik ish oynasi ichida (02:20–23:47)",
+      "details": { "zOut": 0.666, "outsideMin": 0.0, "beforeMin": 0.0,
+                   "afterMin": 0.0, "windowStart": 139.5, "windowFinish": 1427.2 }
+    }
+  },
+
+  "baselineId": "6aa12294c00c35a67bdbd5c8",
+  "evaluatedAt": "2026-09-09T14:11:23"
+}
+```
+
+- `start` / `finish` bu yerda **faqat vaqt** (`"HH:MM:SS"`), arxivda esa to'liq ISO.
+- **Natija o'zi-o'ziga yetarli:** `usualStart`, `windowStart` kabi taqqoslash
+  qiymatlari ichida saqlanadi. Dashboard «odatda qachon kelardi» ni joriy
+  baseline'dan izlamaydi — shuning uchun versiya nomuvofiqligi bo'lmaydi.
+- `triggeredDetectors` massiv: bitta multikey indeks barcha detectorlar
+  bo'yicha filtrni qoplaydi.
+- **Indeks:** UNIQUE `{clientId, date}`, plus `{isAnomaly, date}` va
+  `{triggeredDetectors}`.
+
+---
+
+## Manba bazadagi indeks
+
+`agentsessionstatuses` da hozir faqat `{clientId: 1, computerId: 1}` indeksi
+bor — `dateTime` indekslanmagan. Bizning so'rov `clientId` + vaqt oralig'i
+bo'yicha ketadi.
+
+Hozirgi hajmda (2400 hujjat) muammo yo'q. Ma'lumot o'sganda DLP jamoasidan
+so'rash kerak:
+
+```js
+db.agentsessionstatuses.createIndex({ clientId: 1, dateTime: -1 })
+```
+
+Bizning kod DLP bazasiga yoza olmaydi, shuning uchun buni faqat ular qo'sha
+oladi.
+
+---
+
 ## Loyiha tuzilishi
 
 ```
@@ -430,6 +548,34 @@ for t in tests/*.py; do venv/bin/python $t; done
 
 `pytest` ishlatilmaydi — har test `bool` qaytaradi, `python tests/xxx.py`
 bilan yurgiziladi.
+
+---
+
+## Edge caselar
+
+Kodda ataylab hisobga olingan holatlar.
+
+| Holat | Xatti-harakat |
+|---|---|
+| `clients` da `disabled` maydoni yo'q | `$or` so'rovi — xodim **active** hisoblanadi |
+| `hostname` bo'sh yoki yo'q | o'rniga `str(_id)` ishlatiladi |
+| Vaqt maydoni parse bo'lmadi | o'sha hodisa skip, xato tashlanmaydi (bu «ma'lumot yaroqsiz», «o'qib bo'lmadi» emas) |
+| **Manbani o'qib bo'lmadi** (tarmoq uzildi) | 2 marta qayta urinish → baribir bo'lmasa `SourceReadError`; **shu xodim umuman yozilmaydi**, eski ma'lumoti saqlanadi |
+| Xodim ishdan bo'shadi | active ro'yxatga tushmaydi → arxiv yozuvlari o'chiriladi → keyingi baseline'ga kirmaydi. `results` dagi tarixi qoladi |
+| Kun to'liq tugamagan (bugungi) | o'qitish oynasiga **kirmaydi**, baholanishda esa qatnashadi |
+| Shu hafta kuni uchun baseline yo'q | `status: insufficient` — kun dashboardda ko'rinadi, ma'lumot yo'qolmaydi |
+| Yangi xodim, baseline umuman yo'q | natija **baribir yoziladi**, `insufficient` bo'ladi |
+| σ = 0 (xodim har kuni aynan bir xil vaqtda) | z hisoblanmaydi; oyna `[mean, mean]` bo'ladi va har qanday chiqish 100 ball oladi |
+| Kunda faqat 1 ta hodisa | `finish = start + SINGLE_EVENT_STAY_HOURS`; keyin hodisa qo'shilsa o'zi to'g'rilanadi |
+| Yagona hodisa 23:00 dan keyin | `finish` 23:59:59 bilan cheklanadi — soxta «erta ketish» bo'lmaydi |
+| Sessiya yarim tunni kesib o'tdi | har hodisa o'z sanasi bilan guruhlanadi — kun 2 ga bo'linadi |
+| Kun 12 soatdan uzun | filtrlanmaydi, normal saqlanadi — chetlanish bo'lishi mumkin |
+| Dastur 2 kun o'chiq turdi | keyingi trigger cursor'dan hozirgacha hammasini oladi |
+| Publish paytida RabbitMQ yotdi | `trigger_data` yozilmaydi → cursor orqada → keyingi o'tishda qayta yuboriladi |
+| Worker 3 marta urinib tashladi | kunlar `trigger_data` da «yuborilgan» → avtomatik qaytmaydi. Kerak bo'lsa: `db.trigger_data.deleteOne({clientId, date})` |
+| Bitta detector xato tashladi | `registry.run` uni ushlaydi, `evaluated: false` yoziladi — kun yo'qolmaydi |
+| Retrain davomida job keldi | eski baseline swap'gacha joyida — worker bo'sh baseline ko'rmaydi |
+| Bir (clientId, date) qayta yozildi | replacement upsert → idempotent, dublikat yo'q |
 
 ---
 

@@ -15,8 +15,8 @@ yozadiganidan farq qilmaydi — ayni funksiya chaqiriladi.
 
 Chegaralar:
   - manba (alpha-demo) bazaga UMUMAN tegilmaydi — faqat mahalliy ueba_local;
-  - arxivda yo'q kunlarga tegilmaydi (bugungi tugallanmagan kun, 60 kundan
-    eski natijalar) — ular uchun `scripts/backfill_scores.py` ishlatiladi;
+  - arxivda yo'q kunlarga tegilmaydi (bugungi tugallanmagan kun, oynadan
+    eski natijalar) — ular keyingi trigger o'tishida o'z-o'zidan yangilanadi;
   - hech narsa o'chirilmaydi, faqat upsert.
 
 DIQQAT: tarixiy kunlar JORIY baseline bilan qayta baholanadi. Odatda bu qilinmaydi
@@ -131,8 +131,8 @@ def main():
         print(f"\nYozildi: {written} ta hujjat.")
         qolgan = results.count_documents({"anomalyScore": {"$exists": False}})
         if qolgan:
-            print(f"\nArxivda yo'q {qolgan} ta yozuv qoldi (bugungi kun / 60 kundan eskisi).")
-            print("Ular uchun:  python scripts/backfill_scores.py --apply")
+            print(f"\nArxivda yo'q {qolgan} ta yozuv qoldi (bugungi kun yoki oynadan eskisi).")
+            print("Ular keyingi trigger o'tishida o'z-o'zidan yangilanadi.")
     else:
         print("\nHech narsa yozilmadi. Yozish uchun:")
         print("  python scripts/rebuild_results.py --apply")
