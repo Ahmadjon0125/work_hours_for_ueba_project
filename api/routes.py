@@ -91,8 +91,13 @@ def health():
         # Dashboard grafigi shu chegara bo'yicha yo'lak chizadi va nuqtalarni
         # bo'yaydi — kodda qattiq yozilmasin, aks holda .env bilan uzilib qoladi.
         "anomalyZThreshold": config.ANOMALY_Z_THRESHOLD,
-        # Dashboard "kamida N ta kun kerak" matnini shundan oladi
+        # Dashboard qattiq yozilgan raqam ishlatmasin — hammasi shu yerdan
         "minDowSamples": config.MIN_DOW_SAMPLES,
+        "severity": {"high": config.SEVERITY_HIGH,
+                     "medium": config.SEVERITY_MEDIUM,
+                     "low": config.SEVERITY_LOW},
+        "dashboard": {"rangeDays": config.DASHBOARD_RANGE_DAYS,
+                      "maxIssues": config.DASHBOARD_MAX_ISSUES},
         "lastTrigger": _state["lastTrigger"],
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
         "lastRetrain": _job_as_state(jobs.latest()),
@@ -134,7 +139,7 @@ def retrain_endpoint():
 
 
 @router.get("/api/jobs")
-def list_jobs(limit: int = Query(20, ge=1, le=200)):
+def list_jobs(limit: int = Query(20, ge=1, le=config.API_PAGE_MAX)):
     """O'qitish job'lari tarixi — yangisi birinchi."""
     return jobs.recent(limit)
 
@@ -264,7 +269,7 @@ def results(date_from: str = Query(None, alias="from"),
             is_anomaly: bool = None,
             min_risk: int = Query(None, ge=0, le=100),
             trigger: str = None,
-            limit: int = Query(100, ge=1, le=5000),
+            limit: int = Query(config.API_PAGE_SIZE, ge=1, le=config.API_PAGE_MAX),
             offset: int = Query(0, ge=0)):
     return _query_results(date_from, date_to, client_id, status, limit, offset,
                           is_anomaly, min_risk, trigger)
@@ -278,7 +283,7 @@ def results_for_client(client_id: str,
                        is_anomaly: bool = None,
                        min_risk: int = Query(None, ge=0, le=100),
                        trigger: str = None,
-                       limit: int = Query(100, ge=1, le=5000),
+                       limit: int = Query(config.API_PAGE_SIZE, ge=1, le=config.API_PAGE_MAX),
                        offset: int = Query(0, ge=0)):
     if not local_db()[config.COL_RESULTS].count_documents({"clientId": client_id}, limit=1):
         raise HTTPException(status_code=404, detail="client topilmadi")

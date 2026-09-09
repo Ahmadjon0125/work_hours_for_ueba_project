@@ -34,7 +34,7 @@ from services.detectors.working_hours import evaluate_window
 from services.mongo import local_db
 
 DETECTOR = "workingHours"
-BATCH = 500
+BATCH = config.BULK_BATCH_SIZE
 
 
 def _hhmmss_to_minutes(value):

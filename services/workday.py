@@ -16,11 +16,14 @@ daqiqalari (tanaffuslar chiqarib tashlangan).
 """
 from collections import defaultdict
 
+import config
 from services.mongo import iter_client_sessions
 
-# Hodisaning ma'nosi: ish boshlanishimi yoki tugashimi
-SESSION_START = ("LOGON", "UNLOCK", "REMOTE_CONNECT")
-SESSION_END = ("LOGOFF", "LOCK", "REMOTE_DISCONNECT")
+# Hodisaning ma'nosi: ish boshlanishimi yoki tugashimi.
+# Agent status nomlarini o'zgartirsa yoki yangisini qo'shsa — kodga emas,
+# `.env` dagi SESSION_START_STATUSES / SESSION_END_STATUSES ga tegiladi.
+SESSION_START = config.SESSION_START_STATUSES
+SESSION_END = config.SESSION_END_STATUSES
 
 
 def collect_client_days(client, window_start, window_end=None):

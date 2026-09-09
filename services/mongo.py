@@ -102,7 +102,8 @@ def active_clients():
     return clients
 
 
-SESSION_COLLECTION = "agentsessionstatuses"
+# `.env` dagi SESSION_COLLECTION bilan o'zgartiriladi
+SESSION_COLLECTION = config.SESSION_COLLECTION
 
 
 def iter_client_sessions(client, window_start, window_end=None):

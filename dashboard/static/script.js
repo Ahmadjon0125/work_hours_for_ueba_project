@@ -43,6 +43,10 @@ let baselines = {};     // clientId -> weeks
 let clientList = [];    // [{clientId, hostname, fullName, label}]
 let zThreshold = 1.0;   // /api/health dan keladi (.env: ANOMALY_Z_THRESHOLD)
 let minDowSamples = 3;  // /api/health dan keladi (.env: MIN_DOW_SAMPLES)
+// Qolgan sozlamalar ham serverdan keladi — bu yerda faqat zaxira qiymatlar.
+// Server javob bermasa sahifa baribir chiziladi.
+let sozlama = { severity: { high: 75, medium: 50, low: 25 },
+                dashboard: { rangeDays: 30, maxIssues: 20 } };
 
 /** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
 function personName(row) {
@@ -214,6 +218,8 @@ async function loadHealth() {
     const h = await (await fetch('/api/health')).json();
     if (typeof h.anomalyZThreshold === 'number') zThreshold = h.anomalyZThreshold;
     if (typeof h.minDowSamples === 'number') minDowSamples = h.minDowSamples;
+    if (h.severity) sozlama.severity = h.severity;
+    if (h.dashboard) sozlama.dashboard = h.dashboard;
     const bad = [];
     if (h.mongo_main !== 'ok') bad.push('asosiy baza');
     if (h.mongo_local !== 'ok') bad.push('mahalliy baza');
@@ -281,9 +287,9 @@ const severityOf = (row) =>
 /** Daraja uchun qisqa yorliq: 100 ballik shkala odamga tushunarli tilda. */
 function severityLabel(score) {
   if (score === null) return '';
-  if (score >= 75) return 'juda yuqori';
-  if (score >= 50) return 'yuqori';
-  if (score >= 25) return "o'rtacha";
+  if (score >= sozlama.severity.high) return 'juda yuqori';
+  if (score >= sozlama.severity.medium) return 'yuqori';
+  if (score >= sozlama.severity.low) return "o'rtacha";
   return 'past';
 }
 
@@ -293,7 +299,7 @@ function renderIssues() {
     // Eng xavflisi tepada: daraja bo'yicha, teng bo'lsa yangi sana bo'yicha
     .sort((a, b) => (severityOf(b) || 0) - (severityOf(a) || 0)
       || b.date.localeCompare(a.date))
-    .slice(0, 20);
+    .slice(0, sozlama.dashboard.maxIssues);
 
   if (!issues.length) {
     $('issues').innerHTML = `<p class="ok-note">Bu oraliqda e'tibor talab qiladigan kun topilmadi.</p>`;
@@ -614,7 +620,8 @@ async function setDefaultRange() {
     if (d.items && d.items.length) last = new Date(d.items[0].date + 'T12:00:00');
   } catch (e) { /* bugundan boshlaymiz */ }
   $('to').value = iso(last);
-  $('from').value = iso(new Date(last.getTime() - 29 * 86400000));
+  const kun = Math.max(1, sozlama.dashboard.rangeDays) - 1;
+  $('from').value = iso(new Date(last.getTime() - kun * 86400000));
 }
 
 async function init() {

@@ -187,7 +187,8 @@ Dashboard: **http://localhost:8000**
 |---|---|
 | `docker compose ps` | servislar holati |
 | `docker compose logs -f app` | jonli loglar |
-| `docker compose restart app` | dasturni qayta ishga tushirish |
+| `docker compose restart app` | dasturni qayta ishga tushirish (`.env` o'zgarishi **o'qilmaydi**) |
+| `docker compose up -d` | `.env` o'zgarishini qo'llash (konteyner qayta yaratiladi) |
 | `docker compose down` | to'xtatish (data volume'da qoladi) |
 
 Compose timezone'ni (`TZ=Asia/Tashkent`) va servis manzillarini o'zi to'g'rilaydi, Mongo/RabbitMQ tayyor bo'lgunicha kutadi va reboot'dan keyin o'zi ko'tariladi.
@@ -209,6 +210,36 @@ venv/bin/python main.py
 > **2)** Server timezone'i xodimlar timezone'i bilan bir xil bo'lishi kerak (`Asia/Tashkent`) va keyin o'zgartirilmasligi lozim.
 
 ---
+
+## Sozlamalar
+
+**Kodda qattiq yozilgan qiymat yo'q — hammasi `.env` da.** Buni
+`tests/test_config.py` qo'riqlaydi: u har bir sozlamani haqiqatan almashtirib
+ko'radi, va agar kimdir kodga qattiq qiymat yozib qo'ysa yiqiladi.
+
+| Guruh | Sozlamalar |
+|---|---|
+| **Manba baza** | `MONGO_URI`, `DB_NAME`, `SESSION_COLLECTION`, `SESSION_START_STATUSES`, `SESSION_END_STATUSES` |
+| **Mahalliy baza** | `LOCAL_MONGO_URI`, `LOCAL_DB_NAME`, `COL_*` (6 ta collection nomi) |
+| **RabbitMQ** | `RABBITMQ_*`, `QUEUE_NAME`, `WORKER_COUNT`, `MAX_RETRIES` |
+| **API** | `API_HOST`, `API_PORT`, `API_PAGE_SIZE`, `API_PAGE_MAX` |
+| **Pipeline** | `DAYS_WINDOW`, `TRIGGER_INTERVAL_HOURS`, `LOOKBACK_HOURS`, `BATCH_SIZE`, `SOURCE_READ_RETRIES`, `SOURCE_READ_RETRY_DELAY`, `SINGLE_EVENT_STAY_HOURS`, `RESULTS_RETENTION_DAYS`, `BASELINE_KEEP_VERSIONS`, `BULK_BATCH_SIZE` |
+| **Anomaliya** | `MIN_DOW_SAMPLES`, `ANOMALY_Z_THRESHOLD`, `ANOMALY_Z_FULL_SCALE` |
+| **Detectorlar** | `DETECTOR_WEIGHT_<NOM>` (masalan `DETECTOR_WEIGHT_WORKING_HOURS`) |
+| **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
+
+Dashboard hech qanday qiymatni o'zida saqlamaydi — chegaralarni, daraja
+yorliqlarini va sana oralig'ini `/api/health` dan oladi.
+
+```bash
+# .env ni tahrirlash, keyin:
+docker compose up -d          # `restart` EMAS: env_file faqat konteyner
+                              # yaratilganda o'qiladi
+```
+
+Chegaralarni (`MIN_DOW_SAMPLES`, `DAYS_WINDOW`, `ANOMALY_Z_*`) o'zgartirsangiz
+**baseline qayta o'qitilishi** kerak — dashboarddagi «Odatiy jadvallarni
+yangilash» tugmasi.
 
 ## Kundalik foydalanish
 

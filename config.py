@@ -21,7 +21,8 @@ RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
 RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
 QUEUE_NAME = os.getenv("QUEUE_NAME", "ueba_jobs")
 WORKER_COUNT = int(os.getenv("WORKER_COUNT", 3))
-MAX_RETRIES = 3
+# Job xato bersa necha marta qayta urinish (mq/worker.py)
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", 3))
 
 # --- API ---
 API_HOST = os.getenv("API_HOST", "127.0.0.1")
@@ -37,6 +38,24 @@ SOURCE_READ_RETRIES = int(os.getenv("SOURCE_READ_RETRIES", 2))
 SOURCE_READ_RETRY_DELAY = float(os.getenv("SOURCE_READ_RETRY_DELAY", 2))
 SINGLE_EVENT_STAY_HOURS = float(os.getenv("SINGLE_EVENT_STAY_HOURS", 1))
 RESULTS_RETENTION_DAYS = int(os.getenv("RESULTS_RETENTION_DAYS", 365))
+
+# --- Ish kuni manbasi ---
+# Agent hozirlik qaydlari saqlanadigan collection (asosiy bazada).
+SESSION_COLLECTION = os.getenv("SESSION_COLLECTION", "agentsessionstatuses")
+
+
+def _statuslar(kalit, default):
+    """Vergul bilan ajratilgan status ro'yxatini o'qiydi."""
+    xom = os.getenv(kalit, default)
+    return tuple(x.strip().upper() for x in xom.split(",") if x.strip())
+
+
+# Qaysi status ish boshlanishi, qaysisi tugashi. Agent yangi status qo'shsa
+# yoki nomlarini o'zgartirsa — bu yerda emas, `.env` da tuzatiladi.
+SESSION_START_STATUSES = _statuslar("SESSION_START_STATUSES",
+                                    "LOGON,UNLOCK,REMOTE_CONNECT")
+SESSION_END_STATUSES = _statuslar("SESSION_END_STATUSES",
+                                  "LOGOFF,LOCK,REMOTE_DISCONNECT")
 
 # --- Anomaliya chegarasi ---
 MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 3))
@@ -85,13 +104,30 @@ def detector_weight(name, default=1.0):
     return min(1.0, max(0.0, weight))
 
 
+# --- Daraja yorliqlari (dashboard uchun) ---
+# 0-100 ballik shkalani odam tiliga o'giradigan chegaralar.
+SEVERITY_HIGH = int(os.getenv("SEVERITY_HIGH", 75))       # bundan yuqori: "juda yuqori"
+SEVERITY_MEDIUM = int(os.getenv("SEVERITY_MEDIUM", 50))   # "yuqori"
+SEVERITY_LOW = int(os.getenv("SEVERITY_LOW", 25))         # "o'rtacha"; pastrog'i "past"
+
+# --- Dashboard va API ---
+# Dashboard ochilganda ko'rsatiladigan sana oralig'i (kun)
+DASHBOARD_RANGE_DAYS = int(os.getenv("DASHBOARD_RANGE_DAYS", 30))
+# "E'tibor talab qiladigan kunlar" ro'yxatida nechta karta
+DASHBOARD_MAX_ISSUES = int(os.getenv("DASHBOARD_MAX_ISSUES", 20))
+# /api/results sahifasi: default va eng katta ruxsat etilgan hajm
+API_PAGE_SIZE = int(os.getenv("API_PAGE_SIZE", 100))
+API_PAGE_MAX = int(os.getenv("API_PAGE_MAX", 5000))
+# Bir martalik skriptlar bir partiyada nechta hujjat yozadi
+BULK_BATCH_SIZE = int(os.getenv("BULK_BATCH_SIZE", 500))
+
 # --- Collection nomlari (mahalliy DB) ---
-COL_RAW_TRAIN = "raw_data_for_train"
-COL_TRIGGER_DATA = "trigger_data"
-COL_BASELINE = "baseline"
-COL_BASELINE_RUNS = "baseline_runs"
-COL_RESULTS = "results"
-COL_TRAINING_JOBS = "training_jobs"
+COL_RAW_TRAIN = os.getenv("COL_RAW_TRAIN", "raw_data_for_train")
+COL_TRIGGER_DATA = os.getenv("COL_TRIGGER_DATA", "trigger_data")
+COL_BASELINE = os.getenv("COL_BASELINE", "baseline")
+COL_BASELINE_RUNS = os.getenv("COL_BASELINE_RUNS", "baseline_runs")
+COL_RESULTS = os.getenv("COL_RESULTS", "results")
+COL_TRAINING_JOBS = os.getenv("COL_TRAINING_JOBS", "training_jobs")
 
 # Nechta baseline versiyasi saqlanadi (eskilari o'chiriladi)
 BASELINE_KEEP_VERSIONS = int(os.getenv("BASELINE_KEEP_VERSIONS", 5))

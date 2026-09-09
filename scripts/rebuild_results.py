@@ -38,7 +38,7 @@ from services.mongo import local_db
 from services.processor import evaluate_job
 from services.trainer import current_baseline_id
 
-BATCH = 500
+BATCH = config.BULK_BATCH_SIZE
 
 
 def main():

@@ -801,6 +801,19 @@ Avto-yangilanish: har 5 daqiqada `/api/health` va `/api/results` qayta o'qiladi.
 
 Barcha qiymatlar `config.py` da o'qiladi (default'lari yuqoridagilar); har kirish nuqtasida `load_dotenv()`.
 
+**Kodda qattiq yozilgan sozlama YO'Q** — buni `tests/test_config.py` qo'riqlaydi:
+u `config.py` ni AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv`
+orqali olinishi shart) va keyin har bir sozlamani haqiqatan `.env` kaliti bilan
+almashtirib ko'radi. Yangi sozlama qattiq yozib qo'yilsa test yiqiladi.
+
+Dashboard ham hech narsani o'zida saqlamaydi: chegaralar, daraja yorliqlari va
+sana oralig'i `/api/health` javobidan olinadi (`anomalyZThreshold`,
+`minDowSamples`, `severity`, `dashboard`).
+
+> **`.env` o'zgarishini qo'llash uchun `docker compose up -d` kerak**, `restart`
+> yetarli emas: `env_file` faqat konteyner yaratilganda o'qiladi. `.env`
+> `.dockerignore` ga qo'shilgan — obraz qatlamiga tushmasligi kerak.
+
 ---
 
 ## 8. Kod strukturasi
