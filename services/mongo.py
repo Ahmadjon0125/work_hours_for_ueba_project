@@ -70,7 +70,14 @@ def ensure_indexes():
                       partialFilterExpression={"status": "running"},
                       name="one_running_job")
     jobs.create_index([("startedAt", -1)])
-    log.info("Indekslar tekshirildi (4 ta unique)")
+
+    # Dashboard va API eng ko'p so'raydigan kesimlar (unique emas — tezlik uchun).
+    results = db[config.COL_RESULTS]
+    results.create_index([("isAnomaly", ASCENDING), ("date", -1)])
+    # Multikey: `triggeredDetectors` massiv, shuning uchun bitta indeks barcha
+    # detectorlar bo'yicha filtrni qoplaydi.
+    results.create_index([("triggeredDetectors", ASCENDING)])
+    log.info("Indekslar tekshirildi (4 ta unique + 2 ta qidiruv)")
 
 
 def active_clients():

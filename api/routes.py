@@ -88,6 +88,9 @@ def health():
         "rabbitmq": "ok" if depth is not None else "error",
         "queue_depth": depth,
         "workers": config.WORKER_COUNT,
+        # Dashboard grafigi shu chegara bo'yicha yo'lak chizadi va nuqtalarni
+        # bo'yaydi — kodda qattiq yozilmasin, aks holda .env bilan uzilib qoladi.
+        "anomalyZThreshold": config.ANOMALY_Z_THRESHOLD,
         "lastTrigger": _state["lastTrigger"],
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
         "lastRetrain": _job_as_state(jobs.latest()),
@@ -217,7 +220,8 @@ def baseline_versions():
             .find({}).sort("trainedAt", -1)]
 
 
-def _query_results(date_from, date_to, client_id, status, limit, offset):
+def _query_results(date_from, date_to, client_id, status, limit, offset,
+                   is_anomaly=None, min_risk=None, trigger=None):
     query = {}
     if date_from or date_to:
         query["date"] = {}
@@ -231,6 +235,16 @@ def _query_results(date_from, date_to, client_id, status, limit, offset):
         statuses = [s.strip() for s in status.split(",") if s.strip()]
         if statuses:
             query["status"] = {"$in": statuses}
+    if is_anomaly is not None:
+        # Diqqat: eski (backfill qilinmagan) hujjatlarda `isAnomaly` maydoni
+        # umuman yo'q — ular bu filtrga tushmaydi.
+        query["isAnomaly"] = is_anomaly
+    if min_risk is not None:
+        query["riskScore"] = {"$gte": min_risk}
+    if trigger:
+        names = [t.strip() for t in trigger.split(",") if t.strip()]
+        if names:
+            query["triggeredDetectors"] = {"$in": names}
 
     col = local_db()[config.COL_RESULTS]
     total = col.count_documents(query)
@@ -245,9 +259,13 @@ def results(date_from: str = Query(None, alias="from"),
             date_to: str = Query(None, alias="to"),
             client_id: str = None,
             status: str = None,
+            is_anomaly: bool = None,
+            min_risk: int = Query(None, ge=0, le=100),
+            trigger: str = None,
             limit: int = Query(100, ge=1, le=5000),
             offset: int = Query(0, ge=0)):
-    return _query_results(date_from, date_to, client_id, status, limit, offset)
+    return _query_results(date_from, date_to, client_id, status, limit, offset,
+                          is_anomaly, min_risk, trigger)
 
 
 @router.get("/api/results/{client_id}")
@@ -255,11 +273,15 @@ def results_for_client(client_id: str,
                        date_from: str = Query(None, alias="from"),
                        date_to: str = Query(None, alias="to"),
                        status: str = None,
+                       is_anomaly: bool = None,
+                       min_risk: int = Query(None, ge=0, le=100),
+                       trigger: str = None,
                        limit: int = Query(100, ge=1, le=5000),
                        offset: int = Query(0, ge=0)):
     if not local_db()[config.COL_RESULTS].count_documents({"clientId": client_id}, limit=1):
         raise HTTPException(status_code=404, detail="client topilmadi")
-    return _query_results(date_from, date_to, client_id, status, limit, offset)
+    return _query_results(date_from, date_to, client_id, status, limit, offset,
+                          is_anomaly, min_risk, trigger)
 
 
 @router.get("/api/dashboard", include_in_schema=False)

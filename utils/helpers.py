@@ -1,4 +1,7 @@
-"""Umumiy yordamchilar: 17 collection mapping, vaqt funksiyalari, kunlik agregat, status."""
+"""Umumiy yordamchilar: 16 collection mapping, vaqt funksiyalari, kunlik agregat.
+
+Status va ball hisobi bu yerda EMAS — u siyosat, `services/detectors/scoring.py` da.
+"""
 import re
 from datetime import datetime, timedelta
 
@@ -33,15 +36,6 @@ COLLECTIONS = {
 
 DAYS_MAP = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday",
             4: "Friday", 5: "Saturday", 6: "Sunday"}
-
-STATUS_COLORS = {
-    "severe": "red",
-    "anomaly": "darkyellow",
-    "watch": "yellow",
-    "normal": "green",
-    "insufficient": "gray",
-}
-
 
 def parse_to_datetime(val):
     """Istalgan ko'rinishdagi vaqtni naive lokal datetime ga keltiradi. Xato -> None."""
@@ -103,22 +97,6 @@ def build_day_agg(tss):
 
 def duration_minutes(start, finish):
     return round((finish - start).total_seconds() / 60.0, 2)
-
-
-def get_status(z_start, z_finish):
-    """z'lardan (status, statusColor) qaytaradi."""
-    if z_start is None and z_finish is None:
-        return "insufficient", STATUS_COLORS["insufficient"]
-    z = max(abs(z_start or 0.0), abs(z_finish or 0.0))
-    if z >= config.SEVERE_THRESHOLD:
-        status = "severe"
-    elif z >= config.Z_THRESHOLD:
-        status = "anomaly"
-    elif z >= config.WATCH_THRESHOLD:
-        status = "watch"
-    else:
-        status = "normal"
-    return status, STATUS_COLORS[status]
 
 
 _GENERIC_NAME = re.compile(r"^user[\s_-]*\d*$", re.IGNORECASE)

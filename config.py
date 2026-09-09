@@ -1,5 +1,6 @@
 """Barcha sozlamalar shu yerda o'qiladi (.env > default)."""
 import os
+import re
 
 from dotenv import load_dotenv
 
@@ -37,11 +38,52 @@ SOURCE_READ_RETRY_DELAY = float(os.getenv("SOURCE_READ_RETRY_DELAY", 2))
 SINGLE_EVENT_STAY_HOURS = float(os.getenv("SINGLE_EVENT_STAY_HOURS", 1))
 RESULTS_RETENTION_DAYS = int(os.getenv("RESULTS_RETENTION_DAYS", 365))
 
-# --- Z-score chegaralari ---
+# --- Anomaliya chegarasi ---
 MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 5))
-WATCH_THRESHOLD = float(os.getenv("WATCH_THRESHOLD", 0.5))
-Z_THRESHOLD = float(os.getenv("Z_THRESHOLD", 1.2))
-SEVERE_THRESHOLD = float(os.getenv("SEVERE_THRESHOLD", 1.8))
+# |z| shu chegaradan oshsa — anomaliya. Eski 4 pog'onali sxema (watch/anomaly/
+# severe) bekor qilindi: bitta chegara + 0-100 ball tushunarliroq va sozlash
+# osonroq. Chegara ball shkalasida aynan 50 ga to'g'ri keladi (detectors/scoring).
+ANOMALY_Z_THRESHOLD = float(os.getenv("ANOMALY_Z_THRESHOLD", 1.0))
+if ANOMALY_Z_THRESHOLD <= 0:
+    # 0 yoki manfiy bo'lsa ball formulasida nolga bo'linish bo'lardi
+    ANOMALY_Z_THRESHOLD = 1.0
+
+# Chetlanish darajasi z-score bilan o'lchanadi: zOut shu qiymatga yetganda ball
+# 100 bo'ladi. Chegara (ANOMALY_Z_THRESHOLD) da ball minimal, bu yerda maksimal.
+# Bundan oshig'i ham 100 bo'lib qolaveradi — xom qiymatlar
+# `detectors.workingHours.details` da (zOut, outsideMin) saqlanadi.
+ANOMALY_Z_FULL_SCALE = float(os.getenv("ANOMALY_Z_FULL_SCALE", 3.0))
+if ANOMALY_Z_FULL_SCALE <= ANOMALY_Z_THRESHOLD:
+    ANOMALY_Z_FULL_SCALE = ANOMALY_Z_THRESHOLD + 2.0
+
+# Detector nomidan .env kalitini quradi: workingHours -> WORKING_HOURS
+_CAMEL_SPLIT = re.compile(r"(?<!^)(?=[A-Z])")
+
+
+def detector_weight(name, default=1.0):
+    """Detector vazni: DETECTOR_WEIGHT_<UPPER_SNAKE> bo'lsa o'sha, aks holda default.
+
+    Vaznni o'zgartirish uchun kodga tegilmaydi:
+        DETECTOR_WEIGHT_WORKING_HOURS=0.4
+
+    Qiymat [0, 1] oralig'iga siqiladi — riskScore formulasi (noisy-OR) faqat shu
+    oraliqda ma'noli. Vazn 0 = "soya rejim": detector ishlaydi va natijaga
+    yoziladi, lekin umumiy riskka ta'sir qilmaydi (yangi detectorni jonli
+    ma'lumotda sinash uchun).
+    """
+    key = "DETECTOR_WEIGHT_" + _CAMEL_SPLIT.sub("_", name).upper()
+    raw = os.getenv(key)
+    weight = default
+    if raw is not None:
+        try:
+            weight = float(raw)
+        except ValueError:
+            # Kechiktirilgan import: config hech qanday loyiha moduliga bog'liq bo'lmasin
+            from utils.logger import get_logger
+            get_logger("config").warning(
+                "%s qiymati son emas (%r) — default %s ishlatildi", key, raw, default)
+    return min(1.0, max(0.0, weight))
+
 
 # --- Collection nomlari (mahalliy DB) ---
 COL_RAW_TRAIN = "raw_data_for_train"
