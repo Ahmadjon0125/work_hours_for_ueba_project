@@ -807,9 +807,88 @@ dan keladi:
 Umumiy xavf bo'yicha kamayish tartibida saralangan — eng yuqorisi tepada.
 Qatorni bosish o'sha xodimga o'tkazadi, qayta bosish tanlovni bekor qiladi.
 
-Chiziq **kumulyativ** bo'lgani uchun doim o'sib boradi: uning tikligi xavf
-qanchalik tez to'planayotganini ko'rsatadi. Tekis chiziq — xodim so'nggi
-paytda xavf to'plamayapti.
+#### Chiziq nimani ko'rsatadi
+
+Har nuqta — **o'sha kungacha to'plangan** `riskScore` yig'indisi:
+
+```
+nuqta[i] = riskScore[0] + riskScore[1] + ... + riskScore[i]
+```
+
+Kodda ([script.js](dashboard/static/script.js) dagi `sparklineSvg`) — bu
+`/api/risk-summary` qaytaradigan `trend` massivi:
+
+```python
+trend, yigindi = [], 0
+for risk in kunlar:          # sana bo'yicha o'sish tartibida
+    yigindi += risk
+    trend.append(yigindi)
+```
+
+**Nega doim o'sadi.** `riskScore` hech qachon manfiy bo'lmaydi. Xodim yaxshi
+ishlagan kun **0** qo'shadi — chiziq tekis qoladi, lekin pastga tushmaydi.
+To'plangan xavfni qaytarib olib bo'lmaydi.
+
+Oxirgi nuqta = **Umumiy xavf** ustunidagi son.
+
+#### Muhimi balandligi emas, shakli
+
+Real ikkita xodim, oxirgi qiymatlari deyarli teng (29 va 21), lekin
+hikoyasi butunlay boshqacha:
+
+**Bir marta katta portlash**
+
+```
+sana        kunlik   to'plangan   chiziq
+2026-08-14     +24           24   ██████████████████████
+2026-08-15      +3           27   ████████████████████████
+2026-08-21       ·           27   ████████████████████████
+2026-08-28       ·           27   ████████████████████████
+2026-08-29       ·           27   ████████████████████████
+2026-09-04       ·           27   ████████████████████████
+2026-09-05      +2           29   ██████████████████████████
+```
+
+Chiziq birdan ko'tarilib, keyin tekislanadi. Bitta kunda jiddiy voqea
+bo'lgan, undan keyin xodim odatiga qaytgan. Umumiy xavf — **29**.
+
+**Asta-sekin to'planish**
+
+```
+sana        kunlik   to'plangan   chiziq
+2026-07-28       ·            0   █
+2026-07-30      +6            6   ███████
+2026-07-31      +6           12   ███████████████
+2026-08-04      +8           20   █████████████████████████
+2026-08-06       ·           20   █████████████████████████
+2026-08-07       ·           20   █████████████████████████
+2026-08-13       ·           20   █████████████████████████
+2026-08-14      +1           21   ██████████████████████████
+2026-08-25       ·           21   ██████████████████████████
+```
+
+Chiziq bosqichma-bosqich ko'tariladi. Bir necha kun **ketma-ket**
+chetlangan — bu boshqacha xatti-harakat va boshqacha e'tibor talab qiladi.
+Umumiy xavf — **21**.
+
+#### Chiziqning cheklovi va nega ikkinchi ustun kerak
+
+Kumulyativ chiziq **qachon** bo'lganini yaxshi ko'rsatmaydi: uch oy oldin
+xavf to'plagan xodim ham, bugun to'playotgani ham bir xil balandlikda
+turadi.
+
+Aynan shuning uchun alohida **«Oxirgi xavf»** ustuni bor — u faqat so'nggi
+`RISK_RECENT_DAYS` kunni sanaydi. Ikkalasi birga to'liq manzara beradi:
+
+| Umumiy | Oxirgi | Ma'nosi |
+|---|---|---|
+| yuqori | yuqori | **hozir faol muammo** |
+| yuqori | 0 | ilgari bo'lgan, hozir tinch |
+| past | yuqori | yangi paydo bo'lgan — e'tibor bering |
+| past | 0 | muammo yo'q |
+
+Belgi rangi (▲ ■ ●) ham **oxirgi** xavfga qarab qo'yiladi, umumiyga emas —
+chunki «kimga bugun qarash kerak» degan savolga o'sha javob beradi.
 
 **3. E'tibor talab qiladigan kunlar** — chetlanishli kunlar kartalari,
 **daraja bo'yicha saralangan** (eng xavflisi tepada), `DASHBOARD_MAX_ISSUES`
