@@ -3,3 +3,11 @@ venv/
 __pycache__/
 *.pyc
 logs/
+
+# DLP bazasining sxemasi — mijoz tizimi haqidagi ichki hujjat.
+# Ichida maxfiy deb belgilangan maydonlar bor (klaviatura yozuvlari,
+# clipboard, email va Telegram matnlari). Repozitoriyga tushmasin.
+ai-db-context*.md
+
+# Ichki manzillar yoki so'rov xatlari bo'lishi mumkin bo'lgan hujjatlar
+*.local.md
