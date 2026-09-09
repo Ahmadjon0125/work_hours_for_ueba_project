@@ -5,11 +5,31 @@ const $ = (id) => document.getElementById(id);
 
 // Statuslar — texnik nom o'rniga oddiy o'zbekcha
 const STATUS = {
-  severe:       { label: "Jiddiy chetlanish",   color: '#e74c3c', css: 'red',        mark: '🔴', rank: 4 },
-  anomaly:      { label: "Sezilarli chetlanish", color: '#d99a06', css: 'darkyellow', mark: '🟠', rank: 3 },
-  watch:        { label: "Kichik chetlanish",    color: '#f1c40f', css: 'yellow',     mark: '🟡', rank: 2 },
-  normal:       { label: "Odatdagidek",          color: '#2ecc71', css: 'green',      mark: '🟢', rank: 1 },
-  insufficient: { label: "Baholanmadi",          color: '#95a5a6', css: 'gray',       mark: '⚪', rank: 0 },
+  anomaly:      { label: "Chetlanish",  color: '#e74c3c', css: 'red',   mark: '🔴', rank: 3 },
+  normal:       { label: "Odatdagidek", color: '#2ecc71', css: 'green', mark: '🟢', rank: 1 },
+  insufficient: { label: "Baholanmadi", color: '#95a5a6', css: 'gray',  mark: '⚪', rank: 0 },
+};
+/** Kun chetlanish sanaladimi.
+ *
+ *  Eski (backfill qilinmagan) yozuvlarda `isAnomaly` maydoni yo'q. Ularda eski
+ *  status nomiga QARAMAYMIZ — u boshqa chegara bilan hisoblangan va `watch`
+ *  (0.5–1.2) yangi qoidada normal ham, chetlanish ham bo'lishi mumkin.
+ *  O'rniga z'dan qaytadan hisoblaymiz: bu backfill qiladigan ishning aynan o'zi,
+ *  shuning uchun dashboard backfilldan oldin ham to'g'ri ko'rsatadi.
+ */
+const isAnomalyRow = (row) => {
+  if (typeof row.isAnomaly === 'boolean') return row.isAnomaly;
+  const o = outsideOf(row);              // eski yozuv — oyna qoidasini o'zimiz qo'llaymiz
+  return !!o && (o.before > 0 || o.after > 0);
+};
+
+/** Qator rangi/yorlig'i. Eski yozuvlarda ham z'dan hisoblanadi. */
+const statusOf = (row) => {
+  if (row.status === 'insufficient') return STATUS.insufficient;
+  if (row.status === 'anomaly' || row.status === 'normal') return STATUS[row.status];
+  // Eski 4 pog'onali yozuv (watch/severe) — yangi qoida bo'yicha qayta baholaymiz
+  if (!windowOf(row)) return STATUS.insufficient;
+  return isAnomalyRow(row) ? STATUS.anomaly : STATUS.normal;
 };
 const WEEKDAY_UZ = {
   Monday: 'dushanba', Tuesday: 'seshanba', Wednesday: 'chorshanba', Thursday: 'payshanba',
@@ -21,6 +41,7 @@ const MONTH_UZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
 let rows = [];          // joriy filtrdagi natijalar
 let baselines = {};     // clientId -> weeks
 let clientList = [];    // [{clientId, hostname, fullName, label}]
+let zThreshold = 1.0;   // /api/health dan keladi (.env: ANOMALY_Z_THRESHOLD)
 
 /** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
 function personName(row) {
@@ -94,23 +115,59 @@ function compare(row) {
   };
 }
 
-/** "1 soat 47 daqiqa erta keldi" ko'rinishidagi jumlalar (eng kattasi birinchi) */
-function describe(row) {
+/** Kunning ish oynasi (daqiqada) yoki null.
+ *
+ *  Qoida backend bilan bir xil:  lo = usualStart − T·σ,  hi = usualFinish + T·σ.
+ *  Yangi natijalarda tayyor `windowStart`/`windowFinish` bo'ladi — o'shani olamiz;
+ *  eski yozuvlarda `compare()` dan hisoblaymiz.
+ */
+function windowOf(row) {
+  if (row.windowStart !== null && row.windowStart !== undefined
+      && row.windowFinish !== null && row.windowFinish !== undefined) {
+    return { lo: row.windowStart, hi: row.windowFinish };
+  }
   const c = compare(row);
-  if (!c) return [];
+  if (!c) return null;
+  return {
+    lo: c.usualStart - zThreshold * (c.stdStart || 0),
+    hi: c.usualFinish + zThreshold * (c.stdFinish || 0),
+  };
+}
+
+/** Oynadan tashqarida qolgan daqiqalar: {before, after, lo, hi} yoki null. */
+function outsideOf(row) {
+  const w = windowOf(row);
+  if (!w) return null;
+  return {
+    before: Math.max(0, w.lo - hhmmssToMinutes(row.start)),
+    after: Math.max(0, hhmmssToMinutes(row.finish) - w.hi),
+    lo: w.lo,
+    hi: w.hi,
+  };
+}
+
+/** «Ish oynasidan 1 soat 12 daqiqa oldin faollik» ko'rinishidagi jumlalar.
+ *
+ *  Kech kelish va erta ketish bu yerda ATAYLAB yo'q — ular oyna ichida qoladi
+ *  va shubhali sanalmaydi.
+ */
+function describe(row) {
+  const o = outsideOf(row);
+  if (!o) return [];
+  const oyna = `Ish oynasi ${minutesToHHMM(o.lo)}–${minutesToHHMM(o.hi)}`;
   const out = [];
-  if (Math.abs(row.zStart || 0) >= 0.5 && Math.abs(c.arriveDiff) >= 5) {
+  if (o.before >= 1) {
     out.push({
-      text: `${humanMinutes(c.arriveDiff)} ${c.arriveDiff > 0 ? 'erta' : 'kech'} keldi`,
-      detail: `Keldi ${row.start.slice(0, 5)} · Odatda ${WEEKDAY_UZ[row.dayOfWeek]}larda ${minutesToHHMM(c.usualStart)}`,
-      z: Math.abs(row.zStart),
+      text: `Ish oynasi boshlanishidan ${humanMinutes(o.before)} oldin faollik`,
+      detail: `Birinchi faollik ${row.start.slice(0, 5)} · ${oyna}`,
+      z: o.before,
     });
   }
-  if (Math.abs(row.zFinish || 0) >= 0.5 && Math.abs(c.leaveDiff) >= 5) {
+  if (o.after >= 1) {
     out.push({
-      text: `${humanMinutes(c.leaveDiff)} ${c.leaveDiff > 0 ? 'kech' : 'erta'} ketdi`,
-      detail: `Ketdi ${row.finish.slice(0, 5)} · Odatda ${WEEKDAY_UZ[row.dayOfWeek]}larda ${minutesToHHMM(c.usualFinish)}`,
-      z: Math.abs(row.zFinish),
+      text: `Ish oynasi tugaganidan ${humanMinutes(o.after)} keyin faollik`,
+      detail: `Oxirgi faollik ${row.finish.slice(0, 5)} · ${oyna}`,
+      z: o.after,
     });
   }
   return out.sort((a, b) => b.z - a.z);
@@ -154,6 +211,7 @@ async function loadResults() {
 async function loadHealth() {
   try {
     const h = await (await fetch('/api/health')).json();
+    if (typeof h.anomalyZThreshold === 'number') zThreshold = h.anomalyZThreshold;
     const bad = [];
     if (h.mongo_main !== 'ok') bad.push('asosiy baza');
     if (h.mongo_local !== 'ok') bad.push('mahalliy baza');
@@ -171,7 +229,7 @@ async function loadHealth() {
 // ---------------------------------------------------------------- chizish
 function render() {
   const visible = $('onlyIssues').checked
-    ? rows.filter((r) => ['watch', 'anomaly', 'severe'].includes(r.status))
+    ? rows.filter(isAnomalyRow)
     : rows;
   renderSummary();
   renderIssues();
@@ -189,7 +247,7 @@ function renderSummary() {
     return;
   }
 
-  const problems = c.severe + c.anomaly;
+  const problems = c.anomaly + (c.severe || 0) + (c.watch || 0);
   const sel = $('client').value;
   const who = sel
     ? ((clientList.find((c) => c.clientId === sel) || {}).hostname || sel)
@@ -197,10 +255,7 @@ function renderSummary() {
   let text = `<b>${who}</b> bo'yicha <b>${rows.length} ish kuni</b> tekshirildi. `;
 
   if (problems) {
-    text += `Ulardan <b>${problems} kunda</b> jiddiy yoki sezilarli chetlanish bor`;
-    text += c.watch ? `, yana ${c.watch} kunda kichik chetlanish.` : '.';
-  } else if (c.watch) {
-    text += `Jiddiy chetlanish yo'q, ${c.watch} kunda kichik chetlanish bor.`;
+    text += `Ulardan <b>${problems} kunda</b> ish oynasidan tashqarida faollik qayd etildi.`;
   } else if (c.normal) {
     text += `Hammasi odatdagidek — chetlanish topilmadi.`;
   } else {
@@ -215,10 +270,27 @@ function renderSummary() {
   $('summary').innerHTML = text;
 }
 
+/** Kunning chetlanish darajasi (0-100) yoki null.
+ *  Yangi natijalarda tayyor, eskilarida ko'rsatilmaydi. */
+const severityOf = (row) =>
+  (typeof row.riskScore === 'number') ? row.riskScore
+    : (typeof row.anomalyScore === 'number') ? row.anomalyScore : null;
+
+/** Daraja uchun qisqa yorliq: 100 ballik shkala odamga tushunarli tilda. */
+function severityLabel(score) {
+  if (score === null) return '';
+  if (score >= 75) return 'juda yuqori';
+  if (score >= 50) return 'yuqori';
+  if (score >= 25) return "o'rtacha";
+  return 'past';
+}
+
 function renderIssues() {
   const issues = rows
-    .filter((r) => ['watch', 'anomaly', 'severe'].includes(r.status))
-    .sort((a, b) => STATUS[b.status].rank - STATUS[a.status].rank || b.date.localeCompare(a.date))
+    .filter(isAnomalyRow)
+    // Eng xavflisi tepada: daraja bo'yicha, teng bo'lsa yangi sana bo'yicha
+    .sort((a, b) => (severityOf(b) || 0) - (severityOf(a) || 0)
+      || b.date.localeCompare(a.date))
     .slice(0, 20);
 
   if (!issues.length) {
@@ -230,13 +302,18 @@ function renderIssues() {
     const parts = describe(r);
     const what = parts.length
       ? parts.map((p) => p.text).join(', ')
-      : STATUS[r.status].label;
+      : statusOf(r).label;
     const detail = parts.map((p) => p.detail).join('<br>');
+    const sev = severityOf(r);
+    const badge = sev === null ? ''
+      : `<span class="sev sev-${severityLabel(sev).replace(/[^a-z]/g, '')}"
+              title="Chetlanish darajasi: xodimning o'z og'ishiga nisbatan">
+           ${sev} · ${severityLabel(sev)}</span>`;
     return `
       <div class="issue ${r.status}">
-        <div class="mark">${STATUS[r.status].mark}</div>
+        <div class="mark">${statusOf(r).mark}</div>
         <div>
-          <div class="who">${personName(r)}</div>
+          <div class="who">${personName(r)} ${badge}</div>
           <div class="when">${humanDate(r.date, r.dayOfWeek)}</div>
           <div class="what">${what}</div>
           <div class="detail">${detail}</div>
@@ -256,145 +333,42 @@ function clearSvg(svg) { while (svg.firstChild) svg.removeChild(svg.firstChild);
 
 function renderChart(visible) {
   const oneClient = !!$('client').value;
-  clearSvg($('chart1'));
-  clearSvg($('chart2'));
+  const svg = $('chart');
+  clearSvg(svg);
 
   if (!rows.length) {
-    for (const id of ['chart1', 'chart2']) {
-      const svg = $(id);
-      svg.setAttribute('height', 56);
-      svg.appendChild(el('text', { x: 12, y: 32 }, 'Ko\'rsatadigan ma\'lumot yo\'q'));
-    }
-    $('chart1Hint').textContent = $('chart2Hint').textContent = '';
-    $('chart1Legend').innerHTML = $('chart2Legend').innerHTML = '';
+    svg.setAttribute('height', 56);
+    svg.appendChild(el('text', { x: 12, y: 32 }, 'Ko\'rsatadigan ma\'lumot yo\'q'));
+    $('chartHint').textContent = '';
+    $('chartLegend').innerHTML = '';
     return;
   }
 
-  const statusLegend = `
-    <span><i style="background:#2ecc71"></i> odatdagidek</span>
-    <span><i style="background:#f1c40f"></i> kichik chetlanish</span>
-    <span><i style="background:#d99a06"></i> sezilarli</span>
-    <span><i style="background:#e74c3c"></i> jiddiy</span>
-    <span><i style="background:#95a5a6"></i> baholanmagan</span>`;
-
-  // 1-grafik — ASOSIY: X o'qi kunlar, Y o'qi soatlar
-  $('chart1Title').textContent = 'Kunlik ish vaqti';
-  $('chart1Hint').textContent = oneClient
-    ? 'X o\'qi — kunlar, Y o\'qi — sutka soatlari. Har ustun bitta kun: pastki uchi kelgan vaqti, '
-      + 'yuqorigi uchi ketgan vaqti. Yashil yo\'lak — shu hafta kunidagi odatiy kelish/ketish oralig\'i.'
-    : 'Yuqoridagi ro\'yxatdan bitta xodimni tanlang — uning kunlik ish vaqti shu yerda chiziladi.';
-  $('chart1Legend').innerHTML = oneClient
-    ? statusLegend + `<span><i style="background:#2ecc71;opacity:.28"></i> odatiy oraliq</span>`
-    : '';
-
   if (oneClient) {
-    drawDayChart($('chart1'), visible);
+    $('chartTitle').textContent = 'Ish oynasi va faollik vaqtlari';
+    $('chartHint').textContent = 'X o\'qi — kunlar, Y o\'qi — sutka soatlari. '
+      + 'Kulrang fon — shu kunning ish oynasi. Ikkita nuqta — birinchi va oxirgi '
+      + 'faollik: oynadan tashqarida bo\'lsa qizil, ichida bo\'lsa yashil. '
+      + 'Oyna ichidagi faollik shubhali sanalmaydi.';
+    $('chartLegend').innerHTML = `
+      <span><i style="background:#8a97ab;opacity:.5"></i> ish oynasi</span>
+      <span><i style="background:#2ecc71;border-radius:50%"></i> oyna ichida</span>
+      <span><i style="background:#e74c3c;border-radius:50%"></i> oynadan tashqarida</span>
+      <span><i style="background:#95a5a6;border-radius:50%"></i> baholanmadi</span>`;
+    drawBaselineChart(svg, visible);
   } else {
-    const svg = $('chart1');
-    svg.setAttribute('height', 56);
-    svg.appendChild(el('text', { x: 12, y: 32 }, 'Xodimni tanlang'));
-  }
-
-  // 2-grafik — qo'shimcha kesim
-  if (oneClient) {
-    $('chart2Title').textContent = 'Haftalik odatiy rejim';
-    $('chart2Hint').textContent = 'X o\'qi — hafta kunlari, Y o\'qi — sutka soatlari. '
-      + 'Yashil yo\'lak — o\'rganilgan odatiy oraliq, nuqtalar — haqiqiy kunlar '
-      + '(ko\'k: kelish, sariq: ketish).';
-    $('chart2Legend').innerHTML = `
-      <span><i style="background:#2ecc71;opacity:.28"></i> odatiy kelish/ketish oralig'i</span>
-      <span><i style="background:#7dd3fc;border-radius:50%"></i> kelgan vaqti</span>
-      <span><i style="background:#fdba74;border-radius:50%"></i> ketgan vaqti</span>`;
-    drawWeeklyProfile($('chart2'), visible);
-  } else {
-    $('chart2Title').textContent = 'Umumiy manzara';
-    $('chart2Hint').textContent = 'Qatorlar — xodimlar, ustunlar — kunlar. '
-      + 'Har katak rangi o\'sha kunning holati, bo\'sh katak — faollik qayd etilmagan.';
-    $('chart2Legend').innerHTML = statusLegend;
-    drawMatrix($('chart2'), visible);
+    $('chartTitle').textContent = 'Umumiy manzara';
+    $('chartHint').textContent = 'Qatorlar — xodimlar, ustunlar — kunlar. '
+      + 'Har katak rangi o\'sha kunning holati, bo\'sh katak — faollik qayd etilmagan. '
+      + 'Bitta xodimni tanlasangiz uning odatiy oralig\'i chiziladi.';
+    $('chartLegend').innerHTML = `
+      <span><i style="background:#2ecc71"></i> odatdagidek</span>
+      <span><i style="background:#e74c3c"></i> chetlanish</span>
+      <span><i style="background:#95a5a6"></i> baholanmagan</span>`;
+    drawMatrix(svg, visible);
   }
 }
 
-/** ASOSIY grafik: X o'qi kunlar, Y o'qi sutka soatlari (00:00 pastda, 24:00 tepada) */
-function drawDayChart(svg, visible) {
-  const days = [...visible].sort((a, b) => a.date.localeCompare(b.date));
-  const colW = Math.max(18, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
-  const pad = { l: 54, r: 16, t: 12, b: 58 };
-  const W = Math.max(560, pad.l + days.length * colW + pad.r);
-  const H = 420;
-  const plotH = H - pad.t - pad.b;
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('height', H);
-
-  const y = (mins) => pad.t + plotH - (mins / 1440) * plotH;
-  const cx = (i) => pad.l + i * colW + colW / 2;
-
-  // Soat to'ri va yorliqlari
-  for (let hour = 0; hour <= 24; hour += 2) {
-    const yy = y(hour * 60);
-    svg.appendChild(el('line', {
-      x1: pad.l, y1: yy, x2: W - pad.r, y2: yy, class: 'grid',
-      opacity: hour % 6 === 0 ? 1 : 0.45,
-    }));
-    svg.appendChild(el('text', { x: pad.l - 8, y: yy + 4, 'text-anchor': 'end' },
-      String(hour).padStart(2, '0') + ':00'));
-  }
-
-  const labelStep = Math.ceil(days.length / 26);
-
-  days.forEach((r, i) => {
-    const c = compare(r);
-    const bw = Math.min(20, colW * 0.56);
-
-    // Dam olish kunlari fonini ajratamiz
-    if (r.dayOfWeek === 'Saturday' || r.dayOfWeek === 'Sunday') {
-      svg.appendChild(el('rect', {
-        x: pad.l + i * colW, y: pad.t, width: colW, height: plotH,
-        fill: '#ffffff', opacity: 0.03,
-      }));
-    }
-
-    // Odatiy kelish/ketish yo'laklari (mean ± std)
-    if (c) {
-      for (const [mean, std] of [[c.usualStart, c.stdStart], [c.usualFinish, c.stdFinish]]) {
-        if (mean === null || !std) continue;
-        const top = y(Math.min(1440, mean + std));
-        const bot = y(Math.max(0, mean - std));
-        svg.appendChild(el('rect', {
-          x: cx(i) - bw / 2 - 4, y: top, width: bw + 8, height: Math.max(2, bot - top),
-          fill: '#2ecc71', opacity: 0.22, rx: 2,
-        }));
-      }
-    }
-
-    // Kun ustuni: kelishdan ketishgacha
-    const sy = y(hhmmssToMinutes(r.start));
-    const fy = y(hhmmssToMinutes(r.finish));
-    const bar = el('rect', {
-      x: cx(i) - bw / 2, y: fy, width: bw, height: Math.max(3, sy - fy),
-      fill: STATUS[r.status].color, opacity: 0.92, rx: 3,
-    });
-    bar.appendChild(el('title', {},
-      `${humanDate(r.date, r.dayOfWeek)}\n` +
-      `Keldi ${r.start.slice(0, 5)} · Ketdi ${r.finish.slice(0, 5)} (${humanMinutes(r.durationMin)})\n` +
-      `${STATUS[r.status].label}` +
-      (c ? `\nOdatda: ${minutesToHHMM(c.usualStart)} – ${minutesToHHMM(c.usualFinish)}` : '')));
-    svg.appendChild(bar);
-
-    // Sana yorlig'i (dam olish kunlari qizil)
-    if (i % labelStep === 0) {
-      const weekend = r.dayOfWeek === 'Saturday' || r.dayOfWeek === 'Sunday';
-      const label = el('text', {
-        x: cx(i), y: H - 18, 'text-anchor': 'end',
-        transform: `rotate(-50 ${cx(i)} ${H - 18})`,
-      }, r.date.slice(5));
-      if (weekend) label.setAttribute('fill', '#e74c3c');
-      svg.appendChild(label);
-    }
-  });
-}
-
-/** Barcha xodimlar: xodim x kun matritsasi (sanoat standarti "umumiy manzara") */
 function drawMatrix(svg, visible) {
   const dates = [...new Set(visible.map((r) => r.date))].sort();
   const names = [...new Set(visible.map((r) => r.hostname || r.clientId))].sort();
@@ -429,89 +403,104 @@ function drawMatrix(svg, visible) {
       const row = cell.get(name + '|' + d);
       const rect = el('rect', {
         x: pad.l + i * cw + 1, y: y + 3, width: cw - 2, height: rh - 6, rx: 2,
-        fill: row ? STATUS[row.status].color : '#1e2632',
+        fill: row ? statusOf(row).color : '#1e2632',
         opacity: row ? 0.9 : 1,
       });
       if (row) {
         rect.appendChild(el('title', {}, `${name}\n${humanDate(row.date, row.dayOfWeek)}\n` +
-          `${row.start.slice(0, 5)} – ${row.finish.slice(0, 5)}\n${STATUS[row.status].label}`));
+          `${row.start.slice(0, 5)} – ${row.finish.slice(0, 5)}\n${statusOf(row).label}`));
       }
       svg.appendChild(rect);
     });
   });
 }
 
-/** Bitta xodim: 7 hafta kuni bo'yicha odatiy rejim + haqiqiy kunlar */
-function drawWeeklyProfile(svg, visible) {
-  const ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const weeks = baselines[$('client').value] || {};
-  const byDay = {};
-  for (const r of visible) (byDay[r.dayOfWeek] = byDay[r.dayOfWeek] || []).push(r);
+/** Baseline grafigi: X o'qi kunlar, Y o'qi sutka soatlari.
+ *
+ *  Kulrang fon — shu kunning odatiy oralig'i: kelish normasining quyi chetidan
+ *  ketish normasining yuqori chetigacha (masalan 08:50 – 18:20).
+ *  Nuqtalar — haqiqiy kelish va ketish vaqti. Har nuqta O'Z o'qi bo'yicha rang
+ *  oladi: normadan chiqsa qizil, chiqmasa yashil. Shuning uchun bir kunda
+ *  kelish yashil, ketish qizil bo'lishi mumkin.
+ *
+ *  `|z| <= chegara` aynan "mean ± chegara·std oralig'ida" degani, shuning uchun
+ *  nuqta rangi kulrang zonaga to'liq mos keladi — ziddiyat bo'lishi mumkin emas.
+ */
+function drawBaselineChart(svg, visible) {
+  const days = [...visible].sort((a, b) => a.date.localeCompare(b.date));
 
-  const W = 780, H = 330;
-  const pad = { l: 52, r: 14, t: 12, b: 44 };
-  const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+  const colW = Math.max(18, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
+  const pad = { l: 54, r: 16, t: 12, b: 58 };
+  const W = Math.max(560, pad.l + pad.r + colW * days.length);
+  const H = 420;
+  const plotH = H - pad.t - pad.b;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('height', H);
 
   const y = (mins) => pad.t + plotH - (mins / 1440) * plotH;
-  const colW = plotW / 7;
   const cx = (i) => pad.l + i * colW + colW / 2;
 
-  for (let hour = 0; hour <= 24; hour += 3) {
+  for (let hour = 0; hour <= 24; hour += 2) {
     const yy = y(hour * 60);
-    svg.appendChild(el('line', { x1: pad.l, y1: yy, x2: W - pad.r, y2: yy, class: 'grid' }));
+    svg.appendChild(el('line', {
+      x1: pad.l, y1: yy, x2: W - pad.r, y2: yy, class: 'grid',
+      opacity: hour % 6 === 0 ? 1 : 0.45,
+    }));
     svg.appendChild(el('text', { x: pad.l - 8, y: yy + 4, 'text-anchor': 'end' },
       String(hour).padStart(2, '0') + ':00'));
   }
 
-  ORDER.forEach((wd, i) => {
-    const w = weeks[wd];
-    const days = byDay[wd] || [];
-    const bw = Math.min(52, colW * 0.62);
+  const labelStep = Math.ceil(days.length / 26);
+  const bw = Math.min(28, colW * 0.72);
 
-    svg.appendChild(el('text', { x: cx(i), y: H - 24, 'text-anchor': 'middle' },
-      WEEKDAY_UZ[wd].slice(0, 3)));
-
-    if (w && w.meanStart !== null && w.meanStart !== undefined) {
-      // Odatiy ish oynasi: kelishdan ketishgacha
-      svg.appendChild(el('rect', {
-        x: cx(i) - bw / 2, y: y(w.meanFinish), width: bw,
-        height: Math.max(2, y(w.meanStart) - y(w.meanFinish)),
-        fill: '#2ecc71', opacity: 0.1, rx: 3,
-      }));
-      // mean ± std yo'laklari
-      for (const [mean, std] of [[w.meanStart, w.stdStart], [w.meanFinish, w.stdFinish]]) {
-        if (!std) continue;
-        const top = y(Math.min(1440, mean + std)), bot = y(Math.max(0, mean - std));
-        svg.appendChild(el('rect', {
-          x: cx(i) - bw / 2, y: top, width: bw, height: Math.max(2, bot - top),
-          fill: '#2ecc71', opacity: 0.3, rx: 3,
-        })).appendChild(el('title', {}, `${WEEKDAY_UZ[wd]}: odatda ${minutesToHHMM(mean)} ` +
-          `(±${humanMinutes(std)}), ${w.count} kun asosida`));
-      }
-      svg.appendChild(el('text', { x: cx(i), y: y(w.meanStart) + 14, 'text-anchor': 'middle' },
-        minutesToHHMM(w.meanStart)));
-      svg.appendChild(el('text', { x: cx(i), y: y(w.meanFinish) - 6, 'text-anchor': 'middle' },
-        minutesToHHMM(w.meanFinish)));
-    } else if (days.length) {
-      svg.appendChild(el('text', { x: cx(i), y: pad.t + plotH / 2, 'text-anchor': 'middle' },
-        'tarix kam'));
+  days.forEach((r, i) => {
+    if (i % labelStep === 0) {
+      const ly = H - pad.b + 18;
+      svg.appendChild(el('text', {
+        x: cx(i), y: ly, 'text-anchor': 'end',
+        transform: `rotate(-50 ${cx(i)} ${ly})`,
+      }, r.date.slice(5)));
     }
 
-    // Haqiqiy kunlar — nuqtalar
-    days.forEach((r, k) => {
-      const jitter = (k - (days.length - 1) / 2) * Math.min(7, bw / Math.max(1, days.length));
-      for (const [val, color] of [[r.start, '#7dd3fc'], [r.finish, '#fdba74']]) {
-        const dot = el('circle', {
-          cx: cx(i) + jitter, cy: y(hhmmssToMinutes(val)), r: 3.4,
-          fill: color, stroke: STATUS[r.status].color, 'stroke-width': 1.4,
-        });
-        dot.appendChild(el('title', {}, `${humanDate(r.date, r.dayOfWeek)}\n` +
-          `${r.start.slice(0, 5)} – ${r.finish.slice(0, 5)}\n${STATUS[r.status].label}`));
-        svg.appendChild(dot);
-      }
-    });
+    const w = windowOf(r);          // {lo, hi} yoki null
+
+    // Kulrang fon — ish oynasi. Faqat baseline bor kunlarda chiziladi.
+    if (w) {
+      const band = el('rect', {
+        x: cx(i) - bw / 2, y: y(Math.min(1440, w.hi)), width: bw,
+        height: Math.max(2, y(Math.max(0, w.lo)) - y(Math.min(1440, w.hi))),
+        fill: '#8a97ab', opacity: 0.22, rx: 3,
+      });
+      band.appendChild(el('title', {},
+        `${humanDate(r.date, r.dayOfWeek)}\nIsh oynasi: ${minutesToHHMM(w.lo)} – ${minutesToHHMM(w.hi)}`));
+      svg.appendChild(band);
+    }
+
+    // Kelish va ketish nuqtalari.
+    // Rang QOIDASI: nuqta oynadan tashqarida bo'lsa qizil, ichida bo'lsa yashil.
+    // Ya'ni rang kulrang fonga to'g'ridan-to'g'ri mos keladi — kech kelish yoki
+    // erta ketish (oyna ICHIDA qolgani uchun) qizil bo'lmaydi.
+    const marks = [
+      { time: r.start, word: 'Birinchi faollik' },
+      { time: r.finish, word: 'Oxirgi faollik' },
+    ];
+    for (const m of marks) {
+      if (!m.time) continue;
+      const mins = hhmmssToMinutes(m.time);
+      const outside = w && (mins < w.lo || mins > w.hi);
+      const dot = el('circle', {
+        cx: cx(i), cy: y(mins), r: 4,
+        fill: !w ? '#95a5a6' : (outside ? '#e74c3c' : '#2ecc71'),
+        stroke: '#0f1419', 'stroke-width': 1,
+      });
+      const izoh = w
+        ? `Ish oynasi ${minutesToHHMM(w.lo)}–${minutesToHHMM(w.hi)}`
+          + (outside ? ' — TASHQARIDA' : ' — ichida')
+        : 'Baholanmadi — bu hafta kuni uchun tarix yetarli emas';
+      dot.appendChild(el('title', {}, `${humanDate(r.date, r.dayOfWeek)}\n`
+        + `${m.word} ${m.time.slice(0, 5)}\n${izoh}`));
+      svg.appendChild(dot);
+    }
   });
 }
 
@@ -520,22 +509,33 @@ function renderTable(visible) {
   $('tableInfo').textContent = `— ${visible.length} ta`;
 
   if (!visible.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty">Ko\'rsatadigan kun yo\'q</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">Ko\'rsatadigan kun yo\'q</td></tr>';
     return;
   }
 
+  // Farq ustunlari o'rtachadan chetlanishni ko'rsatadi. Bu ENDI shubha belgisi
+  // emas — xulosani ish oynasi qoidasi beradi (kech kelish oyna ichida qolsa
+  // shubhali sanalmaydi). Shuning uchun rang berilmaydi, faqat ma'lumot.
   const diffCell = (diff, earlyWord, lateWord) => {
     if (diff === null) return '<td class="dim">—</td>';
     if (Math.abs(diff) < 5) return '<td class="dim">deyarli bir xil</td>';
-    const early = diff > 0;
-    return `<td class="${early ? 'diff-early' : 'diff-late'}">${humanMinutes(diff)} ${early ? earlyWord : lateWord}</td>`;
+    return `<td class="dim">${humanMinutes(diff)} ${diff > 0 ? earlyWord : lateWord}</td>`;
+  };
+
+  // Daraja ustuni: faqat chetlanish bo'lgan kunlarda ko'rsatiladi
+  const sevCell = (r) => {
+    const sev = severityOf(r);
+    if (!isAnomalyRow(r) || sev === null) return '<span class="dim">—</span>';
+    const w = Math.max(3, sev);
+    return `<span class="sev-bar" title="${sev} / 100 — ${severityLabel(sev)}">
+              <i style="width:${w}%"></i></span><span class="sev-num">${sev}</span>`;
   };
 
   tbody.innerHTML = [...visible]
     .sort((a, b) => b.date.localeCompare(a.date) || (a.hostname || '').localeCompare(b.hostname || ''))
     .map((r) => {
       const c = compare(r);
-      const s = STATUS[r.status];
+      const s = statusOf(r);
       return `
       <tr>
         <td>${humanDate(r.date, r.dayOfWeek)}</td>
@@ -547,6 +547,7 @@ function renderTable(visible) {
         <td class="time dim">${c ? minutesToHHMM(c.usualFinish) : '—'}</td>
         ${diffCell(c ? -c.leaveDiff : null, 'erta', 'kech')}
         <td><span class="badge ${s.css}">${s.label}</span></td>
+        <td class="sev-cell">${sevCell(r)}</td>
       </tr>`;
     }).join('');
 }

@@ -176,3 +176,22 @@ tbody tr:hover { background: var(--panel2); }
 .badge.red { background: var(--red); }
 
 .empty { padding: 22px; text-align: center; color: var(--muted); }
+
+/* --- Chetlanish darajasi (0-100) --- */
+.sev {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 10px;
+  font-size: 11px; font-weight: 600; vertical-align: middle;
+  background: #2a3240; color: var(--muted);
+}
+.sev-juda { background: #4a1f1f; color: #ff8b7e; }
+.sev-yuqori { background: #45301a; color: #ffb86b; }
+.sev-otacha { background: #3d3a1c; color: #e8d97a; }
+.sev-past { background: #2a3240; color: var(--muted); }
+
+.sev-cell { white-space: nowrap; }
+.sev-bar {
+  display: inline-block; width: 54px; height: 6px; border-radius: 3px;
+  background: #263041; overflow: hidden; vertical-align: middle;
+}
+.sev-bar i { display: block; height: 100%; background: var(--red); border-radius: 3px; }
+.sev-num { margin-left: 7px; font-size: 12px; color: var(--muted); }
