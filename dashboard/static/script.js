@@ -545,13 +545,18 @@ function drawBaselineChart(svg, visible) {
   const bor = new Map([...visible].map((r) => [r.date, r]));
   const days = kalendarKunlari(bor);
 
-  const colW = Math.max(9, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
+  // Eng kichik ustun kengligi 14px: vertikal sana yorlig'i shundan tor
+  // bo'lsa qo'shnisiga kirib ketadi. Grafik siqilmaydi — kengroq bo'lsa
+  // `.chart-wrap` scroll beradi.
+  const colW = Math.max(14, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
   const pad = { l: 54, r: 16, t: 12, b: 58 };
   const W = Math.max(560, pad.l + pad.r + colW * days.length);
   const H = 420;
   const plotH = H - pad.t - pad.b;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('height', H);
+  // Tabiiy kenglik — konteynerdan kengroq bo'lsa .chart-wrap scroll beradi
+  svg.style.width = `${W}px`;
 
   const y = (mins) => pad.t + plotH - (mins / 1440) * plotH;
   const cx = (i) => pad.l + i * colW + colW / 2;
@@ -566,15 +571,27 @@ function drawBaselineChart(svg, visible) {
       String(hour).padStart(2, '0') + ':00'));
   }
 
-  const labelStep = Math.ceil(days.length / 26);
   const bw = Math.min(28, colW * 0.72);
 
+  // Yorliq faqat MA'LUMOT BOR kunlarga qo'yiladi — bo'sh kunlarda pastdagi
+  // belgi yetarli. Ustunlar tor bo'lsa yorliqlar bir-biriga kirib ketmasligi
+  // uchun ular orasida kamida 13px masofa qoldiriladi.
+  const belgilanadi = new Set();
+  let oxirgiX = -Infinity;
   days.forEach((kun, i) => {
-    if (i % labelStep === 0) {
-      const ly = H - pad.b + 18;
+    if (!kun.row) return;
+    if (cx(i) - oxirgiX >= 13) {
+      belgilanadi.add(i);
+      oxirgiX = cx(i);
+    }
+  });
+
+  days.forEach((kun, i) => {
+    if (belgilanadi.has(i)) {
+      const ly = H - pad.b + 10;
       svg.appendChild(el('text', {
         x: cx(i), y: ly, 'text-anchor': 'end',
-        transform: `rotate(-50 ${cx(i)} ${ly})`,
+        transform: `rotate(-90 ${cx(i)} ${ly})`,
       }, kun.date.slice(5)));
     }
 

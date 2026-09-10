@@ -130,7 +130,12 @@ button.secondary { background: var(--panel); border: 1px solid var(--border); co
 .chart-wrap { overflow-x: auto; }
 /* Faqat ASOSIY grafik cho'ziladi. Ilgari bu qoida `svg` ga edi va BARCHA
    SVG'ga tegardi — jadvaldagi kichik sparkline ham 560px bo'lib ketardi. */
-#chart { display: block; width: 100%; min-width: 560px; }
+/* Grafik o'z tabiiy kengligida chiziladi; konteynerdan kengroq bo'lsa
+   `.chart-wrap` gorizontal scroll beradi. Ilgari `width: 100%` edi va
+   uzun oraliqda chizma SIQILARDI — 313 kunda ustunlar ikki barobar
+   kichrayib o'qilmay qolardi. `min-width: 100%` qisqa oraliqda grafik
+   bo'sh joy qoldirmasligi uchun. */
+#chart { display: block; min-width: 100%; }
 svg text { fill: var(--muted); font-size: 11px; }
 svg .grid { stroke: var(--border); stroke-width: 1; }
 

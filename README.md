@@ -935,6 +935,24 @@ Oraliq `from`/`to` filtrlaridan olinadi. 400 kundan uzun bo'lsa **oxirgi**
 400 kun ko'rsatiladi — uzoq oraliqda eng yangi ma'lumot kerak, boshidan
 kessak bugungi kun tushib qolardi.
 
+**Sana yorliqlari** vertikal va faqat **ma'lumot bor** kunlarga qo'yiladi.
+Bo'sh kunlarda pastdagi belgi yetarli — aks holda o'q o'qib bo'lmaydigan
+sanalar to'plamiga aylanardi.
+
+**Uzun oraliqda grafik siqilmaydi, scroll bo'ladi.** Ustun kengligi
+kamida 14px — vertikal yorliq shundan tor bo'lsa qo'shnisiga kirib ketadi.
+Chizma konteynerdan kengroq bo'lsa gorizontal scroll paydo bo'ladi:
+
+| Oraliq | Grafik kengligi | Scroll |
+|---|---|---|
+| 30 kun | 1418px (konteynerga sig'adi) | yo'q |
+| 90 kun | 1418px | yo'q |
+| 313 kun | 4452px | **ha** |
+
+> Ilgari SVG `width: 100%` edi va chizma konteynerga **siqilardi**:
+> 313 kunda ustunlar ikki barobar kichrayib, nuqtalar bir-birining ustiga
+> chiqib ketardi. Hammasi "ko'rinardi", lekin o'qib bo'lmasdi.
+
 Har kunda ikkita nuqta: birinchi va oxirgi faollik. Rang **har nuqta uchun
 alohida** — bir kunda kelish yashil, ketish qizil bo'lishi mumkin.
 
