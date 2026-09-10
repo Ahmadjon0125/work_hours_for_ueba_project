@@ -4,6 +4,7 @@ import threading
 from collections import Counter, defaultdict
 from datetime import datetime
 
+import pymongo
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 
@@ -22,33 +23,27 @@ router = APIRouter()
 DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard")
 
 # Trigger holati — hozircha xotirada (u job emas, har 5 soatlik avtomatik o'tish)
-_state = {"lastTrigger": {"status": "idle"}}
-
-
-def set_trigger_state(**kwargs):
-    _state["lastTrigger"] = {**kwargs}
-
-
-def get_state():
-    return _state
-
-
 def _retrain_chain(mode, job_id):
     """collector -> trainer zanjiri (fon thread'ida). Bosqichlar job hujjatiga yoziladi."""
     try:
-        jobs.set_stage(job_id, "collecting")
-        collected = collect()
+        jobs.set_stage(job_id, "collecting", progressText="Ma'lumot yig'ish boshlandi")
+        collected = collect(on_progress=lambda foiz, matn: jobs.set_progress(job_id, foiz, matn))
         days, failed = collected["days"], collected["failed"]
 
-        jobs.set_stage(job_id, "training",
+        # Xodim darajasidagi xatolar job'da qoladi — butun zanjir yiqilmasa ham
+        for f in failed:
+            jobs.add_error(job_id, f["error"], kontekst=f"collector · {f['hostname']}")
+
+        jobs.set_stage(job_id, "training", progressText="Odatiy jadvallar hisoblanmoqda",
                        **{"stats.days": days, "stats.clientsRead": collected["clients"]})
         # Muvaffaqiyatsiz clientlar bo'lsa ham o'qitamiz: qolganlarining ma'lumoti
         # to'liq, o'tkazib yuborilganlarniki esa eski (to'g'ri) holicha turibdi.
-        clients = train()
+        clients = train(on_progress=lambda foiz, matn: jobs.set_progress(job_id, foiz, matn))
 
         # Bironta client tushib qolgan bo'lsa "hammasi joyida" deb ko'rsatilmaydi
         status = "partial" if failed else "finished"
-        jobs.finish(job_id, status,
+        jobs.finish(job_id, status, progress=100,
+                    progressText="Tugadi" if status == "finished" else "Qisman bajarildi",
                     baselineId=current_baseline_id(),
                     **{"stats.clients": clients,
                        "stats.failedClients": [{"hostname": f["hostname"],
@@ -60,7 +55,8 @@ def _retrain_chain(mode, job_id):
             log.info("%s zanjiri tugadi: %d kun, %d client", mode, days, clients)
     except Exception as e:
         log.error("%s zanjirida xato: %s", mode, e)
-        jobs.finish(job_id, "error", error=str(e))
+        jobs.add_error(job_id, e, kontekst=f"{mode} zanjiri")
+        jobs.finish(job_id, "error", error=str(e), progressText="Xato bilan to'xtadi")
 
 
 def _start_chain(mode):
@@ -76,8 +72,16 @@ def _start_chain(mode):
 @router.get("/api/health")
 def health():
     def ping(fn):
+        """Bazani tekshiradi, lekin UZOQ KUTMAYDI.
+
+        Manba baza javob bermasa `serverSelectionTimeoutMS` (10s) tufayli bu
+        so'rov 10 soniya osilib qolardi — dashboard esa muzlab qolgandek
+        ko'rinardi, chunki u har 5 daqiqada shu endpointni so'raydi va
+        retrain jarayonini ham shundan o'qiydi.
+        """
         try:
-            fn()
+            with pymongo.timeout(config.HEALTH_PING_TIMEOUT):
+                fn()
             return "ok"
         except Exception:
             return "error"
@@ -99,7 +103,7 @@ def health():
                      "low": config.SEVERITY_LOW},
         "dashboard": {"rangeDays": config.DASHBOARD_RANGE_DAYS,
                       "maxIssues": config.DASHBOARD_MAX_ISSUES},
-        "lastTrigger": _state["lastTrigger"],
+        "lastTrigger": jobs.trigger_latest(),
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
         "lastRetrain": _job_as_state(jobs.latest()),
     }
@@ -121,6 +125,9 @@ def _job_as_state(job):
         "clients": stats.get("clients"),
         "failedClients": stats.get("failedClients", []),
         "baselineId": job.get("baselineId"),
+        "progress": job.get("progress", 0),
+        "progressText": job.get("progressText"),
+        "errorCount": len(job.get("errors") or []),
         "error": job.get("error"),
     }
 
@@ -152,6 +159,51 @@ def get_job(job_id: str):
     if job is None:
         raise HTTPException(status_code=404, detail="job topilmadi")
     return job
+
+
+def build_error_log(job_list, trigger_list, limit=50):
+    """Ikkala manbadagi xatolarni bitta vaqt bo'yicha saralangan ro'yxatga yig'adi.
+
+    DB'ga tegmaydi — sinash oson. "Nima qachon buzildi" degan savolga bitta
+    joyda javob berish uchun o'qitish zanjiri va trigger o'tishlari
+    birlashtiriladi.
+    """
+    UZUNLIK = 300      # pymongo xatolari juda uzun bo'ladi, jadvalga sig'masin
+    out = []
+
+    for job in job_list:
+        ichki = job.get("errors") or []
+        # `errors[]` dagi yozuvlar kontekstga ega, shuning uchun ular ustun.
+        for e in ichki:
+            out.append({"at": e.get("at"), "manba": job.get("type") or "retrain",
+                        "kontekst": e.get("context") or "",
+                        "xato": (e.get("error") or "")[:UZUNLIK]})
+        # Zanjir xatosi `finish(error=...)` da ham, `add_error` da ham yoziladi.
+        # Ikkalasini ko'rsatsak bitta xato ikki qator bo'lib chiqardi.
+        xato = job.get("error")
+        if xato and not any((e.get("error") or "").startswith(xato[:80]) for e in ichki):
+            out.append({"at": job.get("finishedAt") or job.get("startedAt"),
+                        "manba": job.get("type") or "retrain",
+                        "kontekst": "zanjir to'xtadi",
+                        "xato": xato[:UZUNLIK]})
+
+    for run in trigger_list:
+        if run.get("error"):
+            out.append({"at": run.get("finishedAt") or run.get("startedAt"),
+                        "manba": "trigger", "kontekst": "o'tish to'xtadi",
+                        "xato": run["error"][:UZUNLIK]})
+
+    out.sort(key=lambda x: x.get("at") or "", reverse=True)
+    return out[:limit]
+
+
+@router.get("/api/errors")
+def errors(limit: int = Query(50, ge=1, le=500)):
+    """Xatolar tarixi: o'qitish zanjiri va trigger o'tishlari bo'yicha.
+
+    Dashboarddagi "Xatolar" tugmasi shu yerdan o'qiydi.
+    """
+    return build_error_log(jobs.recent(limit), jobs.trigger_recent(limit), limit)
 
 
 @router.get("/api/clients")

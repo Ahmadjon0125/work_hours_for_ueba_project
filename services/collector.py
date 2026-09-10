@@ -26,8 +26,12 @@ def _log_weekday_report(client_id, coll_name, stamps):
                  max(tss).strftime("%Y-%m-%d %H:%M:%S"), len(tss))
 
 
-def collect():
-    """60 kunlik tarixni yig'ib raw_data_for_train ni to'ldiradi.
+def collect(on_progress=None):
+    """90 kunlik tarixni yig'ib raw_data_for_train ni to'ldiradi.
+
+    `on_progress(foiz, matn)` — ixtiyoriy. Har client'dan keyin chaqiriladi,
+    shuning uchun uzoq ishlaydigan jarayon frontda ko'rinib turadi. CLI
+    rejimida (`python collector.py`) berilmaydi va e'tiborsiz qoladi.
 
     Natija: {"clients": N, "days": N, "failed": [{clientId, hostname, error}, ...]}
 
@@ -59,8 +63,11 @@ def collect():
 
     total_days = 0
     failed = []
-    for client in clients:
+    for nomer, client in enumerate(clients, start=1):
         cid, hostname = client["clientId"], client["hostname"]
+        if on_progress:
+            on_progress(round(nomer / len(clients) * 100),
+                        f"Ma'lumot yig'ilmoqda: {nomer}/{len(clients)} xodim")
         full_name = client.get("fullName")
         try:
             day_stamps = collect_client_days(client, window_start, window_end)

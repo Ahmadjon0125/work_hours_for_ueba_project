@@ -299,11 +299,81 @@ async function loadHealth() {
     $('health').innerHTML = bad.length
       ? `<span class="bad">⚠ Ishlamayapti: ${bad.join(', ')}</span>`
       : `<span class="ok">●</span> Tizim ishlayapti`;
+    renderRunbar(h);
     return h;
   } catch (e) {
     $('health').innerHTML = '<span class="bad">⚠ Server bilan aloqa yo\'q</span>';
     return null;
   }
+}
+
+/** Sana-vaqtni qisqa ko'rinishda: "09-09 14:10". Bo'sh bo'lsa "—". */
+function qisqaVaqt(iso) {
+  if (!iso) return '—';
+  return iso.slice(5, 16).replace('T', ' ');
+}
+
+/** Fon jarayonlari qatori: oxirgi retrain, oxirgi trigger va jarayon chizig'i.
+ *
+ *  Har `loadHealth()` da yangilanadi, shuning uchun sahifa qayta ochilsa ham
+ *  ko'rinadi — ilgari holat faqat tugma bosilgandan keyingi polling paytida
+ *  ko'rinardi va tunda bo'lgan xato bilinmay qolardi.
+ */
+function renderRunbar(h) {
+  const r = (h && h.lastRetrain) || {};
+  const t = (h && h.lastTrigger) || {};
+
+  // Jarayon chizig'i — faqat ish ketayotganda
+  const ketmoqda = r.status === 'running';
+  $('runProgress').hidden = !ketmoqda;
+  if (ketmoqda) {
+    const foiz = Math.max(0, Math.min(100, r.progress || 0));
+    $('runProgressFill').style.width = foiz + '%';
+    $('runProgressPct').textContent = foiz + '%';
+    $('runProgressText').textContent = r.progressText
+      || { collecting: "Ma'lumot yig'ilmoqda", training: 'Odatiy jadvallar hisoblanmoqda' }[r.stage]
+      || 'Bajarilmoqda';
+  }
+
+  const belgi = { finished: ['ok', '✓'], partial: ['warn', '⚠'], error: ['bad', '✕'],
+                  running: ['', '…'], idle: ['', '—'] };
+
+  const [rk, ri] = belgi[r.status] || ['', ''];
+  $('runRetrain').innerHTML = `Oxirgi yangilash: <b>${qisqaVaqt(r.finishedAt || r.startedAt)}</b>`
+    + ` <span class="${rk}">${ri}</span>`
+    + (r.status === 'partial' ? ` <span class="warn">(${(r.failedClients || []).length} xodim tushib qoldi)</span>` : '')
+    + (r.status === 'error' ? ` <span class="bad">xato</span>` : '');
+
+  const [tk, ti] = belgi[t.status] || ['', ''];
+  $('runTrigger').innerHTML = `Oxirgi tekshiruv: <b>${qisqaVaqt(t.finishedAt || t.startedAt)}</b>`
+    + ` <span class="${tk}">${ti}</span>`
+    + (t.status === 'finished' ? ` <span class="muted">(${t.sent || 0} kun yuborildi)</span>` : '')
+    + (t.status === 'error' ? ` <span class="bad">xato</span>` : '');
+
+  // "Xatolar" tugmasi faqat xato bo'lsa ko'rinadi
+  const xatoBor = r.status === 'error' || t.status === 'error'
+    || (r.errorCount || 0) > 0 || r.status === 'partial';
+  const btn = $('errorsBtn');
+  btn.hidden = !xatoBor;
+  btn.className = xatoBor ? 'ghost has-errors' : 'ghost';
+}
+
+async function loadErrors() {
+  const tbody = $('errorsTable').querySelector('tbody');
+  let rows = [];
+  try {
+    rows = await (await fetch('/api/errors?limit=100')).json();
+  } catch (e) { rows = []; }
+
+  $('errorsInfo').textContent = rows.length ? `— ${rows.length} ta` : '';
+  tbody.innerHTML = rows.length
+    ? rows.map((x) => `<tr>
+        <td class="time dim">${qisqaVaqt(x.at)}</td>
+        <td>${x.manba || ''}</td>
+        <td class="dim">${x.kontekst || ''}</td>
+        <td class="xato">${(x.xato || '').replace(/</g, '&lt;')}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Xato qayd etilmagan</td></tr>';
 }
 
 // ---------------------------------------------------------------- chizish
@@ -741,12 +811,14 @@ function pollRetrain() {
     $('retrainStatus').style.color = r.stage === 'partial' ? 'var(--yellow)'
       : (r.stage === 'error' ? 'var(--red)' : '');
 
+    if (!$('errorsPanel').hidden) loadErrors();
+
     if (['finished', 'partial', 'error'].includes(r.status)) {
       clearInterval(retrainTimer);
       $('retrain').disabled = false;
       if (r.status !== 'error') { loadBaselines().then(loadResults); loadClients(); }
     }
-  }, 5000);
+  }, 2000);
 }
 
 // ---------------------------------------------------------------- boshlanish
@@ -776,6 +848,12 @@ async function init() {
   }
   $('client').addEventListener('change', loadResults);
   $('onlyIssues').addEventListener('change', render);
+  $('errorsBtn').addEventListener('click', async () => {
+    $('errorsPanel').hidden = false;
+    await loadErrors();
+    $('errorsPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  $('errorsClose').addEventListener('click', () => { $('errorsPanel').hidden = true; });
 
   await loadHealth();
   await setDefaultRange();

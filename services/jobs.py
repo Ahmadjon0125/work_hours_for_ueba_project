@@ -39,6 +39,11 @@ def create(mode):
         "finishedAt": None,
         "stats": {},
         "baselineId": None,
+        # Bosqich ichidagi jarayon: 0..100 va odam o'qiydigan matn
+        "progress": 0,
+        "progressText": "Navbatda",
+        # Bosqichlar davomida to'plangan xatolar (client darajasidagilar ham)
+        "errors": [],
         "error": None,
     }
     try:
@@ -49,9 +54,34 @@ def create(mode):
     return doc["_id"]
 
 
+def set_progress(job_id, percent, text=None):
+    """Bosqich ichidagi jarayonni yangilaydi (0..100).
+
+    Tez-tez chaqiriladi (har client uchun), shuning uchun faqat ikkita
+    maydonni yozadi — butun hujjat qayta yozilmaydi.
+    """
+    update = {"progress": max(0, min(100, int(percent)))}
+    if text is not None:
+        update["progressText"] = text
+    local_db()[config.COL_TRAINING_JOBS].update_one({"_id": job_id}, {"$set": update})
+
+
+def add_error(job_id, xato, kontekst=None):
+    """Job davomida yuz bergan xatoni ro'yxatga qo'shadi (jarayon to'xtamaydi).
+
+    Butun job yiqilmasa ham xodim darajasidagi xatolar shu yerda qoladi va
+    keyin dashboardda ko'rinadi.
+    """
+    yozuv = {"at": _now(), "error": str(xato)[:400]}
+    if kontekst:
+        yozuv["context"] = kontekst
+    local_db()[config.COL_TRAINING_JOBS].update_one(
+        {"_id": job_id}, {"$push": {"errors": {"$each": [yozuv], "$slice": -50}}})
+
+
 def set_stage(job_id, stage, **fields):
-    """Bosqichni (va qo'shimcha maydonlarni) yangilaydi."""
-    update = {"stage": stage}
+    """Bosqichni (va qo'shimcha maydonlarni) yangilaydi. Jarayon nolga qaytadi."""
+    update = {"stage": stage, "progress": 0}
     for key, value in fields.items():
         update[key] = value
     local_db()[config.COL_TRAINING_JOBS].update_one({"_id": job_id}, {"$set": update})
@@ -88,4 +118,60 @@ def recover_stale():
                   "error": "dastur qayta ishga tushdi, job uzilib qoldi"}})
     if result.modified_count:
         log.warning("%d ta uzilib qolgan job yopildi", result.modified_count)
+    return result.modified_count
+
+
+# ---------------------------------------------------------------------------
+# Trigger o'tishlari
+#
+# Ilgari holat API protsessining xotirasida (`_state` dict) turardi: dastur
+# qayta ishga tushsa yo'qolardi va tunda bo'lgan xato ertalab bilinmasdi.
+# Endi har o'tish `trigger_runs` da hujjat — tarix qoladi.
+# ---------------------------------------------------------------------------
+
+def trigger_start():
+    """Yangi trigger o'tishini ochadi, id qaytaradi."""
+    doc = {"_id": str(ObjectId()), "status": "running", "startedAt": _now(),
+           "finishedAt": None, "sent": 0, "skipped": 0, "clients": 0,
+           "events": 0, "error": None}
+    local_db()[config.COL_TRIGGER_RUNS].insert_one(doc)
+    return doc["_id"]
+
+
+def trigger_finish(run_id, status, **fields):
+    """O'tishni yopadi va eski yozuvlarni tozalaydi."""
+    local_db()[config.COL_TRIGGER_RUNS].update_one(
+        {"_id": run_id},
+        {"$set": {"status": status, "finishedAt": _now(), **fields}})
+    _prune_trigger_runs()
+
+
+def _prune_trigger_runs():
+    """Oxirgi TRIGGER_KEEP_RUNS o'tishini qoldiradi."""
+    col = local_db()[config.COL_TRIGGER_RUNS]
+    eskilar = list(col.find({}, {"_id": 1}).sort("startedAt", -1)
+                   .skip(config.TRIGGER_KEEP_RUNS))
+    if eskilar:
+        col.delete_many({"_id": {"$in": [d["_id"] for d in eskilar]}})
+
+
+def trigger_latest():
+    """Oxirgi o'tish, yoki hech qachon ishlamagan bo'lsa {'status': 'idle'}."""
+    doc = local_db()[config.COL_TRIGGER_RUNS].find_one({}, sort=[("startedAt", -1)])
+    return doc or {"status": "idle"}
+
+
+def trigger_recent(limit=20):
+    return list(local_db()[config.COL_TRIGGER_RUNS]
+                .find({}).sort("startedAt", -1).limit(limit))
+
+
+def trigger_recover_stale():
+    """Uzilib qolgan o'tishlarni yopadi (dastur qayta ishga tushganda)."""
+    result = local_db()[config.COL_TRIGGER_RUNS].update_many(
+        {"status": "running"},
+        {"$set": {"status": "error", "finishedAt": _now(),
+                  "error": "dastur qayta ishga tushdi, o'tish uzilib qoldi"}})
+    if result.modified_count:
+        log.warning("%d ta uzilib qolgan trigger o'tishi yopildi", result.modified_count)
     return result.modified_count

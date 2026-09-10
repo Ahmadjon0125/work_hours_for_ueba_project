@@ -28,6 +28,31 @@
     <span class="retrain-status" id="retrainStatus"></span>
   </section>
 
+  <!-- Fon jarayonlari holati: har doim ko'rinadi, sahifa yangilansa ham -->
+  <section class="runbar" id="runbar">
+    <div class="run-progress" id="runProgress" hidden>
+      <div class="run-progress-bar"><i id="runProgressFill"></i></div>
+      <span class="run-progress-text" id="runProgressText"></span>
+      <span class="run-progress-pct" id="runProgressPct"></span>
+    </div>
+    <span class="run-item" id="runRetrain"></span>
+    <span class="run-item" id="runTrigger"></span>
+    <span class="spacer"></span>
+    <button id="errorsBtn" class="ghost" hidden>Xatolar</button>
+  </section>
+
+  <!-- Xatolar tarixi — "Xatolar" tugmasi ochadi -->
+  <section class="panel" id="errorsPanel" hidden>
+    <h2>Xatolar tarixi <span class="muted" id="errorsInfo"></span>
+      <button id="errorsClose" class="ghost right">Yopish</button></h2>
+    <div class="table-wrap">
+      <table id="errorsTable">
+        <thead><tr><th>Vaqt</th><th>Manba</th><th>Qayerda</th><th>Xato</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- Oddiy tilda xulosa -->
   <section class="summary" id="summary"></section>
 

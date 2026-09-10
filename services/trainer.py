@@ -43,8 +43,10 @@ def _week_stats(days):
     }
 
 
-def train():
-    """baseline ni qayta quradi. Qurilgan client'lar sonini qaytaradi."""
+def train(on_progress=None):
+    """baseline ni qayta quradi. Qurilgan client'lar sonini qaytaradi.
+
+    `on_progress(foiz, matn)` — ixtiyoriy, collector'dagidek."""
     db = local_db()
     now = datetime.now()
 
@@ -79,7 +81,11 @@ def train():
     trained_at = now.isoformat(timespec="seconds")
 
     docs = []
-    for client_id, entry in per_client.items():
+    jami = len(per_client)
+    for nomer, (client_id, entry) in enumerate(per_client.items(), start=1):
+        if on_progress:
+            on_progress(round(nomer / jami * 100),
+                        f"Odatiy jadvallar hisoblanmoqda: {nomer}/{jami} xodim")
         weeks = {wd: _week_stats(days) for wd, days in entry["weeks"].items()}
         kept = sum(w["count"] for w in weeks.values() if w["meanStart"] is not None)
         docs.append({

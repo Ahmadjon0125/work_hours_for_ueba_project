@@ -11,7 +11,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import config
 from api.app import create_app
-from api.routes import set_trigger_state
 from mq.worker import start_workers
 from services import jobs, trigger
 from services.mongo import ensure_indexes
@@ -25,19 +24,25 @@ _scheduler = None
 
 
 def _trigger_job():
-    """Rejalashtirilgan trigger o'tishi (faqat avtomatik — API orqali chaqirilmaydi)."""
-    started = datetime.now()
-    set_trigger_state(status="running", startedAt=started.isoformat(timespec="seconds"))
+    """Rejalashtirilgan trigger o'tishi (faqat avtomatik — API orqali chaqirilmaydi).
+
+    Holat `trigger_runs` collection'iga yoziladi: dastur qayta ishga tushsa ham
+    tarix qoladi va tunda bo'lgan xato ertalab ko'rinadi.
+    """
+    try:
+        run_id = jobs.trigger_start()
+    except Exception as e:
+        # Mongo yotgan bo'lsa ham trigger'ni urinib ko'ramiz — hisobotsiz
+        log.error("Trigger o'tishini qayd qilib bo'lmadi: %s", e)
+        run_id = None
     try:
         sent, skipped = trigger.run()
-        set_trigger_state(status="finished", sent=sent, skipped=skipped,
-                          startedAt=started.isoformat(timespec="seconds"),
-                          finishedAt=datetime.now().isoformat(timespec="seconds"))
+        if run_id:
+            jobs.trigger_finish(run_id, "finished", sent=sent, skipped=skipped)
     except Exception as e:
         log.error("Trigger o'tishida xato: %s", e)
-        set_trigger_state(status="error", error=str(e),
-                          startedAt=started.isoformat(timespec="seconds"),
-                          finishedAt=datetime.now().isoformat(timespec="seconds"))
+        if run_id:
+            jobs.trigger_finish(run_id, "error", error=str(e))
 
 
 @app.on_event("startup")
@@ -48,6 +53,7 @@ def _startup():
         # Protsess job o'rtasida to'xtagan bo'lsa, hujjat "running" holicha qolib
         # keyingi barcha o'qitishlarni bloklab qo'yardi (ARCH-01).
         jobs.recover_stale()
+        jobs.trigger_recover_stale()
     except Exception as e:
         # Mongo hozir yotgan bo'lsa ham dastur ko'tariladi: /api/health xatoni ko'rsatadi,
         # indekslar keyingi trigger o'tishida yaratiladi.

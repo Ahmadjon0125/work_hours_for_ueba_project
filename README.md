@@ -1071,7 +1071,8 @@ Barcha endpointlar `/api/docs` da ham hujjatlashtirilgan (FastAPI avtomatik).
 | `/api/health` | GET | Tizim holati + dashboard sozlamalari |
 | `/api/train` | POST | Birinchi o'qitish (baseline mavjud bo'lsa **409**) |
 | `/api/retrain` | POST | Baseline yangilash: collector → trainer (**202**) |
-| `/api/jobs` | GET | O'qitish joblari tarixi |
+| `/api/jobs` | GET | O'qitish joblari tarixi (sana, bosqich, xatolar bilan) |
+| `/api/errors` | GET | Xatolar tarixi: retrain zanjiri + trigger o'tishlari |
 | `/api/jobs/{job_id}` | GET | Bitta job (yo'q bo'lsa **404**) |
 | `/api/clients` | GET | Xodimlar ro'yxati |
 | `/api/baseline` | GET | Joriy baseline hujjatlari |
@@ -1341,7 +1342,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 46 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 49 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1358,6 +1359,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Detectorlar** | `DETECTOR_WEIGHT_<NOM>` |
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
 | **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
+| **Kuzatuv** | `COL_TRIGGER_RUNS`, `TRIGGER_KEEP_RUNS`, `HEALTH_PING_TIMEOUT` |
 
 ### Eng ko'p sozlanadigan uchtasi
 
@@ -1378,6 +1380,77 @@ docker compose up -d          # `restart` EMAS
 Xavfsizlik: noto'g'ri qiymatlar jimgina ushlanadi. `ANOMALY_Z_THRESHOLD=0`
 → 1.0 ga qaytadi (nolga bo'linish bo'lardi); `ANOMALY_Z_FULL_SCALE`
 chegaradan kichik berilsa → `T+2`; detector vazni `[0, 1]` ga siqiladi.
+
+---
+
+## Xatolar va jarayon kuzatuvi
+
+### Jarayon ko'rsatkichi
+
+Retrain ketayotganda dashboardda foiz chizig'i va bosqich matni ko'rinadi:
+
+```
+[████████░░░░░░░░]  Ma'lumot yig'ilmoqda: 7/15 xodim        47%
+[████████████████]  Odatiy jadvallar hisoblanmoqda: 5/5     100%
+```
+
+`collect()` va `train()` ixtiyoriy `on_progress(foiz, matn)` chaqiruvini
+qabul qiladi. Har xodimdan keyin chaqiriladi va `training_jobs` hujjatidagi
+`progress` / `progressText` maydonlarini yangilaydi. CLI rejimida
+(`python collector.py`) berilmaydi va e'tiborsiz qoladi.
+
+### Fon jarayonlari qatori
+
+Filtrlar ostidagi qator **har doim** ko'rinadi, sahifa yangilansa ham:
+
+```
+Oxirgi yangilash: 09-10 11:58 ✕ xato    Oxirgi tekshiruv: 09-10 12:00 ✓ (1 kun yuborildi)    [Xatolar]
+```
+
+Ilgari holat faqat tugma bosilgandan keyingi polling paytida ko'rinardi —
+tunda bo'lgan xato ertalab bilinmay qolardi.
+
+### Xatolar tarixi
+
+«Xatolar» tugmasi **faqat xato bo'lganda** paydo bo'ladi va
+`/api/errors` dan ikkala manbani birlashtirib ko'rsatadi:
+
+| Manba | Qachon yoziladi |
+|---|---|
+| `retrain` · *zanjir to'xtadi* | butun o'qitish yiqilgan |
+| `retrain` · *collector · pc-1* | bitta xodim o'tkazib yuborilgan, zanjir davom etgan |
+| `trigger` · *o'tish to'xtadi* | trigger o'tishi yiqilgan |
+
+Xodim darajasidagi xatolar `training_jobs.errors[]` da saqlanadi (oxirgi
+50 tasi), trigger xatolari `trigger_runs` da. Bitta xato ikkala joyga
+yozilgan bo'lsa ro'yxatda **bir marta** ko'rinadi — kontekstli varianti
+ustun.
+
+### Trigger tarixi bazada
+
+Ilgari trigger holati API protsessining xotirasida (`_state` dict) turardi
+va qayta ishga tushirishda yo'qolardi. Endi har o'tish `trigger_runs` da
+hujjat: oxirgi `TRIGGER_KEEP_RUNS` (50) tasi saqlanadi.
+
+Uzilib qolgan o'tishlar startupda yopiladi (`trigger_recover_stale`) —
+xuddi o'qitish joblari kabi.
+
+### Xato bo'lganda ma'lumot yo'qoladimi
+
+Yo'q. Har bir vaziyat ko'zda tutilgan:
+
+| Vaziyat | Nima bo'ladi |
+|---|---|
+| Trigger publish qildi, keyin server o'chdi | `trigger_data` yozilmaydi → cursor orqada → keyingi o'tishda qayta yuboriladi. `results` upsert idempotent, dublikat yo'q |
+| Publish'dan oldin o'chdi | Hech narsa yuborilmadi, cursor joyida |
+| Worker ishlayotganda o'chdi | `ack` bo'lmagan → RabbitMQ boshqa worker'ga qayta beradi |
+| RabbitMQ yotgan | Trigger butun o'tishni bekor qiladi, cursor tegilmaydi |
+| Collector o'rtasida o'chdi | Job `running` qolardi → `recover_stale()` startupda yopadi; arxiv keyingi run'da to'liq qayta yoziladi |
+| DLP bazasi javob bermadi | O'sha xodim o'tkazib yuboriladi, eskisi saqlanadi, job **`partial`** |
+
+`/api/health` bazalarni tekshirishda `HEALTH_PING_TIMEOUT` (2 soniya) bilan
+cheklangan. Busiz manba baza yotganda so'rov 10 soniya osilib qolardi va
+dashboard muzlab qolgandek ko'rinardi.
 
 ---
 
@@ -1507,7 +1580,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari | 9 |
-| | **Jami** | **50** |
+| `test_progress_errors.py` | Jarayon xabarlari, xatolar tarixi, takror xatoni birlashtirish | 10 |
+| | **Jami** | **60** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1560,7 +1634,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     50 ta tekshiruv
+tests/                     60 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

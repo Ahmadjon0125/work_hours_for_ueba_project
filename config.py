@@ -120,6 +120,10 @@ SEVERITY_HIGH = int(os.getenv("SEVERITY_HIGH", 75))       # bundan yuqori: "juda
 SEVERITY_MEDIUM = int(os.getenv("SEVERITY_MEDIUM", 50))   # "yuqori"
 SEVERITY_LOW = int(os.getenv("SEVERITY_LOW", 25))         # "o'rtacha"; pastrog'i "past"
 
+# /api/health bazani tekshirishda qancha kutadi (soniya). Qisqa bo'lishi
+# shart: baza yotgan bo'lsa dashboard muzlab qolmasligi kerak.
+HEALTH_PING_TIMEOUT = float(os.getenv("HEALTH_PING_TIMEOUT", 2))
+
 # --- Dashboard va API ---
 # Dashboard ochilganda ko'rsatiladigan sana oralig'i (kun)
 DASHBOARD_RANGE_DAYS = int(os.getenv("DASHBOARD_RANGE_DAYS", 30))
@@ -138,6 +142,10 @@ COL_BASELINE = os.getenv("COL_BASELINE", "baseline")
 COL_BASELINE_RUNS = os.getenv("COL_BASELINE_RUNS", "baseline_runs")
 COL_RESULTS = os.getenv("COL_RESULTS", "results")
 COL_TRAINING_JOBS = os.getenv("COL_TRAINING_JOBS", "training_jobs")
+# Trigger o'tishlari tarixi — xotirada emas, bazada saqlanadi
+COL_TRIGGER_RUNS = os.getenv("COL_TRIGGER_RUNS", "trigger_runs")
+# Nechta trigger o'tishi saqlanadi (eskilari o'chiriladi)
+TRIGGER_KEEP_RUNS = int(os.getenv("TRIGGER_KEEP_RUNS", 50))
 
 # Nechta baseline versiyasi saqlanadi (eskilari o'chiriladi)
 BASELINE_KEEP_VERSIONS = int(os.getenv("BASELINE_KEEP_VERSIONS", 5))

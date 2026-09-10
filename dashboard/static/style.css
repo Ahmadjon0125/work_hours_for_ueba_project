@@ -241,3 +241,44 @@ tbody tr:hover { background: var(--panel2); }
   background: #2a3240; color: var(--muted); font-size: 12px; text-align: center;
 }
 .risk-cases.hit { background: #4a1f1f; color: #ff8b7e; }
+
+/* --- Fon jarayonlari qatori --- */
+.runbar {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 8px 16px; margin: 0 0 12px; border-radius: 8px;
+  background: var(--panel); border: 1px solid var(--border);
+  font-size: 13px; color: var(--muted);
+}
+.run-item { white-space: nowrap; }
+.run-item b { color: var(--text); font-weight: 600; }
+.run-item .ok { color: var(--green); }
+.run-item .warn { color: var(--yellow); }
+.run-item .bad { color: var(--red); }
+
+.run-progress { display: flex; align-items: center; gap: 10px; flex: 1 1 320px; }
+.run-progress-bar {
+  flex: 1 1 auto; height: 8px; border-radius: 4px;
+  background: #263041; overflow: hidden; min-width: 120px;
+}
+.run-progress-bar i {
+  display: block; height: 100%; width: 0;
+  background: var(--accent); border-radius: 4px;
+  transition: width .4s ease;
+}
+.run-progress-text { color: var(--text); white-space: nowrap; }
+.run-progress-pct { color: var(--text); font-weight: 600; min-width: 40px; text-align: right; }
+
+button.ghost {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 12px; font-size: 13px; cursor: pointer;
+}
+button.ghost:hover { color: var(--text); border-color: var(--muted); }
+button.ghost.right { float: right; }
+button.ghost.has-errors { color: #ff8b7e; border-color: #4a1f1f; }
+
+#errorsTable td { vertical-align: top; }
+#errorsTable td.xato { color: #ff8b7e; white-space: normal; word-break: break-word; }
+#errorsTable th:nth-child(1), #errorsTable td:nth-child(1) { width: 150px; }
+#errorsTable th:nth-child(2), #errorsTable td:nth-child(2) { width: 100px; }
+#errorsTable th:nth-child(3), #errorsTable td:nth-child(3) { width: 220px; }
