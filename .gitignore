@@ -11,3 +11,11 @@ ai-db-context*.md
 
 # Ichki manzillar yoki so'rov xatlari bo'lishi mumkin bo'lgan hujjatlar
 *.local.md
+
+# Manba bazadan olingan nusxalar — ichida xodimlarning haqiqiy faoliyat
+# yozuvlari va ismlari bor. Repoga tushishi mumkin emas.
+dump/
+dump-*/
+*.bson
+*.bson.gz
+*.archive
