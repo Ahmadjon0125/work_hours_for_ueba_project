@@ -47,7 +47,8 @@ let minDowSamples = 3;  // /api/health dan keladi (.env: MIN_DOW_SAMPLES)
 // Qolgan sozlamalar ham serverdan keladi — bu yerda faqat zaxira qiymatlar.
 // Server javob bermasa sahifa baribir chiziladi.
 let sozlama = { severity: { high: 75, medium: 50, low: 25 },
-                dashboard: { rangeDays: 30, maxIssues: 20 } };
+                dashboard: { rangeDays: 30, maxIssues: 20,
+                             pollMs: 400, progressHoldMs: 2500 } };
 
 /** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
 function personName(row) {
@@ -313,6 +314,21 @@ function qisqaVaqt(iso) {
   return iso.slice(5, 16).replace('T', ' ');
 }
 
+// Retrain shu sahifadan boshlanganini bildiradi. Server hujjatida `running`
+// paydo bo'lgunicha (va tugagandan keyin "hold" muddati davomida) chiziq shu
+// bayroq tufayli ekranda turadi.
+let jarayonBand = false;
+// Yakuniy matn ("Tugadi") qulflandi — fon so'rovlari uni qayta yozib yubormasin.
+let jarayonYakunda = false;
+
+/** Jarayon chizig'ini bir joyda yangilaydi: eni, foizi va matni. */
+function setProgress(foiz, matn) {
+  const p = Math.max(0, Math.min(100, Math.round(foiz || 0)));
+  $('runProgressFill').style.width = p + '%';
+  $('runProgressPct').textContent = p + '%';
+  if (matn !== undefined) $('runProgressText').textContent = matn;
+}
+
 /** Fon jarayonlari qatori: oxirgi retrain, oxirgi trigger va jarayon chizig'i.
  *
  *  Har `loadHealth()` da yangilanadi, shuning uchun sahifa qayta ochilsa ham
@@ -323,17 +339,14 @@ function renderRunbar(h) {
   const r = (h && h.lastRetrain) || {};
   const t = (h && h.lastTrigger) || {};
 
-  // Jarayon chizig'i — faqat ish ketayotganda
-  const ketmoqda = r.status === 'running';
+  // Jarayon chizig'i. Server "running" desa ham, biz o'zimiz endigina
+  // boshlagan bo'lsak ham ko'rinadi (`jarayonBand`) — server javobini kutib
+  // turgan bir necha yuz millisekundda chiziq yo'qolib turmasin.
+  const ketmoqda = r.status === 'running' || jarayonBand;
   $('runProgress').hidden = !ketmoqda;
-  if (ketmoqda) {
-    const foiz = Math.max(0, Math.min(100, r.progress || 0));
-    $('runProgressFill').style.width = foiz + '%';
-    $('runProgressPct').textContent = foiz + '%';
-    $('runProgressText').textContent = r.progressText
-      || { collecting: "Ma'lumot yig'ilmoqda", training: 'Odatiy jadvallar hisoblanmoqda' }[r.stage]
-      || 'Bajarilmoqda';
-  }
+  if (ketmoqda && !jarayonYakunda) setProgress(r.progress, r.progressText
+    || { collecting: "Ma'lumot yig'ilmoqda", training: 'Odatiy jadvallar hisoblanmoqda' }[r.stage]
+    || 'Bajarilmoqda');
 
   const belgi = { finished: ['ok', '✓'], partial: ['warn', '⚠'], error: ['bad', '✕'],
                   running: ['', '…'], idle: ['', '—'] };
@@ -779,25 +792,59 @@ function renderTable(visible) {
 }
 
 // ---------------------------------------------------------------- retrain
+//
+// Zanjir kichik bazada 1 soniyada tugaydi. Ilgari birinchi so'rov `setInterval`
+// tufayli 2 soniyadan keyin ketardi — natijada jarayon chizig'i umuman
+// ko'rinmasdi, tugma bosilgach faqat "Yangilandi ✓" chiqib qolardi. Endi:
+//   1) chiziq tugma bosilishi bilanoq 0% da paydo bo'ladi (serverni kutmaydi),
+//   2) birinchi so'rov darrov ketadi, keyingilari DASHBOARD_POLL_MS oralig'ida,
+//   3) tugagach 100% da DASHBOARD_PROGRESS_HOLD_MS davomida turadi.
 let retrainTimer = null;
+let holdTimer = null;
 
 async function startRetrain() {
+  clearTimeout(holdTimer);
+  jarayonBand = true;
+  jarayonYakunda = false;
   $('retrain').disabled = true;
+  $('runProgress').hidden = false;
+  setProgress(0, 'Boshlanmoqda...');
   $('retrainStatus').textContent = 'boshlanmoqda...';
+  $('retrainStatus').style.color = '';
   try {
     const res = await fetch('/api/retrain', { method: 'POST' });
     if (res.status === 409) $('retrainStatus').textContent = 'allaqachon bajarilmoqda';
     pollRetrain();
   } catch (e) {
+    jarayonBand = false;
+    $('runProgress').hidden = true;
     $('retrainStatus').textContent = 'xato: ' + e.message;
+    $('retrainStatus').style.color = 'var(--red)';
     $('retrain').disabled = false;
   }
 }
 
+/** Chiziqni yakuniy holatda bir oz ushlab turadi, keyin yashiradi.
+ *
+ *  Zanjir bir soniyada tugab qolsa foydalanuvchi "100%" ni ko'rmay qolardi —
+ *  shuning uchun yakuniy holat majburan ushlab turiladi.
+ */
+function finishProgress(matn, foiz) {
+  jarayonYakunda = true;
+  setProgress(foiz, matn);
+  clearTimeout(holdTimer);
+  holdTimer = setTimeout(() => {
+    jarayonBand = false;
+    jarayonYakunda = false;
+    $('runProgress').hidden = true;
+  }, Math.max(0, sozlama.dashboard.progressHoldMs || 0));
+}
+
 function pollRetrain() {
   clearInterval(retrainTimer);
-  retrainTimer = setInterval(async () => {
-    const h = await loadHealth();
+
+  const bir = async () => {
+    const h = await loadHealth();          // loadHealth() ichida renderRunbar chaqiriladi
     const r = (h && h.lastRetrain) || {};
     const skipped = (r.failedClients || []).length;
     $('retrainStatus').textContent = {
@@ -816,9 +863,16 @@ function pollRetrain() {
     if (['finished', 'partial', 'error'].includes(r.status)) {
       clearInterval(retrainTimer);
       $('retrain').disabled = false;
+      // Xatoda chiziq qayerda to'xtaganini ko'rsatamiz, 100% ga sudramaymiz
+      finishProgress({ finished: 'Tugadi', partial: 'Qisman bajarildi',
+                       error: "Xato bilan to'xtadi" }[r.status],
+                     r.status === 'error' ? (r.progress || 0) : 100);
       if (r.status !== 'error') { loadBaselines().then(loadResults); loadClients(); }
     }
-  }, 2000);
+  };
+
+  bir();                                   // birinchi so'rov darrov — kutilmaydi
+  retrainTimer = setInterval(bir, Math.max(200, sozlama.dashboard.pollMs || 400));
 }
 
 // ---------------------------------------------------------------- boshlanish

@@ -10,8 +10,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
 import services.collector as collector_mod
+import services.jobs as jobs_mod
 import services.workday as workday_mod
-from api.routes import build_error_log
+from api.routes import build_error_log, _bosqich_foizi
 
 
 def _check(label, condition, detail=""):
@@ -160,6 +161,64 @@ def test_collector_jarayonni_xabar_qiladi():
             & _check("matnda xodim soni bor", "4" in qadamlar[-1][1], qadamlar[-1][1]))
 
 
+# --- Bosqichlar bo'ylab umumiy foiz --------------------------------------
+
+def test_bosqich_foizi_bir_yonalishda_osadi():
+    print("  Umumiy foiz collector -> trainer bo'ylab faqat oldinga yuradi")
+    yozilgan = []
+    asl = jobs_mod.set_progress
+    try:
+        jobs_mod.set_progress = lambda job_id, foiz, matn=None: yozilgan.append(foiz)
+        ulush = config.RETRAIN_COLLECT_SHARE
+        collect_cb = _bosqich_foizi("job-1", 0, ulush)
+        train_cb = _bosqich_foizi("job-1", ulush, 100)
+        for f in (0, 50, 100):
+            collect_cb(f, "yig'ilmoqda")
+        for f in (0, 50, 100):
+            train_cb(f, "o'qitilmoqda")
+    finally:
+        jobs_mod.set_progress = asl
+    return (_check("collector 0 dan boshlaydi", yozilgan[0] == 0, str(yozilgan))
+            & _check(f"collector {ulush} da tugaydi", yozilgan[2] == ulush, str(yozilgan))
+            & _check("trainer o'sha nuqtadan davom etadi", yozilgan[3] == ulush, str(yozilgan))
+            & _check("oxiri 100", yozilgan[-1] == 100, str(yozilgan))
+            & _check("kamaymaydi", all(a <= b for a, b in zip(yozilgan, yozilgan[1:])),
+                     str(yozilgan)))
+
+
+def test_bosqich_foizi_chegaradan_chiqmaydi():
+    print("  Bosqich noto'g'ri foiz bersa ham umumiy shkala buzilmaydi")
+    yozilgan = []
+    asl = jobs_mod.set_progress
+    try:
+        jobs_mod.set_progress = lambda job_id, foiz, matn=None: yozilgan.append(foiz)
+        cb = _bosqich_foizi("job-1", 40, 90)
+        cb(-20, "x")
+        cb(300, "x")
+    finally:
+        jobs_mod.set_progress = asl
+    return (_check("pastdan chiqmaydi", yozilgan[0] == 40, str(yozilgan))
+            & _check("yuqoridan chiqmaydi", yozilgan[1] == 90, str(yozilgan)))
+
+
+def test_set_stage_foizni_saqlay_oladi():
+    print("  set_stage berilgan foizni saqlaydi (chiziq nolga sakramaydi)")
+    tutilgan = {}
+
+    class _Coll:
+        def update_one(self, filtr, update):
+            tutilgan.update(update["$set"])
+
+    asl = jobs_mod.local_db
+    try:
+        jobs_mod.local_db = lambda: {config.COL_TRAINING_JOBS: _Coll()}
+        jobs_mod.set_stage("job-1", "training", progress=50, progressText="x")
+    finally:
+        jobs_mod.local_db = asl
+    return (_check("bosqich yozildi", tutilgan.get("stage") == "training", str(tutilgan))
+            & _check("foiz 50 qoldi", tutilgan.get("progress") == 50, str(tutilgan)))
+
+
 def test_jarayonsiz_ham_ishlaydi():
     print("  on_progress berilmasa collector baribir ishlaydi (CLI rejimi)")
     asl_idx, asl_cl, asl_db = (collector_mod.ensure_indexes,
@@ -182,6 +241,8 @@ if __name__ == "__main__":
         test_ikkala_manba_vaqt_boyicha(), test_xatosiz_holat(), test_limit(),
         test_takroriy_xato_bir_marta(), test_uzun_xato_qisqartiriladi(),
         test_collector_jarayonni_xabar_qiladi(), test_jarayonsiz_ham_ishlaydi(),
+        test_bosqich_foizi_bir_yonalishda_osadi(), test_bosqich_foizi_chegaradan_chiqmaydi(),
+        test_set_stage_foizni_saqlay_oladi(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "
           f"({sum(results)}/{len(results)})")

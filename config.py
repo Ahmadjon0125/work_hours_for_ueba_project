@@ -129,6 +129,17 @@ HEALTH_PING_TIMEOUT = float(os.getenv("HEALTH_PING_TIMEOUT", 2))
 DASHBOARD_RANGE_DAYS = int(os.getenv("DASHBOARD_RANGE_DAYS", 30))
 # "E'tibor talab qiladigan kunlar" ro'yxatida nechta karta
 DASHBOARD_MAX_ISSUES = int(os.getenv("DASHBOARD_MAX_ISSUES", 20))
+# Retrain ketayotganda dashboard holatni qancha tez-tez so'raydi (millisekund).
+# Zanjir kichik bazada 1 soniyada tugaydi — so'rov undan sekin bo'lsa jarayon
+# chizig'i umuman ko'rinmay qoladi.
+DASHBOARD_POLL_MS = int(os.getenv("DASHBOARD_POLL_MS", 400))
+# Tugagandan keyin "100% — Tugadi" holati ekranda qancha turadi (millisekund).
+# Bo'lmasa juda tez zanjir miltillab o'tib ketadi va foydalanuvchi ko'rmaydi.
+DASHBOARD_PROGRESS_HOLD_MS = int(os.getenv("DASHBOARD_PROGRESS_HOLD_MS", 2500))
+# Umumiy 0-100 shkalada collector bosqichiga ajratilgan ulush (foiz).
+# Qolgani trainer'ga tegadi: collector 0->N, trainer N->100. Shu tufayli
+# chiziq bir marta 0 dan 100 gacha o'sadi, har bosqichda noldan boshlamaydi.
+RETRAIN_COLLECT_SHARE = min(95, max(5, int(os.getenv("RETRAIN_COLLECT_SHARE", 50))))
 # /api/results sahifasi: default va eng katta ruxsat etilgan hajm
 API_PAGE_SIZE = int(os.getenv("API_PAGE_SIZE", 100))
 API_PAGE_MAX = int(os.getenv("API_PAGE_MAX", 5000))

@@ -263,7 +263,9 @@ tbody tr:hover { background: var(--panel2); }
 .run-progress-bar i {
   display: block; height: 100%; width: 0;
   background: var(--accent); border-radius: 4px;
-  transition: width .4s ease;
+  /* Zanjir kichik bazada 1 soniyada tugaydi — animatsiya undan sekin bo'lmasin,
+     aks holda chiziq to'lguncha jarayon allaqachon tugab bo'ladi. */
+  transition: width .2s linear;
 }
 .run-progress-text { color: var(--text); white-space: nowrap; }
 .run-progress-pct { color: var(--text); font-weight: 600; min-width: 40px; text-align: right; }

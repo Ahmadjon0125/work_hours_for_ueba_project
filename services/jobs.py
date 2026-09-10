@@ -79,9 +79,14 @@ def add_error(job_id, xato, kontekst=None):
         {"_id": job_id}, {"$push": {"errors": {"$each": [yozuv], "$slice": -50}}})
 
 
-def set_stage(job_id, stage, **fields):
-    """Bosqichni (va qo'shimcha maydonlarni) yangilaydi. Jarayon nolga qaytadi."""
-    update = {"stage": stage, "progress": 0}
+def set_stage(job_id, stage, progress=0, **fields):
+    """Bosqichni (va qo'shimcha maydonlarni) yangilaydi.
+
+    `progress` — umumiy 0-100 shkaladagi yangi qiymat. Default 0, lekin zanjir
+    ikkinchi bosqichga o'tganda chiziq orqaga sakramasligi uchun chaqiruvchi
+    o'tgan bosqich tugagan nuqtani beradi.
+    """
+    update = {"stage": stage, "progress": progress}
     for key, value in fields.items():
         update[key] = value
     local_db()[config.COL_TRAINING_JOBS].update_one({"_id": job_id}, {"$set": update})
