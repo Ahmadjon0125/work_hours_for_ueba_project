@@ -66,8 +66,21 @@
   <!-- Oddiy tilda xulosa -->
   <section class="summary" id="summary"></section>
 
+  <!-- To'rt panel ketma-ket emas, tab bo'lib turadi: sahifa uzun bo'lib
+       ketmasin va ko'z bir vaqtda bitta narsaga qarasin. -->
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-panel="riskPanel">Kuzatuvdagi xodimlar
+      <span class="tab-count"></span></button>
+    <button class="tab" data-panel="issuesPanel">E'tibor talab qiladigan kunlar
+      <span class="tab-count"></span></button>
+    <button class="tab" data-panel="chartPanel">Ish oynasi va faollik vaqtlari
+      <span class="tab-count"></span></button>
+    <button class="tab" data-panel="tablePanel">Barcha kunlar
+      <span class="tab-count"></span></button>
+  </nav>
+
   <!-- Kuzatuvdagi xodimlar: to'plangan xavf bo'yicha -->
-  <section class="panel" id="riskPanel">
+  <section class="panel tab-panel" id="riskPanel">
     <h2>Kuzatuvdagi xodimlar <span class="muted" id="riskInfo"></span></h2>
     <p class="hint">Umumiy xavf — tanlangan oraliqdagi kunlik xavf ballarining
       yig'indisi; chiziq uning kunma-kun to'planishi. Oxirgi xavf — so'nggi
@@ -88,13 +101,13 @@
   </section>
 
   <!-- Diqqat talab qiladigan kunlar -->
-  <section class="panel" id="issuesPanel">
+  <section class="panel tab-panel" id="issuesPanel" hidden>
     <h2>E'tibor talab qiladigan kunlar</h2>
     <div id="issues"></div>
   </section>
 
   <!-- Yagona grafik: xodim tanlansa odatiy oraliq, aks holda umumiy manzara -->
-  <section class="panel">
+  <section class="panel tab-panel" id="chartPanel" hidden>
     <h2 id="chartTitle">Odatiy oraliq va haqiqiy vaqtlar</h2>
     <p class="hint" id="chartHint"></p>
     <div class="chart-wrap"><svg id="chart"></svg></div>
@@ -102,7 +115,7 @@
   </section>
 
   <!-- To'liq jadval -->
-  <section class="panel">
+  <section class="panel tab-panel" id="tablePanel" hidden>
     <h2>Barcha kunlar <span class="muted" id="tableInfo"></span></h2>
     <div class="table-wrap">
       <table id="table">

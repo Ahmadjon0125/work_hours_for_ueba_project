@@ -785,7 +785,35 @@ Yaratiladigan indekslar:
 `dashboard/` — **vanilla JS + inline SVG**, tashqi kutubxona yo'q, CDN yo'q.
 Grafiklar brauzerda `document.createElementNS` bilan chiziladi.
 
-### Beshta panel
+### Filtrlar, xulosa va to'rtta tab
+
+Sahifa uch qismdan iborat:
+
+```
+[ Sana … dan … Xodim ▾  ☐ Faqat chetlanishlar  [Jadvalni yangilash] … [Qayta o'qitish] ]
+[ jarayon chizig'i · oxirgi yangilash · oxirgi tekshiruv · [Xatolar] ]
+[ Xulosa — bir jumlada nima bo'lgani ]
+
+┌ Kuzatuvdagi xodimlar 15 ┬ E'tibor talab… 3 ┬ Ish oynasi… ┬ Barcha kunlar 12 ┐
+│ (faol tab paneli)                                                            │
+```
+
+Filtrlar, holat qatori va xulosa **har doim** ko'rinadi — ular butun tanlovga
+tegishli. Qolgan to'rtta panel esa **tab**: bir vaqtda bittasi ochiq.
+
+Ilgari to'rttasi ketma-ket turardi va sahifa juda uzun bo'lib ketgandi —
+jadvalni ko'rish uchun grafikdan o'tib scroll qilish kerak edi. Tab
+yorlig'idagi son (`15`, `3`, `12`) o'sha tabni ochmasdan ichida nima
+borligini ko'rsatadi; chetlanishlar soni nolga teng bo'lmasa qizil bo'ladi.
+
+Tanlangan tab `localStorage` da saqlanadi (`ueba.tab`) — sahifa yangilanganda
+odam qayerda edi, o'sha yerda qoladi. Brauzer saqlashga ruxsat bermasa
+(shaxsiy oyna, o'chirilgan saytlar ma'lumoti) sahifa baribir ishlaydi,
+shunchaki har safar birinchi tabdan boshlanadi.
+
+> **Grafik yashirin holatda ham to'g'ri chiziladi.** Uning kengligi kun
+> soniga qarab hisoblanadi (`colW · days.length`), konteynerning o'lchamiga
+> emas — shuning uchun tab ochilganda qayta chizish shart emas.
 
 **1. Xulosa** — bir jumla:
 
@@ -794,7 +822,7 @@ Grafiklar brauzerda `document.createElementNS` bilan chiziladi.
 
 Baholanmagan kunlar bo'lsa sababi ham yoziladi.
 
-**2. Kuzatuvdagi xodimlar** — QRadar uslubidagi kesim, `/api/risk-summary`
+**2. Kuzatuvdagi xodimlar** (tab) — QRadar uslubidagi kesim, `/api/risk-summary`
 dan keladi:
 
 | Ustun | Ma'nosi |
@@ -912,18 +940,18 @@ Aynan shuning uchun alohida **«Oxirgi xavf»** ustuni bor — u faqat so'nggi
 Belgi rangi (▲ ■ ●) ham **oxirgi** xavfga qarab qo'yiladi, umumiyga emas —
 chunki «kimga bugun qarash kerak» degan savolga o'sha javob beradi.
 
-**3. E'tibor talab qiladigan kunlar** — chetlanishli kunlar kartalari,
+**3. E'tibor talab qiladigan kunlar** (tab) — chetlanishli kunlar kartalari,
 **daraja bo'yicha saralangan** (eng xavflisi tepada), `DASHBOARD_MAX_ISSUES`
 (20) tagacha. Har kartada daraja yorlig'i: `24 · past`, `56 · yuqori`.
 
-**4. Grafik** — xodim tanlanganiga qarab ikki xil:
+**4. Ish oynasi va faollik vaqtlari** (tab) — xodim tanlanganiga qarab ikki xil:
 
 | Tanlangan | Grafik |
 |---|---|
 | bitta xodim | «Ish oynasi va faollik vaqtlari» |
 | «Barcha xodimlar» | «Umumiy manzara» matritsasi |
 
-**5. Jadval** — barcha kunlar, 11 ustun: sana, xodim, birinchi/oxirgi
+**5. Barcha kunlar** (tab) — 11 ustun: sana, xodim, birinchi/oxirgi
 faollik, odatdagi vaqtlar, farqlar, sof ish, xulosa, daraja.
 
 ### Asosiy grafik mexanikasi

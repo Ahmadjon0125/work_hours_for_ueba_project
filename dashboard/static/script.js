@@ -429,15 +429,62 @@ async function loadErrors() {
 }
 
 // ---------------------------------------------------------------- chizish
+// ---------------------------------------------------------------- tablar
+//
+// To'rt panel ilgari ketma-ket turardi va sahifa juda uzun bo'lib ketgandi.
+// Endi ular tab: bir vaqtda bittasi ko'rinadi. Tanlov localStorage'da
+// saqlanadi — sahifa yangilanganda odam qayerda edi, o'sha yerda qoladi.
+const TAB_KEY = 'ueba.tab';
+const TAB_DEFAULT = 'riskPanel';
+
+function tabniOch(panel) {
+  const tugmalar = [...document.querySelectorAll('#tabs .tab')];
+  const bor = tugmalar.some((b) => b.dataset.panel === panel);
+  const tanlangan = bor ? panel : TAB_DEFAULT;
+  for (const b of tugmalar) {
+    const faol = b.dataset.panel === tanlangan;
+    b.classList.toggle('active', faol);
+    b.setAttribute('aria-selected', faol);
+    const el = $(b.dataset.panel);
+    if (el) el.hidden = !faol;
+  }
+  // Saqlash ixtiyoriy qulaylik — brauzer ruxsat bermasa sahifa baribir ishlaydi
+  try { localStorage.setItem(TAB_KEY, tanlangan); } catch (e) { /* e'tiborsiz */ }
+}
+
+function joriyTab() {
+  try { return localStorage.getItem(TAB_KEY) || TAB_DEFAULT; }
+  catch (e) { return TAB_DEFAULT; }
+}
+
+/** Tab yorliqlaridagi sonlar — boshqa tabda nima borligini ochmasdan bilish. */
+function renderTabCounts(visible, chetlanish) {
+  const sonlar = {
+    riskPanel: riskRows.length,
+    issuesPanel: chetlanish,
+    chartPanel: null,               // grafikda sanaladigan narsa yo'q
+    tablePanel: visible.length,
+  };
+  for (const b of document.querySelectorAll('#tabs .tab')) {
+    const n = sonlar[b.dataset.panel];
+    const span = b.querySelector('.tab-count');
+    span.textContent = n === null ? '' : n;
+    span.hidden = n === null;
+    // Chetlanishlar soni bo'sh bo'lmasa qizil — e'tiborni tortsin
+    span.className = 'tab-count' + (b.dataset.panel === 'issuesPanel' && n ? ' hit' : '');
+  }
+}
+
 function render() {
   const visible = $('onlyIssues').checked
     ? rows.filter(isAnomalyRow)
     : rows;
   renderSummary();
   renderRiskTable();
-  renderIssues();
+  const chetlanish = renderIssues();
   renderChart(visible);
   renderTable(visible);
+  renderTabCounts(visible, chetlanish);
 }
 
 function renderSummary() {
@@ -498,7 +545,7 @@ function renderIssues() {
 
   if (!issues.length) {
     $('issues').innerHTML = `<p class="ok-note">Bu oraliqda e'tibor talab qiladigan kun topilmadi.</p>`;
-    return;
+    return 0;
   }
 
   $('issues').innerHTML = issues.map((r) => {
@@ -523,6 +570,7 @@ function renderIssues() {
         </div>
       </div>`;
   }).join('');
+  return issues.length;
 }
 
 // --- SVG yordamchisi
@@ -946,6 +994,11 @@ async function init() {
     $('errorsPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
   $('errorsClose').addEventListener('click', () => { $('errorsPanel').hidden = true; });
+
+  for (const b of document.querySelectorAll('#tabs .tab')) {
+    b.addEventListener('click', () => tabniOch(b.dataset.panel));
+  }
+  tabniOch(joriyTab());
 
   await loadHealth();
   await setDefaultRange();
