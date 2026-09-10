@@ -42,6 +42,8 @@ def create(mode):
         # Bosqich ichidagi jarayon: 0..100 va odam o'qiydigan matn
         "progress": 0,
         "progressText": "Navbatda",
+        # Har bosqichning o'z foizi: dashboard ikkita alohida chiziq chizadi
+        "stageProgress": {},
         # Bosqichlar davomida to'plangan xatolar (client darajasidagilar ham)
         "errors": [],
         "error": None,
@@ -54,15 +56,40 @@ def create(mode):
     return doc["_id"]
 
 
-def set_progress(job_id, percent, text=None):
+def set_progress(job_id, percent, text=None, stage=None):
     """Bosqich ichidagi jarayonni yangilaydi (0..100).
 
-    Tez-tez chaqiriladi (har client uchun), shuning uchun faqat ikkita
-    maydonni yozadi — butun hujjat qayta yozilmaydi.
+    Tez-tez chaqiriladi (har client uchun), shuning uchun faqat kerakli
+    maydonlarni yozadi — butun hujjat qayta yozilmaydi.
+
+    `stage` berilsa foiz `stageProgress.<stage>` ga ham yoziladi. Dashboard
+    har bosqich uchun ALOHIDA chiziq chizadi, shuning uchun collector va
+    trainer foizlari bir-birining ustiga yozilmasligi kerak: bitta umumiy
+    `progress` bilan ikkinchi bosqich birinchisining natijasini o'chirardi.
     """
-    update = {"progress": max(0, min(100, int(percent)))}
+    p = max(0, min(100, int(percent)))
+    update = {"progress": p}
     if text is not None:
         update["progressText"] = text
+    if stage:
+        update[f"stageProgress.{stage}.percent"] = p
+        update[f"stageProgress.{stage}.status"] = "running"
+        if text is not None:
+            update[f"stageProgress.{stage}.text"] = text
+    local_db()[config.COL_TRAINING_JOBS].update_one({"_id": job_id}, {"$set": update})
+
+
+def finish_stage(job_id, stage, status="done", text=None):
+    """Bosqichni yakunlaydi: `done` bo'lsa foizi 100 ga to'ldiriladi.
+
+    Xodim topilmasa collector bironta `on_progress` chaqirmaydi va chiziq
+    0% da qotib qolardi — shuning uchun yakun alohida belgilanadi.
+    """
+    update = {f"stageProgress.{stage}.status": status}
+    if status == "done":
+        update[f"stageProgress.{stage}.percent"] = 100
+    if text is not None:
+        update[f"stageProgress.{stage}.text"] = text
     local_db()[config.COL_TRAINING_JOBS].update_one({"_id": job_id}, {"$set": update})
 
 
@@ -79,16 +106,19 @@ def add_error(job_id, xato, kontekst=None):
         {"_id": job_id}, {"$push": {"errors": {"$each": [yozuv], "$slice": -50}}})
 
 
-def set_stage(job_id, stage, progress=0, **fields):
+def set_stage(job_id, stage, **fields):
     """Bosqichni (va qo'shimcha maydonlarni) yangilaydi.
 
-    `progress` — umumiy 0-100 shkaladagi yangi qiymat. Default 0, lekin zanjir
-    ikkinchi bosqichga o'tganda chiziq orqaga sakramasligi uchun chaqiruvchi
-    o'tgan bosqich tugagan nuqtani beradi.
+    Yangi bosqich o'z chizig'ini 0 dan boshlaydi — oldingi bosqichning
+    `stageProgress` yozuvi tegilmaydi, u ekranda «bajarildi» bo'lib qoladi.
     """
-    update = {"stage": stage, "progress": progress}
+    update = {"stage": stage, "progress": 0,
+              f"stageProgress.{stage}.percent": 0,
+              f"stageProgress.{stage}.status": "running"}
     for key, value in fields.items():
         update[key] = value
+    if "progressText" in fields:
+        update[f"stageProgress.{stage}.text"] = fields["progressText"]
     local_db()[config.COL_TRAINING_JOBS].update_one({"_id": job_id}, {"$set": update})
 
 

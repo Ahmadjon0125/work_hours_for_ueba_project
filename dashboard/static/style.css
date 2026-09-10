@@ -255,7 +255,15 @@ tbody tr:hover { background: var(--panel2); }
 .run-item .warn { color: var(--yellow); }
 .run-item .bad { color: var(--red); }
 
-.run-progress { display: flex; align-items: center; gap: 10px; flex: 1 1 320px; }
+/* Ikkita bosqich ustma-ust: collector va trainer alohida chiziqqa ega */
+.run-progress { display: flex; flex-direction: column; gap: 6px; flex: 1 1 100%; }
+/* `display: flex` brauzerning [hidden] qoidasini bosib ketadi — jarayon
+   tugagach chiziq yashirinishi uchun buni qaytarib qo'yish shart. */
+.run-progress[hidden] { display: none; }
+.run-stage { display: flex; align-items: center; gap: 10px; }
+.run-stage-name {
+  min-width: 200px; color: var(--muted); font-size: 12.5px; white-space: nowrap;
+}
 .run-progress-bar {
   flex: 1 1 auto; height: 8px; border-radius: 4px;
   background: #263041; overflow: hidden; min-width: 120px;
@@ -267,8 +275,20 @@ tbody tr:hover { background: var(--panel2); }
      aks holda chiziq to'lguncha jarayon allaqachon tugab bo'ladi. */
   transition: width .2s linear;
 }
-.run-progress-text { color: var(--text); white-space: nowrap; }
-.run-progress-pct { color: var(--text); font-weight: 600; min-width: 40px; text-align: right; }
+.run-progress-text { color: var(--muted); white-space: nowrap; font-size: 12.5px; }
+.run-progress-pct {
+  color: var(--text); font-weight: 600; min-width: 42px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bosqich holati: kutmoqda -> ketmoqda -> bajarildi (yoki xato) */
+.run-stage.waiting { opacity: .45; }
+.run-stage.running .run-stage-name { color: var(--text); font-weight: 600; }
+.run-stage.done .run-progress-bar i { background: var(--green); }
+.run-stage.done .run-stage-name::after { content: ' ✓'; color: var(--green); }
+.run-stage.error .run-progress-bar i { background: var(--red); }
+.run-stage.error .run-stage-name { color: var(--red); }
+.run-stage.error .run-stage-name::after { content: ' ✕'; }
 
 button.ghost {
   background: transparent; color: var(--muted);

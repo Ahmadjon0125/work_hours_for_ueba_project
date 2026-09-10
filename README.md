@@ -1342,7 +1342,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 52 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 51 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1358,7 +1358,6 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Anomaliya** | `MIN_DOW_SAMPLES`, `ANOMALY_Z_THRESHOLD`, `ANOMALY_Z_FULL_SCALE` |
 | **Detectorlar** | `DETECTOR_WEIGHT_<NOM>` |
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `DASHBOARD_POLL_MS`, `DASHBOARD_PROGRESS_HOLD_MS`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
-| **Retrain jarayoni** | `RETRAIN_COLLECT_SHARE` |
 | **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
 | **Kuzatuv** | `COL_TRIGGER_RUNS`, `TRIGGER_KEEP_RUNS`, `HEALTH_PING_TIMEOUT` |
 
@@ -1402,21 +1401,46 @@ qabul qiladi. Har xodimdan keyin chaqiriladi va `training_jobs` hujjatidagi
 `progress` / `progressText` maydonlarini yangilaydi. CLI rejimida
 (`python collector.py`) berilmaydi va e'tiborsiz qoladi.
 
-**Ikki bosqich — bitta shkala.** Collector ham, trainer ham o'zicha 0 dan 100
-gacha sanaydi. Ularni to'g'ridan to'g'ri yozsak chiziq 0 → 100 ga chiqib, keyin
-yana 0 ga tushib qayta o'sardi — foydalanuvchi buni «orqaga ketdi» deb tushunadi.
-Shuning uchun `api/routes._bosqich_foizi()` har bosqichning foizini umumiy
-shkalaning o'z bo'lagiga siqadi:
+**Har bosqich — o'z chizig'i.** Collector va trainer ekranda ikkita
+**alohida** qator bo'lib turadi, har biri o'zicha 0 dan 100 gacha to'ladi:
 
-| Bosqich | Bosqich ichida | Umumiy shkalada |
+```
+1 · Ma'lumot yig'ish             [███░░░░░░░░░░░░]   27%  Ma'lumot yig'ilmoqda: 4/15 xodim
+2 · Odatiy jadvallarni o'qitish  [░░░░░░░░░░░░░░░]    0%  navbatda
+                                  ↓ collector tugadi
+1 · Ma'lumot yig'ish ✓           [███████████████]  100%  15 xodim, 35 kun yig'ildi
+2 · Odatiy jadvallarni o'qitish  [██████░░░░░░░░░]   40%  Odatiy jadvallar hisoblanmoqda: 2/5 xodim
+```
+
+Bosqich holati uchta bo'ladi va rangi bilan farqlanadi:
+
+| Holat | Ko'rinishi | Qachon |
 |---|---|---|
-| collector | 0 → 100 | 0 → `RETRAIN_COLLECT_SHARE` (default **50**) |
-| trainer | 0 → 100 | `RETRAIN_COLLECT_SHARE` → **100** |
+| `waiting` | xira, 0% | bosqich hali boshlanmagan |
+| `running` | ko'k chiziq, nomi qalin | ayni damda ishlayapti |
+| `done` | yashil chiziq, nomida ✓ | bajarildi |
+| `error` | qizil chiziq, nomida ✕ | shu bosqichda to'xtadi |
 
-Formulasi: `umumiy = boshi + (oxiri − boshi) · foiz / 100`. Natijada chiziq
-faqat oldinga yuradi. Nisbatni `.env` dagi `RETRAIN_COLLECT_SHARE` bilan
-o'zgartirish mumkin — masalan manba baza sekin bo'lsa `70` qo'ysa collector
-uzunroq bo'lakni egallaydi va chiziq haqiqiy vaqtga yaqinroq harakatlanadi.
+**Nega ikkita alohida chiziq kerak.** Job hujjatida bitta `progress` maydoni
+bor edi va ikkala bosqich unga yozardi — trainer boshlanishi bilan collector
+qayerga yetgani **o'chib ketardi**. Endi har bosqich `stageProgress.<bosqich>`
+ga alohida yozadi:
+
+```jsonc
+"stageProgress": {
+  "collecting": { "percent": 100, "status": "done",    "text": "15 xodim, 35 kun yig'ildi" },
+  "training":   { "percent": 40,  "status": "running", "text": "... 2/5 xodim" }
+}
+```
+
+`jobs.set_progress(job_id, foiz, matn, stage=...)` shu kalitga yozadi,
+`jobs.finish_stage(job_id, stage)` esa bosqichni yopadi. Yopish alohida
+qadam bo'lishi shart: bironta xodim topilmasa collector `on_progress` ni
+umuman chaqirmaydi va chiziq 0% da qotib qolardi.
+
+Zanjir yiqilsa `finish_stage(..., status="error")` **aynan qaysi bosqichda**
+to'xtaganini belgilaydi — chiziq 100% ga sudralmaydi, qayerda to'xtagan bo'lsa
+o'sha foizda qizil bo'lib qoladi.
 
 **Nega chiziq oldin ko'rinmasdi.** Dashboard holatni `setInterval` bilan
 so'rardi va **birinchi so'rov 2 soniyadan keyin** ketardi. Kichik bazada esa
@@ -1429,12 +1453,14 @@ Uchta o'zgarish buni hal qildi:
    serverdan javob kutmaydi (`jarayonBand` bayrog'i).
 2. Birinchi so'rov **darrov** ketadi, keyingilari `DASHBOARD_POLL_MS`
    (default **400 ms**) oralig'ida.
-3. Tugagach chiziq `100% · Tugadi` holatida `DASHBOARD_PROGRESS_HOLD_MS`
+3. Tugagach chiziqlar yakuniy holatida `DASHBOARD_PROGRESS_HOLD_MS`
    (default **2500 ms**) davomida ushlab turiladi, keyin yashiriladi —
    aks holda juda tez zanjir miltillab o'tib ketardi.
 
-Xato bilan tugasa chiziq 100% ga sudralmaydi: qayerda to'xtagan bo'lsa
-o'sha foizda «Xato bilan to'xtadi» yozuvi bilan qoladi.
+> **Ilinib qolgan tuzoq:** `.run-progress` uchun CSS da `display: flex`
+> yozilgani brauzerning `[hidden]` qoidasini bosib ketardi va chiziq
+> yashirilmasdi. `style.css` da `.run-progress[hidden] { display: none }`
+> shuning uchun turibdi.
 
 ### Fon jarayonlari qatori
 
@@ -1617,8 +1643,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari | 9 |
-| `test_progress_errors.py` | Jarayon xabarlari, bosqichlar bo'ylab umumiy foiz, xatolar tarixi, takror xatoni birlashtirish | 13 |
-| | **Jami** | **63** |
+| `test_progress_errors.py` | Jarayon xabarlari, har bosqichning alohida foizi, zanjir bosqichlari tartibi, xatolar tarixi | 15 |
+| | **Jami** | **65** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1671,7 +1697,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     63 ta tekshiruv
+tests/                     65 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

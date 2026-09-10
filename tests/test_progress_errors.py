@@ -12,7 +12,8 @@ import config
 import services.collector as collector_mod
 import services.jobs as jobs_mod
 import services.workday as workday_mod
-from api.routes import build_error_log, _bosqich_foizi
+import api.routes as routes_mod
+from api.routes import build_error_log
 
 
 def _check(label, condition, detail=""):
@@ -161,62 +162,141 @@ def test_collector_jarayonni_xabar_qiladi():
             & _check("matnda xodim soni bor", "4" in qadamlar[-1][1], qadamlar[-1][1]))
 
 
-# --- Bosqichlar bo'ylab umumiy foiz --------------------------------------
+# --- Har bosqichning alohida foizi ---------------------------------------
+#
+# Dashboard collector va trainer uchun IKKITA alohida chiziq chizadi, shuning
+# uchun ularning foizlari bir-birining ustiga yozilmasligi shart.
 
-def test_bosqich_foizi_bir_yonalishda_osadi():
-    print("  Umumiy foiz collector -> trainer bo'ylab faqat oldinga yuradi")
-    yozilgan = []
-    asl = jobs_mod.set_progress
-    try:
-        jobs_mod.set_progress = lambda job_id, foiz, matn=None: yozilgan.append(foiz)
-        ulush = config.RETRAIN_COLLECT_SHARE
-        collect_cb = _bosqich_foizi("job-1", 0, ulush)
-        train_cb = _bosqich_foizi("job-1", ulush, 100)
-        for f in (0, 50, 100):
-            collect_cb(f, "yig'ilmoqda")
-        for f in (0, 50, 100):
-            train_cb(f, "o'qitilmoqda")
-    finally:
-        jobs_mod.set_progress = asl
-    return (_check("collector 0 dan boshlaydi", yozilgan[0] == 0, str(yozilgan))
-            & _check(f"collector {ulush} da tugaydi", yozilgan[2] == ulush, str(yozilgan))
-            & _check("trainer o'sha nuqtadan davom etadi", yozilgan[3] == ulush, str(yozilgan))
-            & _check("oxiri 100", yozilgan[-1] == 100, str(yozilgan))
-            & _check("kamaymaydi", all(a <= b for a, b in zip(yozilgan, yozilgan[1:])),
-                     str(yozilgan)))
+class _YozuvchiColl:
+    """update_one'ni yig'ib boradigan soxta collection."""
+
+    def __init__(self):
+        self.yozuvlar = []
+
+    def update_one(self, filtr, update):
+        self.yozuvlar.append(update["$set"])
 
 
-def test_bosqich_foizi_chegaradan_chiqmaydi():
-    print("  Bosqich noto'g'ri foiz bersa ham umumiy shkala buzilmaydi")
-    yozilgan = []
-    asl = jobs_mod.set_progress
-    try:
-        jobs_mod.set_progress = lambda job_id, foiz, matn=None: yozilgan.append(foiz)
-        cb = _bosqich_foizi("job-1", 40, 90)
-        cb(-20, "x")
-        cb(300, "x")
-    finally:
-        jobs_mod.set_progress = asl
-    return (_check("pastdan chiqmaydi", yozilgan[0] == 40, str(yozilgan))
-            & _check("yuqoridan chiqmaydi", yozilgan[1] == 90, str(yozilgan)))
+def _soxta_baza(coll):
+    return lambda: {config.COL_TRAINING_JOBS: coll}
 
 
-def test_set_stage_foizni_saqlay_oladi():
-    print("  set_stage berilgan foizni saqlaydi (chiziq nolga sakramaydi)")
-    tutilgan = {}
-
-    class _Coll:
-        def update_one(self, filtr, update):
-            tutilgan.update(update["$set"])
-
+def test_har_bosqich_oz_foizini_yozadi():
+    print("  collector va trainer foizlari alohida saqlanadi")
+    coll = _YozuvchiColl()
     asl = jobs_mod.local_db
     try:
-        jobs_mod.local_db = lambda: {config.COL_TRAINING_JOBS: _Coll()}
-        jobs_mod.set_stage("job-1", "training", progress=50, progressText="x")
+        jobs_mod.local_db = _soxta_baza(coll)
+        jobs_mod.set_progress("job-1", 40, "4/10 xodim", stage="collecting")
+        jobs_mod.set_progress("job-1", 20, "1/5 xodim", stage="training")
     finally:
         jobs_mod.local_db = asl
-    return (_check("bosqich yozildi", tutilgan.get("stage") == "training", str(tutilgan))
-            & _check("foiz 50 qoldi", tutilgan.get("progress") == 50, str(tutilgan)))
+    c, t = coll.yozuvlar
+    return (_check("collector o'z kalitiga yozdi",
+                   c.get("stageProgress.collecting.percent") == 40, str(c))
+            & _check("trainer boshqa kalitga yozdi",
+                     t.get("stageProgress.training.percent") == 20, str(t))
+            & _check("trainer collector foizini o'chirmadi",
+                     "stageProgress.collecting.percent" not in t, str(t))
+            & _check("matn ham bosqich ostida", c.get("stageProgress.collecting.text")
+                     == "4/10 xodim", str(c)))
+
+
+def test_set_stage_faqat_oz_bosqichini_nollaydi():
+    print("  Yangi bosqich boshlansa oldingisining chizig'i tegilmaydi")
+    coll = _YozuvchiColl()
+    asl = jobs_mod.local_db
+    try:
+        jobs_mod.local_db = _soxta_baza(coll)
+        jobs_mod.set_stage("job-1", "training", progressText="o'qitilmoqda")
+    finally:
+        jobs_mod.local_db = asl
+    u = coll.yozuvlar[0]
+    return (_check("yangi bosqich 0 dan boshlaydi",
+                   u.get("stageProgress.training.percent") == 0, str(u))
+            & _check("holati running", u.get("stageProgress.training.status") == "running",
+                     str(u))
+            & _check("matni ko'chirildi",
+                     u.get("stageProgress.training.text") == "o'qitilmoqda", str(u))
+            & _check("collector yozuviga tegilmadi",
+                     not any(k.startswith("stageProgress.collecting") for k in u), str(u)))
+
+
+def test_finish_stage_100_ga_toldiradi():
+    print("  Bosqich yakunlansa chizig'i 100% da yashil bo'lib qoladi")
+    coll = _YozuvchiColl()
+    asl = jobs_mod.local_db
+    try:
+        jobs_mod.local_db = _soxta_baza(coll)
+        jobs_mod.finish_stage("job-1", "collecting", text="4 xodim, 12 kun yig'ildi")
+        jobs_mod.finish_stage("job-1", "training", status="error", text="Mongo yiqildi")
+    finally:
+        jobs_mod.local_db = asl
+    ok, xato = coll.yozuvlar
+    return (_check("bajarilgani 100%", ok.get("stageProgress.collecting.percent") == 100,
+                   str(ok))
+            & _check("holati done", ok.get("stageProgress.collecting.status") == "done",
+                     str(ok))
+            & _check("xatoda 100% ga sudralmaydi",
+                     "stageProgress.training.percent" not in xato, str(xato))
+            & _check("holati error", xato.get("stageProgress.training.status") == "error",
+                     str(xato)))
+
+
+def test_zanjir_ikkala_bosqichni_belgilaydi():
+    print("  Zanjir collector va trainer bosqichlarini ketma-ket yakunlaydi")
+    tartib = []
+    asl_stage, asl_finish, asl_prog = (jobs_mod.set_stage, jobs_mod.finish_stage,
+                                       jobs_mod.set_progress)
+    asl_collect, asl_train = routes_mod.collect, routes_mod.train
+    asl_job_finish, asl_baseline = jobs_mod.finish, routes_mod.current_baseline_id
+    try:
+        jobs_mod.set_stage = lambda job_id, stage, **kw: tartib.append(("boshladi", stage))
+        jobs_mod.finish_stage = lambda job_id, stage, **kw: tartib.append(("tugadi", stage))
+        jobs_mod.set_progress = lambda *a, **kw: None
+        jobs_mod.finish = lambda *a, **kw: None
+        routes_mod.current_baseline_id = lambda: "b1"
+        routes_mod.collect = lambda on_progress=None: {"days": 3, "failed": [], "clients": 2}
+        routes_mod.train = lambda on_progress=None: 2
+        routes_mod._retrain_chain("retrain", "job-1")
+    finally:
+        (jobs_mod.set_stage, jobs_mod.finish_stage, jobs_mod.set_progress,
+         jobs_mod.finish, routes_mod.collect, routes_mod.train,
+         routes_mod.current_baseline_id) = (asl_stage, asl_finish, asl_prog,
+                                            asl_job_finish, asl_collect, asl_train,
+                                            asl_baseline)
+    kutilgan = [("boshladi", "collecting"), ("tugadi", "collecting"),
+                ("boshladi", "training"), ("tugadi", "training")]
+    return _check("tartib to'g'ri", tartib == kutilgan, str(tartib))
+
+
+def test_xato_qaysi_bosqichda_bolgani_belgilanadi():
+    print("  Trainer yiqilsa aynan trainer bosqichi xato deb belgilanadi")
+    xatolar = []
+    asl_stage, asl_finish, asl_prog = (jobs_mod.set_stage, jobs_mod.finish_stage,
+                                       jobs_mod.set_progress)
+    asl_collect, asl_train = routes_mod.collect, routes_mod.train
+    asl_job_finish, asl_add = jobs_mod.finish, jobs_mod.add_error
+    try:
+        jobs_mod.set_stage = lambda *a, **kw: None
+        jobs_mod.set_progress = lambda *a, **kw: None
+        jobs_mod.add_error = lambda *a, **kw: None
+        jobs_mod.finish = lambda *a, **kw: None
+        jobs_mod.finish_stage = lambda job_id, stage, status="done", **kw: (
+            xatolar.append(stage) if status == "error" else None)
+        routes_mod.collect = lambda on_progress=None: {"days": 3, "failed": [], "clients": 2}
+
+        def _yiqiladi(on_progress=None):
+            raise RuntimeError("Mongo javob bermadi")
+        routes_mod.train = _yiqiladi
+        routes_mod._retrain_chain("retrain", "job-1")
+    finally:
+        (jobs_mod.set_stage, jobs_mod.finish_stage, jobs_mod.set_progress,
+         jobs_mod.finish, jobs_mod.add_error, routes_mod.collect,
+         routes_mod.train) = (asl_stage, asl_finish, asl_prog, asl_job_finish,
+                              asl_add, asl_collect, asl_train)
+    return _check("xato trainer bosqichida belgilandi", xatolar == ["training"],
+                  str(xatolar))
 
 
 def test_jarayonsiz_ham_ishlaydi():
@@ -241,8 +321,9 @@ if __name__ == "__main__":
         test_ikkala_manba_vaqt_boyicha(), test_xatosiz_holat(), test_limit(),
         test_takroriy_xato_bir_marta(), test_uzun_xato_qisqartiriladi(),
         test_collector_jarayonni_xabar_qiladi(), test_jarayonsiz_ham_ishlaydi(),
-        test_bosqich_foizi_bir_yonalishda_osadi(), test_bosqich_foizi_chegaradan_chiqmaydi(),
-        test_set_stage_foizni_saqlay_oladi(),
+        test_har_bosqich_oz_foizini_yozadi(), test_set_stage_faqat_oz_bosqichini_nollaydi(),
+        test_finish_stage_100_ga_toldiradi(), test_zanjir_ikkala_bosqichni_belgilaydi(),
+        test_xato_qaysi_bosqichda_bolgani_belgilanadi(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "
           f"({sum(results)}/{len(results)})")

@@ -30,10 +30,20 @@
 
   <!-- Fon jarayonlari holati: har doim ko'rinadi, sahifa yangilansa ham -->
   <section class="runbar" id="runbar">
+    <!-- Har bosqich o'z chizig'i bilan: collector tugagach trainer boshlanadi -->
     <div class="run-progress" id="runProgress" hidden>
-      <div class="run-progress-bar"><i id="runProgressFill"></i></div>
-      <span class="run-progress-text" id="runProgressText"></span>
-      <span class="run-progress-pct" id="runProgressPct"></span>
+      <div class="run-stage waiting" id="stageCollecting">
+        <span class="run-stage-name">1 · Ma'lumot yig'ish</span>
+        <div class="run-progress-bar"><i></i></div>
+        <span class="run-progress-pct"></span>
+        <span class="run-progress-text"></span>
+      </div>
+      <div class="run-stage waiting" id="stageTraining">
+        <span class="run-stage-name">2 · Odatiy jadvallarni o'qitish</span>
+        <div class="run-progress-bar"><i></i></div>
+        <span class="run-progress-pct"></span>
+        <span class="run-progress-text"></span>
+      </div>
     </div>
     <span class="run-item" id="runRetrain"></span>
     <span class="run-item" id="runTrigger"></span>

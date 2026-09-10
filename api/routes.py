@@ -23,38 +23,41 @@ router = APIRouter()
 DASHBOARD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard")
 
 # Trigger holati — hozircha xotirada (u job emas, har 5 soatlik avtomatik o'tish)
-def _bosqich_foizi(job_id, boshi, oxiri):
-    """Bosqich ichidagi 0-100 ni umumiy shkalaning [boshi, oxiri] bo'lagiga o'girodi.
+def _bosqich_yozuvchi(job_id, stage):
+    """Bosqichning o'z 0-100 foizini job hujjatiga yozadigan chaqiruv.
 
-    Collector ham, trainer ham o'zicha 0 dan 100 gacha sanaydi. Ularni to'g'ridan
-    to'g'ri yozsak chiziq 0->100 ga chiqib, keyin yana 0 ga tushib qayta o'sadi —
-    foydalanuvchi buni "orqaga ketdi" deb tushunadi. Shuning uchun bosqich foizi
-    umumiy shkalaning o'z bo'lagiga siqiladi: chiziq faqat oldinga yuradi.
+    Collector ham, trainer ham o'zicha 0 dan 100 gacha sanaydi va dashboardda
+    HAR BIRI ALOHIDA chiziq bo'lib chiqadi — shuning uchun foizlar aralashmasin
+    deb har biri `stageProgress.<stage>` ga yoziladi.
     """
-    def yozuvchi(foiz, matn):
-        umumiy = boshi + (oxiri - boshi) * max(0, min(100, foiz)) / 100.0
-        jobs.set_progress(job_id, int(umumiy), matn)
-    return yozuvchi
+    return lambda foiz, matn: jobs.set_progress(job_id, foiz, matn, stage=stage)
 
 
 def _retrain_chain(mode, job_id):
     """collector -> trainer zanjiri (fon thread'ida). Bosqichlar job hujjatiga yoziladi."""
-    ulush = config.RETRAIN_COLLECT_SHARE
+    joriy = "collecting"        # xato bo'lsa qaysi bosqichda to'xtaganini bilamiz
     try:
         jobs.set_stage(job_id, "collecting", progressText="Ma'lumot yig'ish boshlandi")
-        collected = collect(on_progress=_bosqich_foizi(job_id, 0, ulush))
+        collected = collect(on_progress=_bosqich_yozuvchi(job_id, "collecting"))
         days, failed = collected["days"], collected["failed"]
 
         # Xodim darajasidagi xatolar job'da qoladi — butun zanjir yiqilmasa ham
         for f in failed:
             jobs.add_error(job_id, f["error"], kontekst=f"collector · {f['hostname']}")
 
-        jobs.set_stage(job_id, "training", progress=ulush,
+        # Bironta xodim topilmasa collector `on_progress` chaqirmaydi — chiziq
+        # 0% da qotib qolmasligi uchun bosqich yakuni alohida belgilanadi.
+        jobs.finish_stage(job_id, "collecting",
+                          text=f"{collected['clients']} xodim, {days} kun yig'ildi")
+
+        joriy = "training"
+        jobs.set_stage(job_id, "training",
                        progressText="Odatiy jadvallar hisoblanmoqda",
                        **{"stats.days": days, "stats.clientsRead": collected["clients"]})
         # Muvaffaqiyatsiz clientlar bo'lsa ham o'qitamiz: qolganlarining ma'lumoti
         # to'liq, o'tkazib yuborilganlarniki esa eski (to'g'ri) holicha turibdi.
-        clients = train(on_progress=_bosqich_foizi(job_id, ulush, 100))
+        clients = train(on_progress=_bosqich_yozuvchi(job_id, "training"))
+        jobs.finish_stage(job_id, "training", text=f"{clients} xodim o'qitildi")
 
         # Bironta client tushib qolgan bo'lsa "hammasi joyida" deb ko'rsatilmaydi
         status = "partial" if failed else "finished"
@@ -72,6 +75,8 @@ def _retrain_chain(mode, job_id):
     except Exception as e:
         log.error("%s zanjirida xato: %s", mode, e)
         jobs.add_error(job_id, e, kontekst=f"{mode} zanjiri")
+        # Qaysi bosqichda to'xtagani ekranda ko'rinsin — chiziq o'sha yerda qoladi
+        jobs.finish_stage(job_id, joriy, status="error", text=str(e)[:80])
         jobs.finish(job_id, "error", error=str(e), progressText="Xato bilan to'xtadi")
 
 
@@ -146,6 +151,8 @@ def _job_as_state(job):
         "baselineId": job.get("baselineId"),
         "progress": job.get("progress", 0),
         "progressText": job.get("progressText"),
+        # Har bosqichning alohida foizi — dashboard ikkita chiziq chizadi
+        "stageProgress": job.get("stageProgress") or {},
         "errorCount": len(job.get("errors") or []),
         "error": job.get("error"),
     }

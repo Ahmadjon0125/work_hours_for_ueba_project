@@ -321,12 +321,33 @@ let jarayonBand = false;
 // Yakuniy matn ("Tugadi") qulflandi — fon so'rovlari uni qayta yozib yubormasin.
 let jarayonYakunda = false;
 
-/** Jarayon chizig'ini bir joyda yangilaydi: eni, foizi va matni. */
-function setProgress(foiz, matn) {
+// Zanjir bosqichlari — ekranda shu tartibda, har biri o'z chizig'i bilan.
+// Collector 0->100 ga to'ladi, tugagach yashil ✓ bo'lib qoladi va shundan
+// keyingina trainer chizig'i 0 dan boshlanadi.
+const BOSQICHLAR = [
+  { kalit: 'collecting', el: 'stageCollecting' },
+  { kalit: 'training', el: 'stageTraining' },
+];
+
+/** Bitta bosqich chizig'ini yangilaydi. */
+function setStageBar(elId, holat, foiz, matn) {
+  const root = $(elId);
+  if (!root) return;
   const p = Math.max(0, Math.min(100, Math.round(foiz || 0)));
-  $('runProgressFill').style.width = p + '%';
-  $('runProgressPct').textContent = p + '%';
-  if (matn !== undefined) $('runProgressText').textContent = matn;
+  root.className = 'run-stage ' + holat;
+  root.querySelector('.run-progress-bar i').style.width = p + '%';
+  root.querySelector('.run-progress-pct').textContent = p + '%';
+  root.querySelector('.run-progress-text').textContent = matn || '';
+}
+
+/** Ikkala bosqich chizig'ini job holatidan chizadi. */
+function setProgress(r) {
+  const sp = (r && r.stageProgress) || {};
+  for (const b of BOSQICHLAR) {
+    const s = sp[b.kalit] || {};
+    // `stageProgress` da yozuv yo'q = bosqich hali boshlanmagan
+    setStageBar(b.el, s.status || 'waiting', s.percent, s.text);
+  }
 }
 
 /** Fon jarayonlari qatori: oxirgi retrain, oxirgi trigger va jarayon chizig'i.
@@ -344,9 +365,7 @@ function renderRunbar(h) {
   // turgan bir necha yuz millisekundda chiziq yo'qolib turmasin.
   const ketmoqda = r.status === 'running' || jarayonBand;
   $('runProgress').hidden = !ketmoqda;
-  if (ketmoqda && !jarayonYakunda) setProgress(r.progress, r.progressText
-    || { collecting: "Ma'lumot yig'ilmoqda", training: 'Odatiy jadvallar hisoblanmoqda' }[r.stage]
-    || 'Bajarilmoqda');
+  if (ketmoqda && !jarayonYakunda) setProgress(r);
 
   const belgi = { finished: ['ok', '✓'], partial: ['warn', '⚠'], error: ['bad', '✕'],
                   running: ['', '…'], idle: ['', '—'] };
@@ -808,7 +827,8 @@ async function startRetrain() {
   jarayonYakunda = false;
   $('retrain').disabled = true;
   $('runProgress').hidden = false;
-  setProgress(0, 'Boshlanmoqda...');
+  setStageBar('stageCollecting', 'running', 0, 'boshlanmoqda...');
+  setStageBar('stageTraining', 'waiting', 0, 'navbatda');
   $('retrainStatus').textContent = 'boshlanmoqda...';
   $('retrainStatus').style.color = '';
   try {
@@ -829,9 +849,9 @@ async function startRetrain() {
  *  Zanjir bir soniyada tugab qolsa foydalanuvchi "100%" ni ko'rmay qolardi —
  *  shuning uchun yakuniy holat majburan ushlab turiladi.
  */
-function finishProgress(matn, foiz) {
+function finishProgress(r) {
   jarayonYakunda = true;
-  setProgress(foiz, matn);
+  setProgress(r);
   clearTimeout(holdTimer);
   holdTimer = setTimeout(() => {
     jarayonBand = false;
@@ -863,10 +883,8 @@ function pollRetrain() {
     if (['finished', 'partial', 'error'].includes(r.status)) {
       clearInterval(retrainTimer);
       $('retrain').disabled = false;
-      // Xatoda chiziq qayerda to'xtaganini ko'rsatamiz, 100% ga sudramaymiz
-      finishProgress({ finished: 'Tugadi', partial: 'Qisman bajarildi',
-                       error: "Xato bilan to'xtadi" }[r.status],
-                     r.status === 'error' ? (r.progress || 0) : 100);
+      // Xatoda chiziq 100% ga sudralmaydi: to'xtagan bosqich qizil qoladi
+      finishProgress(r);
       if (r.status !== 'error') { loadBaselines().then(loadResults); loadClients(); }
     }
   };
