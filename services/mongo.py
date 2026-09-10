@@ -80,13 +80,30 @@ def ensure_indexes():
     log.info("Indekslar tekshirildi (4 ta unique + 2 ta qidiruv)")
 
 
+def _group_names():
+    """`groups` collectionidan {id: nom} xaritasi. Xatoda bo'sh xarita qaytadi.
+
+    Xodim jadvalida ism ostida bo'lim ko'rsatiladi. Guruh nomi bo'lmasa jadval
+    baribir chizilishi kerak, shuning uchun bu qidiruv hech qachon chaqiruvchini
+    yiqitmaydi.
+    """
+    try:
+        return {str(g["_id"]): (g.get("name") or "").strip()
+                for g in main_db()["groups"].find({}, {"name": 1})}
+    except Exception as e:
+        log.warning("Guruh nomlarini o'qib bo'lmadi: %s", e)
+        return {}
+
+
 def active_clients():
     """Active client'lar: disabled=false yoki maydon umuman yo'q."""
     from utils.helpers import display_name
 
+    guruhlar = _group_names()
     cursor = main_db()["clients"].find(
         {"$or": [{"disabled": False}, {"disabled": {"$exists": False}}]},
-        {"_id": 1, "hostname": 1, "fullName": 1, "firstName": 1, "lastName": 1},
+        {"_id": 1, "hostname": 1, "fullName": 1, "firstName": 1, "lastName": 1,
+         "group": 1, "department": 1, "position": 1},
     )
     clients = []
     for doc in cursor:
@@ -97,6 +114,10 @@ def active_clients():
             "hostname": hostname,
             "fullName": display_name(hostname, doc.get("fullName"),
                                      doc.get("firstName"), doc.get("lastName")),
+            # Ism ostidagi kichik yozuv: lavozim yoki bo'lim, bo'lmasa guruh nomi
+            "unit": ((doc.get("position") or "").strip()
+                     or (doc.get("department") or "").strip()
+                     or guruhlar.get(str(doc.get("group")), "")),
             "_id": doc["_id"],
         })
     return clients

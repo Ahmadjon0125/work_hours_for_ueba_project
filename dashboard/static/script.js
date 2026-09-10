@@ -254,27 +254,47 @@ function sparklineSvg(trend, w = 88, h = 26) {
 function renderRiskTable() {
   const tbody = $('riskTable').querySelector('tbody');
   const tanlangan = $('client').value;
-  $('riskInfo').textContent = riskRows.length ? `— ${riskRows.length} ta` : '';
+  // Jadval BARCHA kuzatuvdagi xodimlarni ko'rsatadi, shuning uchun nechtasi
+  // haqiqatan baholangani alohida yoziladi — 15 qatorning hammasi nol bo'lsa
+  // "hech kim chetga chiqmadi" bilan "hali baholanmadi" chalkashmasin.
+  const baholangan = riskRows.filter((r) => r.evaluatedDays > 0).length;
+  $('riskInfo').textContent = riskRows.length
+    ? `— ${riskRows.length} ta xodim, ${baholangan} tasida baholangan kun bor`
+    : '';
 
   if (!riskRows.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="empty">Bu oraliqda baholangan kun yo\'q</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Kuzatuvdagi xodim yo\'q</td></tr>';
     return;
   }
 
-  tbody.innerHTML = riskRows.map((r) => `
-    <tr data-client="${r.clientId}"${r.clientId === tanlangan ? ' class="active"' : ''}>
+  tbody.innerHTML = riskRows.map((r) => {
+    // Baholangan kuni yo'q xodim ham ro'yxatda turadi (kuzatuvda-ku), lekin
+    // uning noli "yaxshi ishladi" degani emas — shuning uchun xiraroq.
+    const baholanmagan = !r.evaluatedDays;
+    const sinf = [r.clientId === tanlangan ? 'active' : '', baholanmagan ? 'unrated' : '']
+      .filter(Boolean).join(' ');
+    const izoh = baholanmagan
+      ? 'Bu oraliqda baholangan kuni yo\'q — odatiy jadvali hali tayyor emas'
+      : `${r.evaluatedDays} ta baholangan kun`;
+    return `
+    <tr data-client="${r.clientId}"${sinf ? ` class="${sinf}"` : ''} title="${izoh}">
       <td>
         <i class="risk-mark ${r.level}" title="Oxirgi xavf: ${r.recentRisk}"></i>
-        <span class="risk-name">${r.fullName || r.hostname}</span>
+        <span class="risk-who">
+          <span class="risk-name">${r.fullName || r.hostname}</span>
+          <span class="risk-unit">${r.unit || ''}</span>
+        </span>
       </td>
       <td class="num">${r.recentRisk}</td>
-      <td title="${r.evaluatedDays} ta baholangan kun">
+      <td>
         ${sparklineSvg(r.trend)}<span class="risk-total">${r.overallRisk}</span>
       </td>
       <td class="num">
-        <span class="risk-cases${r.anomalyDays ? ' hit' : ''}">${r.anomalyDays}</span>
+        <span class="risk-cases${r.anomalyDays ? ' hit' : ''}">${
+          baholanmagan ? '—' : r.anomalyDays}</span>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   // Qatorni bosish — o'sha xodimga o'tish (qayta bosilsa tanlov bekor qilinadi)
   for (const tr of tbody.querySelectorAll('tr[data-client]')) {

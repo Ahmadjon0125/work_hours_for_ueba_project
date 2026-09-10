@@ -21,6 +21,10 @@ def _r(cid, sana, risk, anomaly=False, host=None):
             "date": sana, "riskScore": risk, "isAnomaly": anomaly}
 
 
+def _c(cid, unit=None, name=None):
+    return {"clientId": cid, "hostname": f"pc-{cid}", "fullName": name, "unit": unit}
+
+
 def test_yigindi_va_tendensiya():
     print("  Umumiy xavf = yig'indi, tendensiya = kumulyativ")
     rows = [_r("A", "2026-09-01", 10), _r("A", "2026-09-02", 5), _r("A", "2026-09-03", 20)]
@@ -104,10 +108,53 @@ def test_trend_cheklanadi():
 
 def test_bosh_royxat():
     print("  Bo'sh kirish xato bermaydi")
-    return (_check("[] -> []", build_risk_summary([]) == [])
-            & _check("faqat null risk -> []",
-                     build_risk_summary([_r("A", "2026-09-01", None)],
-                                        date_to="2026-09-01") == []))
+    # Natijasi ham, xodimlar ro'yxati ham bo'lmasa — bo'sh jadval
+    bosh = build_risk_summary([]) == []
+    # Faqat baholanmagan kuni bor xodim endi ro'yxatdan TUSHMAYDI: u kuzatuvda
+    # turibdi, shunchaki hali baholanmagan (evaluatedDays 0 shuni bildiradi).
+    x = build_risk_summary([_r("A", "2026-09-01", None)], date_to="2026-09-01")
+    return (_check("[] -> []", bosh)
+            & _check("faqat null risk -> 1 qator", len(x) == 1, str(x))
+            & _check("xavfi 0", x[0]["overallRisk"] == 0, str(x[0]["overallRisk"]))
+            & _check("baholangan kun 0", x[0]["evaluatedDays"] == 0))
+
+
+# --- Kuzatuv ro'yxati to'liq bo'lishi ------------------------------------
+
+def test_hamma_xodim_royxatda():
+    print("  Natijasi yo'q xodim ham jadvalda 0 bilan turadi")
+    clients = [_c("A", "Sotuv"), _c("B", "Buxgalteriya"), _c("C")]
+    rows = [_r("A", "2026-09-01", 12, anomaly=True)]
+    out = build_risk_summary(rows, date_to="2026-09-01", clients=clients)
+    nomlar = [x["clientId"] for x in out]
+    b = next(x for x in out if x["clientId"] == "B")
+    return (_check("3 qator", len(out) == 3, str(len(out)))
+            & _check("hammasi bor", set(nomlar) == {"A", "B", "C"}, str(nomlar))
+            & _check("natijasi bori tepada", nomlar[0] == "A", str(nomlar))
+            & _check("B xavfi 0", b["overallRisk"] == 0 and b["recentRisk"] == 0, str(b))
+            & _check("B baholangan kuni 0", b["evaluatedDays"] == 0)
+            & _check("B chizig'i tekis", b["trend"] == [0, 0], str(b["trend"]))
+            & _check("bo'lim ko'chdi", b["unit"] == "Buxgalteriya", str(b["unit"])))
+
+
+def test_royxatda_yoq_xodim_yoqolmaydi():
+    print("  Ro'yxatda yo'q, lekin natijasi bor xodim jadvaldan tushmaydi")
+    # Xodim DLP'da o'chirilgan bo'lishi mumkin — o'tgan kunlardagi xavfi
+    # baribir ko'rinishi kerak, aks holda tarix jimgina yo'qoladi.
+    out = build_risk_summary([_r("Z", "2026-09-01", 40)], date_to="2026-09-01",
+                             clients=[_c("A")])
+    return (_check("2 qator", len(out) == 2, str(len(out)))
+            & _check("Z birinchi", out[0]["clientId"] == "Z", str(out[0]))
+            & _check("Z xavfi saqlandi", out[0]["overallRisk"] == 40))
+
+
+def test_teng_xavfda_tartib_barqaror():
+    print("  Xavfi teng xodimlar ism bo'yicha barqaror tartibda")
+    clients = [_c("C", name="Vali"), _c("A", name="Anvar"), _c("B", name="Bobur")]
+    out = build_risk_summary([], date_to="2026-09-01", clients=clients)
+    return _check("Anvar, Bobur, Vali",
+                  [x["fullName"] for x in out] == ["Anvar", "Bobur", "Vali"],
+                  str([x["fullName"] for x in out]))
 
 
 if __name__ == "__main__":
@@ -116,7 +163,8 @@ if __name__ == "__main__":
         test_yigindi_va_tendensiya(), test_baholanmagan_kun_hisobga_olinmaydi(),
         test_oxirgi_davr(), test_kesim_hamma_uchun_bitta(), test_saralash(),
         test_daraja_chegaralari(), test_anomaly_kunlar(), test_trend_cheklanadi(),
-        test_bosh_royxat(),
+        test_bosh_royxat(), test_hamma_xodim_royxatda(),
+        test_royxatda_yoq_xodim_yoqolmaydi(), test_teng_xavfda_tartib_barqaror(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "
           f"({sum(results)}/{len(results)})")

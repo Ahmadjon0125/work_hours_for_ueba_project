@@ -800,12 +800,34 @@ dan keladi:
 | Ustun | Ma'nosi |
 |---|---|
 | belgi | ▲ qizil / ■ sariq / ● kulrang — `recentRisk` chegaralari bo'yicha |
+| **Xodim** | ismi, ostida bo'limi (lavozim → bo'lim → guruh nomi tartibida) |
 | **Oxirgi xavf** | so'nggi `RISK_RECENT_DAYS` (7) kunlik yig'indi |
 | **Umumiy xavf** | oraliqdagi to'liq yig'indi + kumulyativ chiziq |
 | **Chetlanish** | chetlanishli kunlar soni |
 
 Umumiy xavf bo'yicha kamayish tartibida saralangan — eng yuqorisi tepada.
-Qatorni bosish o'sha xodimga o'tkazadi, qayta bosish tanlovni bekor qiladi.
+Xavfi teng bo'lsa baholangani bor xodim tepada, oxirida ism bo'yicha —
+tartib har so'rovda bir xil bo'lsin. Qatorni bosish o'sha xodimga
+o'tkazadi, qayta bosish tanlovni bekor qiladi.
+
+**Jadvalda BARCHA kuzatuvdagi xodimlar bo'ladi.** Ilgari u faqat natijasi
+bor xodimlardan tuzilardi: 15 ta xodimdan ikkitasi ko'rinib, qolgani go'yo
+tizimda yo'qdek edi. Xavfi nol xodim ham kuzatuvda turibdi va ro'yxatda
+ko'rinishi kerak — bu QRadar'da ham shunday.
+
+Ro'yxat `active_clients()` dan olinadi (`disabled: false` bo'lgan hamma
+xodim), ustiga natijalar qo'yiladi. Ikkita chekka holat:
+
+- **Baholangan kuni yo'q xodim** (`evaluatedDays: 0`) — qatori xira
+  chiziladi va «Chetlanish» ustunida `0` emas, `—` turadi. Sababi: uning
+  noli «yaxshi ishladi» degani emas, «hali baholanmadi» degani. Panel
+  sarlavhasida nechtasi haqiqatan baholangani yoziladi.
+- **Ro'yxatda yo'q, lekin natijasi bor xodim** (DLP'da o'chirilgan bo'lsa)
+  jadvaldan tushmaydi — o'tgan kunlardagi xavfi ko'rinib turadi, aks holda
+  tarix jimgina yo'qolardi.
+
+Manba baza javob bermasa jadval baribir chiziladi — shunchaki faqat
+natijasi bor xodimlar bilan (`active_clients()` xatosi ushlanadi).
 
 #### Chiziq nimani ko'rsatadi
 
@@ -1110,15 +1132,19 @@ o'shaning kunlarini qaytaradi, bu jadval esa har doim hammasini talab qiladi.
 
 ```json
 [{ "clientId": "...", "hostname": "azam@azam-upc", "fullName": null,
+   "unit": "linux-dev",        // lavozim -> bo'lim -> guruh nomi
    "overallRisk": 29,          // oraliqdagi riskScore yig'indisi
    "recentRisk": 2,            // oxirgi RISK_RECENT_DAYS kunlik yig'indi
-   "evaluatedDays": 7,
+   "evaluatedDays": 7,         // 0 bo'lsa: kuzatuvda, lekin hali baholanmagan
    "anomalyDays": 3,
    "trend": [24, 27, 27, 27, 27, 27, 29],   // kumulyativ — sparkline uchun
    "level": "low" }]           // high | medium | low
 ```
 
 Parametrlar: `from`, `to`. Saralash — `overallRisk` kamayish tartibida.
+
+- Ro'yxatda **barcha active xodimlar** bo'ladi, oraliqda natijasi bo'lmasa
+  ham: `overallRisk: 0`, `evaluatedDays: 0`, `trend: [0, 0]`.
 
 - Baholanmagan kunlar (`riskScore: null`) xavfga qo'shilmaydi.
 - `recentRisk` chegarasi **hamma xodim uchun bitta** — oraliq oxiridan
@@ -1642,9 +1668,9 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_detectors.py` | Ball jadvali, oyna qoidasi, `riskScore`, vazn, xato izolyatsiyasi, nom tekshiruvi | 13 |
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
-| `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari | 9 |
+| `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
 | `test_progress_errors.py` | Jarayon xabarlari, har bosqichning alohida foizi, zanjir bosqichlari tartibi, xatolar tarixi | 15 |
-| | **Jami** | **65** |
+| | **Jami** | **68** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1697,7 +1723,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     65 ta tekshiruv
+tests/                     68 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

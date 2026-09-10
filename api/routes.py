@@ -286,13 +286,19 @@ def clients():
     return out
 
 
-def build_risk_summary(rows, date_to=None):
+def build_risk_summary(rows, date_to=None, clients=None):
     """`results` qatorlaridan xodimlar kesimini quradi. DB'ga tegmaydi — sinash oson.
 
     `rows` sana bo'yicha O'SISH tartibida bo'lishi kutiladi (kumulyativ chiziq
     uchun muhim).
+
+    `clients` berilsa jadval SHU RO'YXATDAN quriladi: oraliqda bironta
+    baholangan kuni yo'q xodim ham 0 xavf bilan qatorda turadi. Ilgari jadval
+    faqat natijasi bor xodimlardan tuzilardi — 15 ta kuzatuvdagi xodimdan
+    ikkitasi ko'rinib, qolgani go'yo yo'qdek edi. Kuzatuv ro'yxati to'liq
+    bo'lishi kerak: xavfi nol xodim ham kuzatuvda turibdi.
     """
-    if not rows:
+    if not rows and not clients:
         return []
 
     # Oxirgi davr chegarasi HAMMA xodim uchun bitta bo'lishi kerak, aks holda
@@ -301,8 +307,16 @@ def build_risk_summary(rows, date_to=None):
     kesim = date_str_days_ago(datetime.strptime(oxirgi_sana, "%Y-%m-%d"),
                               config.RISK_RECENT_DAYS)
 
-    per = defaultdict(lambda: {"hostname": None, "fullName": None, "kunlar": [],
-                               "overall": 0, "recent": 0, "anomaly": 0})
+    def _bosh():
+        return {"hostname": None, "fullName": None, "unit": None, "kunlar": [],
+                "overall": 0, "recent": 0, "anomaly": 0}
+
+    per = defaultdict(_bosh)
+    # Avval butun kuzatuv ro'yxati, keyin ustiga natijalar qo'yiladi
+    for c in (clients or []):
+        p = per[c["clientId"]]
+        p["hostname"], p["fullName"] = c.get("hostname"), c.get("fullName")
+        p["unit"] = c.get("unit")
     for r in rows:
         p = per[r["clientId"]]
         p["hostname"] = r.get("hostname") or p["hostname"]
@@ -326,9 +340,8 @@ def build_risk_summary(rows, date_to=None):
 
     out = []
     for cid, p in per.items():
-        if not p["kunlar"]:
-            continue
-        # Sparkline — kumulyativ yig'indi, oxirgi RISK_TREND_POINTS nuqta
+        # Sparkline — kumulyativ yig'indi, oxirgi RISK_TREND_POINTS nuqta.
+        # Baholangan kuni yo'q xodimda ikkita nol: chiziq tekis bo'lib chiziladi.
         trend, yigindi = [], 0
         for risk in p["kunlar"]:
             yigindi += risk
@@ -337,15 +350,20 @@ def build_risk_summary(rows, date_to=None):
             "clientId": cid,
             "hostname": p["hostname"] or cid,
             "fullName": p["fullName"],
+            "unit": p["unit"],
             "overallRisk": p["overall"],
             "recentRisk": p["recent"],
             "evaluatedDays": len(p["kunlar"]),
             "anomalyDays": p["anomaly"],
-            "trend": trend[-config.RISK_TREND_POINTS:],
+            "trend": trend[-config.RISK_TREND_POINTS:] or [0, 0],
             "level": daraja(p["recent"]),
         })
 
-    out.sort(key=lambda x: (-x["overallRisk"], -x["recentRisk"]))
+    # Xavf bo'yicha kamayish tartibida; teng bo'lsa baholangani bor xodim
+    # tepada, oxirida esa ism bo'yicha — tartib har so'rovda bir xil bo'lsin.
+    out.sort(key=lambda x: (-x["overallRisk"], -x["recentRisk"],
+                            -x["evaluatedDays"],
+                            (x["fullName"] or x["hostname"]).lower()))
     return out
 
 
@@ -378,7 +396,17 @@ def risk_summary(date_from: str = Query(None, alias="from"),
                 .find(query, {"_id": 0, "clientId": 1, "hostname": 1, "fullName": 1,
                               "date": 1, "riskScore": 1, "isAnomaly": 1})
                 .sort("date", 1))
-    return build_risk_summary(rows, date_to)
+
+    # Kuzatuv ro'yxati TO'LIQ bo'lishi kerak: oraliqda baholangan kuni yo'q
+    # xodim ham 0 xavf bilan qatorda tursin. Manba baza javob bermasa jadval
+    # baribir chiziladi — shunchaki faqat natijasi borlar ko'rinadi.
+    try:
+        clients = active_clients()
+    except Exception as e:
+        log.warning("Xodimlar ro'yxatini o'qib bo'lmadi, jadval faqat "
+                    "natijalardan quriladi: %s", e)
+        clients = None
+    return build_risk_summary(rows, date_to, clients)
 
 
 @router.get("/api/baseline")
