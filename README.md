@@ -989,19 +989,33 @@ kessak bugungi kun tushib qolardi.
 Bo'sh kunlarda pastdagi belgi yetarli — aks holda o'q o'qib bo'lmaydigan
 sanalar to'plamiga aylanardi.
 
-**Uzun oraliqda grafik siqilmaydi, scroll bo'ladi.** Ustun kengligi
-kamida 14px — vertikal yorliq shundan tor bo'lsa qo'shnisiga kirib ketadi.
-Chizma konteynerdan kengroq bo'lsa gorizontal scroll paydo bo'ladi:
+**Ustun kengligi O'ZGARMAS — grafik hech qachon siqilmaydi.**
+`.env` dagi `CHART_COLUMN_WIDTH` (default **34px**) har kun uchun bir xil
+joy ajratadi. Kun soni ko'paysa grafik kengayadi, konteyner esa gorizontal
+scroll beradi. O'lchangan:
 
-| Oraliq | Grafik kengligi | Scroll |
-|---|---|---|
-| 30 kun | 1418px (konteynerga sig'adi) | yo'q |
-| 90 kun | 1418px | yo'q |
-| 313 kun | 4452px | **ha** |
+| Oraliq | Grafik kengligi | Ustun oralig'i | Scroll |
+|---|---|---|---|
+| 30 kun | 1090px (konteynerga sig'adi) | 34px | yo'q |
+| 61 kun | 2144px | 34px | **ha** |
+| 185 kun | 6360px | 34px | **ha** |
 
-> Ilgari SVG `width: 100%` edi va chizma konteynerga **siqilardi**:
-> 313 kunda ustunlar ikki barobar kichrayib, nuqtalar bir-birining ustiga
-> chiqib ketardi. Hammasi "ko'rinardi", lekin o'qib bo'lmasdi.
+> **Ikki marta tuzatilgan xato.** Avval SVG `width: 100%` edi va chizma
+> konteynerga siqilardi. Uni `min-width: 100%` ga o'zgartirgach ham
+> siqilish qoldi, chunki ustun kengligi `900 / kun_soni` bilan
+> hisoblanardi: 30 kunda 30px, 64 kundan keyin esa 14px ga tushib,
+> nuqtalar bir-biriga yopishib qolardi. Endi kenglik kun soniga
+> **umuman bog'liq emas**.
+
+Grafik konteynerdan kengroq bo'lsa **o'ng chetiga — eng yangi kunlarga —
+surilgan holda ochiladi** (`engYangiKunlarniKorsat`). Aks holda uzun
+oraliqda ekranda oraliqning boshi turardi va u ko'pincha bo'sh bo'lardi
+(agent hali ishlamagan kunlar).
+
+«Umumiy manzara» matritsasi ham xuddi shunday: katak kengligi
+`CHART_CELL_WIDTH` (default **18px**), o'zgarmas. Qiya sana yorliqlari
+gorizontal bo'yicha ~22px joy egallagani uchun kataklar undan tor bo'lsa
+yorliqlar oralab qo'yiladi.
 
 Har kunda ikkita nuqta: birinchi va oxirgi faollik. Rang **har nuqta uchun
 alohida** — bir kunda kelish yashil, ketish qizil bo'lishi mumkin.
@@ -1396,7 +1410,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 51 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 53 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1412,6 +1426,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Anomaliya** | `MIN_DOW_SAMPLES`, `ANOMALY_Z_THRESHOLD`, `ANOMALY_Z_FULL_SCALE` |
 | **Detectorlar** | `DETECTOR_WEIGHT_<NOM>` |
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `DASHBOARD_POLL_MS`, `DASHBOARD_PROGRESS_HOLD_MS`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
+| **Grafik** | `CHART_COLUMN_WIDTH`, `CHART_CELL_WIDTH` |
 | **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
 | **Kuzatuv** | `COL_TRIGGER_RUNS`, `TRIGGER_KEEP_RUNS`, `HEALTH_PING_TIMEOUT` |
 

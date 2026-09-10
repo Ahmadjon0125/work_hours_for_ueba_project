@@ -133,6 +133,14 @@ DASHBOARD_MAX_ISSUES = int(os.getenv("DASHBOARD_MAX_ISSUES", 20))
 # Zanjir kichik bazada 1 soniyada tugaydi — so'rov undan sekin bo'lsa jarayon
 # chizig'i umuman ko'rinmay qoladi.
 DASHBOARD_POLL_MS = int(os.getenv("DASHBOARD_POLL_MS", 400))
+# Grafikdagi bitta kun ustunining kengligi (piksel). O'ZGARMAS: kun soni
+# ko'paysa grafik siqilmaydi, kengayadi va konteyner scroll beradi. Ilgari
+# kenglik kun soniga bo'lib hisoblanardi va 30 kundan uzun oraliqda ustunlar
+# ikki barobar ingichkalashib, grafik o'qilmay qolardi.
+CHART_COLUMN_WIDTH = int(os.getenv("CHART_COLUMN_WIDTH", 34))
+# "Umumiy manzara" matritsasidagi bitta katak kengligi (piksel). Xuddi shunday
+# o'zgarmas.
+CHART_CELL_WIDTH = int(os.getenv("CHART_CELL_WIDTH", 18))
 # Tugagandan keyin "100% — Tugadi" holati ekranda qancha turadi (millisekund).
 # Bo'lmasa juda tez zanjir miltillab o'tib ketadi va foydalanuvchi ko'rmaydi.
 DASHBOARD_PROGRESS_HOLD_MS = int(os.getenv("DASHBOARD_PROGRESS_HOLD_MS", 2500))

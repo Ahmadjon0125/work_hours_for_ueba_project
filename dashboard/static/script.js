@@ -48,7 +48,8 @@ let minDowSamples = 3;  // /api/health dan keladi (.env: MIN_DOW_SAMPLES)
 // Server javob bermasa sahifa baribir chiziladi.
 let sozlama = { severity: { high: 75, medium: 50, low: 25 },
                 dashboard: { rangeDays: 30, maxIssues: 20,
-                             pollMs: 400, progressHoldMs: 2500 } };
+                             pollMs: 400, progressHoldMs: 2500,
+                             chartColumnWidth: 34, chartCellWidth: 18 } };
 
 /** Ekranda ko'rsatiladigan nom: ism bo'lsa "Ism — hostname", bo'lmasa hostname */
 function personName(row) {
@@ -608,6 +609,7 @@ function renderChart(visible) {
       <span><i style="background:#95a5a6;border-radius:50%"></i> baholanmadi</span>
       <span><i style="background:#3a4657"></i> faollik qayd etilmagan</span>`;
     drawBaselineChart(svg, visible);
+    engYangiKunlarniKorsat(svg);
   } else {
     $('chartTitle').textContent = 'Umumiy manzara';
     $('chartHint').textContent = 'Qatorlar — xodimlar, ustunlar — kunlar. '
@@ -618,7 +620,19 @@ function renderChart(visible) {
       <span><i style="background:#e74c3c"></i> chetlanish</span>
       <span><i style="background:#95a5a6"></i> baholanmagan</span>`;
     drawMatrix(svg, visible);
+    engYangiKunlarniKorsat(svg);
   }
+}
+
+/** Grafik konteynerdan kengroq bo'lsa o'ng chetiga — eng yangi kunlarga — suradi.
+ *
+ *  Aks holda uzun oraliq tanlanganda ekranda oraliqning BOSHI turadi va u
+ *  ko'pincha bo'sh bo'ladi (agent hali ishlamagan kunlar), foydalanuvchi esa
+ *  ma'lumotni ko'rish uchun qo'lda o'ngga surishi kerak bo'lardi.
+ */
+function engYangiKunlarniKorsat(svg) {
+  const wrap = svg.closest('.chart-wrap');
+  if (wrap) wrap.scrollLeft = wrap.scrollWidth;
 }
 
 function drawMatrix(svg, visible) {
@@ -627,16 +641,21 @@ function drawMatrix(svg, visible) {
   const cell = new Map();
   for (const r of visible) cell.set((r.hostname || r.clientId) + '|' + r.date, r);
 
-  const cw = Math.max(9, Math.min(20, Math.floor(760 / Math.max(1, dates.length))));
+  // Katak kengligi ham o'zgarmas (.env: CHART_CELL_WIDTH) — uzun oraliqda
+  // matritsa siqilmasin, scroll bo'lsin.
+  const cw = Math.max(4, sozlama.dashboard.chartCellWidth || 18);
   const rh = 22;
   const pad = { l: 200, r: 16, t: 26, b: 40 };
   const W = pad.l + dates.length * cw + pad.r;
   const H = pad.t + names.length * rh + pad.b;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('height', H);
+  // Tabiiy kenglik — konteynerdan kengroq bo'lsa .chart-wrap scroll beradi
+  svg.style.width = `${W}px`;
 
-  // Sana yorliqlari (oralab)
-  const step = Math.max(1, Math.ceil(dates.length / 20));
+  // Sana yorliqlari. Qiya yozuv gorizontal bo'yicha ~22px joy egallaydi —
+  // kataklar undan tor bo'lsa yorliqlar oralab qo'yiladi.
+  const step = Math.max(1, Math.ceil(22 / cw));
   dates.forEach((d, i) => {
     if (i % step) return;
     const x = pad.l + i * cw + cw / 2;
@@ -715,10 +734,12 @@ function drawBaselineChart(svg, visible) {
   const bor = new Map([...visible].map((r) => [r.date, r]));
   const days = kalendarKunlari(bor);
 
-  // Eng kichik ustun kengligi 14px: vertikal sana yorlig'i shundan tor
-  // bo'lsa qo'shnisiga kirib ketadi. Grafik siqilmaydi — kengroq bo'lsa
-  // `.chart-wrap` scroll beradi.
-  const colW = Math.max(14, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
+  // Ustun kengligi O'ZGARMAS (.env: CHART_COLUMN_WIDTH). Ilgari u
+  // `900 / kun_soni` bilan hisoblanardi va uzun oraliqda grafik siqilardi:
+  // 30 kunda ustun 30px, 64 kundan keyin esa 14px bo'lib, nuqtalar bir-biriga
+  // yopishib o'qilmay qolardi. Endi grafik siqilmaydi — kengayadi va
+  // `.chart-wrap` gorizontal scroll beradi.
+  const colW = Math.max(6, sozlama.dashboard.chartColumnWidth || 34);
   const pad = { l: 54, r: 16, t: 12, b: 58 };
   const W = Math.max(560, pad.l + pad.r + colW * days.length);
   const H = 420;

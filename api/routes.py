@@ -126,7 +126,10 @@ def health():
                       "maxIssues": config.DASHBOARD_MAX_ISSUES,
                       # Jarayon chizig'i sozlamalari — dashboardda qattiq yozilmasin
                       "pollMs": config.DASHBOARD_POLL_MS,
-                      "progressHoldMs": config.DASHBOARD_PROGRESS_HOLD_MS},
+                      "progressHoldMs": config.DASHBOARD_PROGRESS_HOLD_MS,
+                      # Grafik ustun/katak kengligi — kodda qattiq yozilmasin
+                      "chartColumnWidth": config.CHART_COLUMN_WIDTH,
+                      "chartCellWidth": config.CHART_CELL_WIDTH},
         "lastTrigger": jobs.trigger_latest(),
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
         "lastRetrain": _job_as_state(jobs.latest()),
