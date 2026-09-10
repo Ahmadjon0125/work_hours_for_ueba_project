@@ -1586,6 +1586,60 @@ dashboard muzlab qolgandek ko'rinardi.
 
 ---
 
+## Stress sinovi natijalari
+
+Quyidagilar **jonli o'lchangan** (2026-09-10, docker stack, demo baza):
+
+| Stsenariy | Nima bo'ladi | Ma'lumot yo'qoladimi |
+|---|---|---|
+| RabbitMQ o'chdi, trigger ishladi | o'tish bekor qilinadi, `trigger_data` ga hech narsa yozilmaydi, kursor orqada qoladi | **yo'q** |
+| RabbitMQ qaytdi | keyingi o'tish o'sha kunlarni qayta o'qiydi; o'zgarmagani `skipped` bo'ladi | **yo'q** |
+| RabbitMQ to'liq restart, navbatda 5 xabar | 5 tasi ham omon qoldi (`durable: true` + `delivery_mode=2`) | **yo'q** |
+| App retrain o'rtasida SIGKILL | job `running` da qotib qoladi (27%), unique indeks yangi retrain'ni bloklaydi | **yo'q** |
+| App qaytdi | `recover_stale()` uni `error` deb yopadi, qulf ochiladi, yangi retrain ishlaydi | **yo'q** |
+| 5 marta ketma-ket SIGKILL | qotgan job 0, dublikat 0, `results`/`raw` o'zgarmadi | **yo'q** |
+| Mahalliy baza o'chdi | `/` va statik fayllar ishlaydi; `/api/results` va `/api/retrain` 503; health degradatsiya bilan javob beradi | **yo'q** |
+| 20 500 job navbatga | 30 soniyada hazm qilindi — **~680 job/s** (3 worker, bittasiga ~230/s), dublikat 0, xato 0 | **yo'q** |
+
+**Ma'lumot yo'qolmasligining sababi** — to'rtta mexanizm birgalikda:
+
+1. **Publish-then-write** ([trigger.py:115](services/trigger.py#L115)) — avval navbatga
+   yuboriladi, faqat muvaffaqiyatli bo'lsagina `trigger_data` ga yoziladi. Teskari
+   tartibda bo'lganda "yuborilgan" deb belgilanib, aslida yuborilmagan kun bo'lardi.
+2. **Durable navbat + doimiy xabar** — broker restart bo'lsa ham xabarlar diskda qoladi.
+3. **Idempotent upsert** `{clientId, date}` bo'yicha — bir xil kun necha marta
+   kelsa ham bitta qator bo'ladi (20 500 takroriy jobdan keyin dublikat 0).
+4. **Kursorli davom etish** — trigger `trigger_data` dagi eng oxirgi `finish` dan
+   davom etadi, ya'ni uzilish qancha davom etsa ham qayerda to'xtagani esda qoladi.
+
+### Bazaning o'sishi cheklangan
+
+Uchala collection ham tozalanadi, shuning uchun mahalliy baza **cheksiz o'smaydi** —
+barqaror holatga chiqadi. O'lchangan o'rtacha hujjat hajmlari bo'yicha bashorat:
+
+| Xodim | `results` (365 kun) | `raw` (90 kun) | `trigger_data` (90 kun) | Jami (indeks bilan) |
+|---|---|---|---|---|
+| 15 | 4 MB | 0.4 MB | 0.4 MB | ~7 MB |
+| 100 | 26 MB | 2.7 MB | 2.5 MB | ~44 MB |
+| 500 | 132 MB | 14 MB | 13 MB | ~0.22 GB |
+| 2 000 | 528 MB | 54 MB | 51 MB | ~0.89 GB |
+| 10 000 | 2.6 GB | 272 MB | 254 MB | ~4.4 GB |
+
+Hujjat hajmlari: `results` 723 B, `raw_data_for_train` 302 B, `trigger_data` 282 B.
+
+### Ochiq qolgan xatarlar
+
+1. **Uzoq uzilishdan keyingi birinchi o'tish chegaralanmagan.**
+   `_window_start()` kursordan davom etadi va yuqori chegara yo'q — tizim yarim yil
+   to'xtab qolsa, qaytgandagi birinchi trigger yarim yillik hodisani bitta so'rovda
+   o'qiydi. Demo bazada bu arzon (365 kun = 0.14s, 352 hodisa), lekin haqiqiy
+   hajmda og'ir bo'ladi. Chegara qo'yish mumkin, ammo u eski kunlarni **butunlay
+   tashlab yuborishni** anglatadi — bu ongli qaror bo'lishi kerak.
+2. **`/api/results` bitta so'rovda 5000 qator** (`API_PAGE_MAX`). 15 xodim × 365 kun
+   = 5475 — chegaradan oshadi va eng eski kunlar **jimgina** tushib qoladi.
+   100 xodimda atigi 50 kun yetadi.
+3. **Disk to'lib qolsa** Mongo yozishni to'xtatadi. Bu holat sinalmagan.
+
 ## Loglar va kuzatuv
 
 Loglar `logs/ueba.log` ga va konsolga yoziladi:
@@ -1712,8 +1766,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
-| `test_progress_errors.py` | Jarayon xabarlari, har bosqichning alohida foizi, zanjir bosqichlari tartibi, xatolar tarixi | 15 |
-| | **Jami** | **68** |
+| `test_progress_errors.py` | Jarayon xabarlari, har bosqichning alohida foizi, zanjir bosqichlari tartibi, xatolar tarixi, baza yotganda health | 17 |
+| | **Jami** | **70** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1766,7 +1820,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     68 ta tekshiruv
+tests/                     70 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

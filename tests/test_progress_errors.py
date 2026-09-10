@@ -299,6 +299,64 @@ def test_xato_qaysi_bosqichda_bolgani_belgilanadi():
                   str(xatolar))
 
 
+# --- Baza yotganda health --------------------------------------------------
+#
+# Stress sinovda topilgan nuqson: /api/health dagi `trigger_latest()` va
+# `latest()` chaqiruvlari himoyasiz edi. Mahalliy baza yotganda so'rov
+# ~13 soniya osilib, keyin 503 qaytarardi — dashboard esa uni retrain paytida
+# har 400ms da so'raydi, natijada butun sahifa muzlab qolardi.
+
+def test_health_baza_yotganda_ham_javob_beradi():
+    print("  Mahalliy baza yotganda ham /api/health to'liq javob qaytaradi")
+
+    def _yiqiladi(*a, **kw):
+        raise RuntimeError("mongo javob bermadi")
+
+    asl = (routes_mod.local_db, routes_mod.main_db, routes_mod.queue_depth,
+           jobs_mod.trigger_latest, jobs_mod.latest)
+    try:
+        routes_mod.local_db = _yiqiladi
+        routes_mod.main_db = _yiqiladi
+        routes_mod.queue_depth = lambda: 0
+        jobs_mod.trigger_latest = _yiqiladi
+        jobs_mod.latest = _yiqiladi
+        h = routes_mod.health()
+    finally:
+        (routes_mod.local_db, routes_mod.main_db, routes_mod.queue_depth,
+         jobs_mod.trigger_latest, jobs_mod.latest) = asl
+
+    return (_check("xato tashlamadi", isinstance(h, dict))
+            & _check("mongo_local error deb belgilandi", h["mongo_local"] == "error",
+                     str(h.get("mongo_local")))
+            & _check("lastRetrain unknown", h["lastRetrain"]["status"] == "unknown",
+                     str(h.get("lastRetrain")))
+            & _check("lastTrigger unknown", h["lastTrigger"]["status"] == "unknown",
+                     str(h.get("lastTrigger")))
+            & _check("sozlamalar baribir qaytdi", "anomalyZThreshold" in h))
+
+
+def test_health_baza_yotganda_ortiqcha_sorov_yubormaydi():
+    print("  Ping o'tmasa job hujjatlari umuman so'ralmaydi (2s, 6s emas)")
+    chaqirildi = []
+
+    def _yiqiladi(*a, **kw):
+        raise RuntimeError("mongo javob bermadi")
+
+    asl = (routes_mod.local_db, routes_mod.main_db, routes_mod.queue_depth,
+           jobs_mod.trigger_latest, jobs_mod.latest)
+    try:
+        routes_mod.local_db = _yiqiladi
+        routes_mod.main_db = _yiqiladi
+        routes_mod.queue_depth = lambda: 0
+        jobs_mod.trigger_latest = lambda: chaqirildi.append("trigger")
+        jobs_mod.latest = lambda: chaqirildi.append("job")
+        routes_mod.health()
+    finally:
+        (routes_mod.local_db, routes_mod.main_db, routes_mod.queue_depth,
+         jobs_mod.trigger_latest, jobs_mod.latest) = asl
+    return _check("bironta ham so'ralmadi", chaqirildi == [], str(chaqirildi))
+
+
 def test_jarayonsiz_ham_ishlaydi():
     print("  on_progress berilmasa collector baribir ishlaydi (CLI rejimi)")
     asl_idx, asl_cl, asl_db = (collector_mod.ensure_indexes,
@@ -321,6 +379,8 @@ if __name__ == "__main__":
         test_ikkala_manba_vaqt_boyicha(), test_xatosiz_holat(), test_limit(),
         test_takroriy_xato_bir_marta(), test_uzun_xato_qisqartiriladi(),
         test_collector_jarayonni_xabar_qiladi(), test_jarayonsiz_ham_ishlaydi(),
+        test_health_baza_yotganda_ham_javob_beradi(),
+        test_health_baza_yotganda_ortiqcha_sorov_yubormaydi(),
         test_har_bosqich_oz_foizini_yozadi(), test_set_stage_faqat_oz_bosqichini_nollaydi(),
         test_finish_stage_100_ga_toldiradi(), test_zanjir_ikkala_bosqichni_belgilaydi(),
         test_xato_qaysi_bosqichda_bolgani_belgilanadi(),

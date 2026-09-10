@@ -107,10 +107,38 @@ def health():
         except Exception:
             return "error"
 
+    def xavfsiz(fn, default):
+        """Bazaga boradi, LEKIN health'ni hech qachon yiqitmaydi.
+
+        Ilgari bu ikki so'rov (`trigger_latest`, `latest`) himoyasiz edi:
+        mahalliy baza yotganda `serverSelectionTimeoutMS` tufayli /api/health
+        ~13 soniya osilib, keyin 503 qaytarardi. Dashboard esa uni retrain
+        paytida har 400ms da so'raydi — natijada butun sahifa muzlab qolardi.
+        Endi baza yo'q bo'lsa ham health TEZ va TO'LIQ javob qaytaradi,
+        shunchaki `mongo_local: "error"` deb.
+        """
+        try:
+            with pymongo.timeout(config.HEALTH_PING_TIMEOUT):
+                return fn()
+        except Exception:
+            return default
+
     depth = queue_depth()
+    mongo_local = ping(lambda: local_db().command("ping"))
+
+    # Ping o'tmagan bo'lsa job hujjatlarini SO'RAMAYMIZ ham: ular baribir
+    # yiqiladi va har biri HEALTH_PING_TIMEOUT ni yeydi. Uchta so'rov
+    # 2+2+2 = 6 soniya bo'lardi; endi 2 soniyada tugaydi.
+    if mongo_local == "ok":
+        last_trigger = xavfsiz(jobs.trigger_latest, {"status": "unknown"})
+        last_retrain = xavfsiz(lambda: _job_as_state(jobs.latest()),
+                               {"status": "unknown"})
+    else:
+        last_trigger = last_retrain = {"status": "unknown"}
+
     return {
         "mongo_main": ping(lambda: main_db().command("ping")),
-        "mongo_local": ping(lambda: local_db().command("ping")),
+        "mongo_local": mongo_local,
         "rabbitmq": "ok" if depth is not None else "error",
         "queue_depth": depth,
         "workers": config.WORKER_COUNT,
@@ -130,9 +158,9 @@ def health():
                       # Grafik ustun/katak kengligi — kodda qattiq yozilmasin
                       "chartColumnWidth": config.CHART_COLUMN_WIDTH,
                       "chartCellWidth": config.CHART_CELL_WIDTH},
-        "lastTrigger": jobs.trigger_latest(),
+        "lastTrigger": last_trigger,
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
-        "lastRetrain": _job_as_state(jobs.latest()),
+        "lastRetrain": last_retrain,
     }
 
 

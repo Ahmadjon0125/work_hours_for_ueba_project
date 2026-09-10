@@ -388,17 +388,24 @@ function renderRunbar(h) {
   $('runProgress').hidden = !ketmoqda;
   if (ketmoqda && !jarayonYakunda) setProgress(r);
 
+  // `unknown` — baza yotgani uchun holatni O'QIB BO'LMADI. Buni "hech qachon
+  // ishlamagan" (idle) bilan chalkashtirmaslik kerak: birinchisi nosozlik,
+  // ikkinchisi normal boshlang'ich holat.
   const belgi = { finished: ['ok', '✓'], partial: ['warn', '⚠'], error: ['bad', '✕'],
-                  running: ['', '…'], idle: ['', '—'] };
+                  running: ['', '…'], idle: ['', '—'], unknown: ['bad', '?'] };
 
   const [rk, ri] = belgi[r.status] || ['', ''];
-  $('runRetrain').innerHTML = `Oxirgi yangilash: <b>${qisqaVaqt(r.finishedAt || r.startedAt)}</b>`
+  $('runRetrain').innerHTML = (r.status === 'unknown'
+      ? `Oxirgi yangilash: <b>o'qib bo'lmadi</b>`
+      : `Oxirgi yangilash: <b>${qisqaVaqt(r.finishedAt || r.startedAt)}</b>`)
     + ` <span class="${rk}">${ri}</span>`
     + (r.status === 'partial' ? ` <span class="warn">(${(r.failedClients || []).length} xodim tushib qoldi)</span>` : '')
     + (r.status === 'error' ? ` <span class="bad">xato</span>` : '');
 
   const [tk, ti] = belgi[t.status] || ['', ''];
-  $('runTrigger').innerHTML = `Oxirgi tekshiruv: <b>${qisqaVaqt(t.finishedAt || t.startedAt)}</b>`
+  $('runTrigger').innerHTML = (t.status === 'unknown'
+      ? `Oxirgi tekshiruv: <b>o'qib bo'lmadi</b>`
+      : `Oxirgi tekshiruv: <b>${qisqaVaqt(t.finishedAt || t.startedAt)}</b>`)
     + ` <span class="${tk}">${ti}</span>`
     + (t.status === 'finished' ? ` <span class="muted">(${t.sent || 0} kun yuborildi)</span>` : '')
     + (t.status === 'error' ? ` <span class="bad">xato</span>` : '');
