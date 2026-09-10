@@ -917,6 +917,23 @@ Y o'qi   sutka soatlari 00:00 (past) → 24:00 (tepa)
 | **yashil nuqta** | faollik oyna **ichida** |
 | **qizil nuqta** | faollik oynadan **tashqarida** |
 | **kulrang nuqta** | baseline yo'q, baholab bo'lmadi |
+| **bo'sh ustun** | o'sha kuni manbada faollik umuman qayd etilmagan |
+
+#### X o'qi — to'liq kalendar
+
+Har bir kalendar kuni o'z ustuniga ega, ma'lumot bor-yo'qligidan qat'i
+nazar. Ma'lumotsiz kun bo'sh qoladi, pastda ingichka belgi turadi.
+
+Bu muhim: **bo'shliqning o'zi ma'lumot.** Uzoq bo'shliq — xodim ta'tilda,
+kompyuter o'chiq, yoki agent ishlamayapti degani.
+
+> Ilgari o'q faqat ma'lumot bor kunlardan iborat edi va bu **chalg'itardi**:
+> `08-15` bilan `08-20` yonma-yon turib, orada to'rt kun borligi
+> ko'rinmasdi. Endi masofa haqiqiy.
+
+Oraliq `from`/`to` filtrlaridan olinadi. 400 kundan uzun bo'lsa **oxirgi**
+400 kun ko'rsatiladi — uzoq oraliqda eng yangi ma'lumot kerak, boshidan
+kessak bugungi kun tushib qolardi.
 
 Har kunda ikkita nuqta: birinchi va oxirgi faollik. Rang **har nuqta uchun
 alohida** — bir kunda kelish yashil, ketish qizil bo'lishi mumkin.

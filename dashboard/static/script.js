@@ -430,12 +430,13 @@ function renderChart(visible) {
     $('chartHint').textContent = 'X o\'qi — kunlar, Y o\'qi — sutka soatlari. '
       + 'Kulrang fon — shu kunning ish oynasi. Ikkita nuqta — birinchi va oxirgi '
       + 'faollik: oynadan tashqarida bo\'lsa qizil, ichida bo\'lsa yashil. '
-      + 'Oyna ichidagi faollik shubhali sanalmaydi.';
+      + 'Bo\'sh ustun — o\'sha kuni manbada faollik umuman qayd etilmagan.';
     $('chartLegend').innerHTML = `
       <span><i style="background:#8a97ab;opacity:.5"></i> ish oynasi</span>
       <span><i style="background:#2ecc71;border-radius:50%"></i> oyna ichida</span>
       <span><i style="background:#e74c3c;border-radius:50%"></i> oynadan tashqarida</span>
-      <span><i style="background:#95a5a6;border-radius:50%"></i> baholanmadi</span>`;
+      <span><i style="background:#95a5a6;border-radius:50%"></i> baholanmadi</span>
+      <span><i style="background:#3a4657"></i> faollik qayd etilmagan</span>`;
     drawBaselineChart(svg, visible);
   } else {
     $('chartTitle').textContent = 'Umumiy manzara';
@@ -507,10 +508,44 @@ function drawMatrix(svg, visible) {
  *  `|z| <= chegara` aynan "mean ± chegara·std oralig'ida" degani, shuning uchun
  *  nuqta rangi kulrang zonaga to'liq mos keladi — ziddiyat bo'lishi mumkin emas.
  */
-function drawBaselineChart(svg, visible) {
-  const days = [...visible].sort((a, b) => a.date.localeCompare(b.date));
+/** Chizish uchun kunlar ro'yxati: tanlangan oraliqdagi HAR BIR kalendar kuni.
+ *
+ *  Qaytaradi `[{date, row}]` — `row` null bo'lsa o'sha kuni ma'lumot yo'q.
+ *  Oraliq filtrlardan olinadi; ular bo'sh bo'lsa ma'lumotning o'z chegarasi.
+ */
+function kalendarKunlari(bor) {
+  const sanalar = [...bor.keys()].sort();
+  const boshi = $('from').value || sanalar[0];
+  const oxiri = $('to').value || sanalar[sanalar.length - 1];
+  if (!boshi || !oxiri) return [];
 
-  const colW = Math.max(18, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
+  const MAX = 400;   // undan ortig'i grafikda o'qilmay qoladi
+  const out = [];
+  const d = new Date(boshi + 'T12:00:00');
+  const son = new Date(oxiri + 'T12:00:00');
+  while (d <= son) {
+    const sana = d.toISOString().slice(0, 10);
+    out.push({ date: sana, row: bor.get(sana) || null });
+    d.setDate(d.getDate() + 1);
+  }
+  // Cheklov OXIRIDAN olinadi: uzoq oraliqda eng yangi kunlar kerak.
+  // Boshidan kessak, 2 yillik oraliqda bugungi ma'lumot tushib qolardi.
+  return out.length > MAX ? out.slice(-MAX) : out;
+}
+
+function drawBaselineChart(svg, visible) {
+  // X o'qi — TO'LIQ kalendar, faqat ma'lumot bor kunlar emas.
+  //
+  // Ilgari bu yerda `visible` ning o'zi ishlatilardi va o'q "ma'lumot bor
+  // kunlar ketma-ketligi" bo'lib qolardi: 08-15 va 08-20 yonma-yon turib,
+  // orada 4 kun borligi ko'rinmasdi. Endi har kalendar kuni o'z ustuniga
+  // ega — ma'lumotsiz kun bo'sh joy sifatida ko'rinadi. Bo'shliqning o'zi
+  // ma'lumot: agent hech narsa yubormagan (ta'til, o'chirilgan kompyuter,
+  // agent ishlamayapti).
+  const bor = new Map([...visible].map((r) => [r.date, r]));
+  const days = kalendarKunlari(bor);
+
+  const colW = Math.max(9, Math.min(46, Math.floor(900 / Math.max(1, days.length))));
   const pad = { l: 54, r: 16, t: 12, b: 58 };
   const W = Math.max(560, pad.l + pad.r + colW * days.length);
   const H = 420;
@@ -534,13 +569,26 @@ function drawBaselineChart(svg, visible) {
   const labelStep = Math.ceil(days.length / 26);
   const bw = Math.min(28, colW * 0.72);
 
-  days.forEach((r, i) => {
+  days.forEach((kun, i) => {
     if (i % labelStep === 0) {
       const ly = H - pad.b + 18;
       svg.appendChild(el('text', {
         x: cx(i), y: ly, 'text-anchor': 'end',
         transform: `rotate(-50 ${cx(i)} ${ly})`,
-      }, r.date.slice(5)));
+      }, kun.date.slice(5)));
+    }
+
+    const r = kun.row;
+    if (!r) {
+      // Ma'lumotsiz kun: manbada bitta ham hodisa bo'lmagan. Ustun bo'sh
+      // qoladi, faqat pastda ingichka belgi — bo'shliq ko'rinib tursin.
+      const tick = el('rect', {
+        x: cx(i) - 1, y: pad.t + plotH - 3, width: 2, height: 3,
+        fill: '#3a4657',
+      });
+      tick.appendChild(el('title', {}, `${kun.date}\nFaollik qayd etilmagan`));
+      svg.appendChild(tick);
+      return;
     }
 
     const w = windowOf(r);          // {lo, hi} yoki null
@@ -570,7 +618,7 @@ function drawBaselineChart(svg, visible) {
       const mins = hhmmssToMinutes(m.time);
       const outside = w && (mins < w.lo || mins > w.hi);
       const dot = el('circle', {
-        cx: cx(i), cy: y(mins), r: 4,
+        cx: cx(i), cy: y(mins), r: Math.max(2.5, Math.min(4, colW * 0.22)),
         fill: !w ? '#95a5a6' : (outside ? '#e74c3c' : '#2ecc71'),
         stroke: '#0f1419', 'stroke-width': 1,
       });
