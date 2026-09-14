@@ -1397,7 +1397,15 @@ faqat ular qo'sha oladi — hozircha kerak emas.
 
 ## Ishga tushirish
 
-`.env` da `MONGO_URI` va `DB_NAME` DLP bazasiga ko'rsatib turgan bo'lsin.
+```bash
+cp .env.example .env        # va MONGO_URI / DB_NAME ni DLP bazasiga sozlang
+```
+
+`.env.example` — barcha 60 sozlamaning izohli namunasi. U repozitoriyda
+turadi, `.env` esa `.gitignore` da (ichida haqiqiy manzil va parollar
+bo'ladi). [tests/test_config.py](tests/test_config.py) namunaning
+eskirib qolmasligini qo'riqlaydi: yangi sozlama qo'shilib namunaga
+yozilmasa, test yiqiladi.
 
 ```bash
 docker compose up -d --build                    # mongo + rabbitmq + app
@@ -2122,7 +2130,7 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 
 | Fayl | Nimani qo'riqlaydi | Soni |
 |---|---|---|
-| `test_config.py` | Har bir sozlama `.env` dan o'qiladimi; noto'g'ri qiymat tizimni buzmaydimi | 4 |
+| `test_config.py` | Har bir sozlama `.env` dan o'qiladimi; noto'g'ri qiymat tizimni buzmaydimi; `.env.example` to'liqmi | 5 |
 | `test_workday.py` | Sof ish vaqti, ochiq sessiya, ikki kompyuter birlashishi, kunlarga ajratish | 8 |
 | `test_collector.py` | Oyna chegaralari (COL-01), manba xatosi (COL-04), arxiv tozalash (COL-02), qayta urinish | 9 |
 | `test_detectors.py` | Ball jadvali, oyna qoidasi, `riskScore`, vazn, xato izolyatsiyasi, nom tekshiruvi | 13 |
@@ -2130,7 +2138,7 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
 | `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi va tasnifi, baza yotganda health | 22 |
-| | **Jami** | **76** |
+| | **Jami** | **77** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -2183,7 +2191,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     76 ta tekshiruv
+tests/                     77 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

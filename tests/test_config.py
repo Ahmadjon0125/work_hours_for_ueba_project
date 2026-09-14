@@ -8,14 +8,16 @@ Ishga tushirish:  python tests/test_config.py
 import ast
 import importlib
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
 
-CONFIG_FAYLI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            "config.py")
+LOYIHA = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_FAYLI = os.path.join(LOYIHA, "config.py")
+ENV_NAMUNA = os.path.join(LOYIHA, ".env.example")
 
 # Turiga qarab sinov qiymati
 NAMUNA = {int: "77", float: "7.5", str: "sinov-qiymati", tuple: "AAA,BBB,CCC"}
@@ -24,6 +26,44 @@ NAMUNA = {int: "77", float: "7.5", str: "sinov-qiymati", tuple: "AAA,BBB,CCC"}
 def _check(label, condition, detail=""):
     print(f"    {'✓' if condition else '✗'} {label}{'' if condition else '  <- ' + detail}")
     return condition
+
+
+def _env_kalitlari(yol):
+    """`.env` shaklidagi fayldan kalitlarni o'qiydi (izohlar hisobga olinmaydi)."""
+    out = set()
+    with open(yol, encoding="utf-8") as f:
+        for qator in f:
+            q = qator.strip()
+            if q and not q.startswith("#") and "=" in q:
+                out.add(q.split("=", 1)[0].strip())
+    return out
+
+
+def _kod_kalitlari():
+    """config.py da `os.getenv(...)` bilan o'qiladigan barcha kalitlar."""
+    src = open(CONFIG_FAYLI, encoding="utf-8").read()
+    kalitlar = set(re.findall(r'os\.getenv\(\s*"([A-Z0-9_]+)"', src))
+    # `_statuslar("X", ...)` kabi yordamchilar ham `.env` dan o'qiydi
+    kalitlar |= set(re.findall(r'_statuslar\(\s*"([A-Z0-9_]+)"', src))
+    return kalitlar
+
+
+def test_env_namuna_toliq():
+    """`.env.example` barcha sozlamani qamrab olishi SHART.
+
+    Yangi sozlama qo'shilib, namunaga yozilmasa — serverga o'rnatgan odam
+    uni umuman bilmay qoladi. Shu test buni oldini oladi.
+    """
+    print("  .env.example barcha sozlamani qamraydi")
+    if not os.path.exists(ENV_NAMUNA):
+        return _check(".env.example mavjud", False, "fayl yo'q")
+    kod = _kod_kalitlari()
+    namuna = _env_kalitlari(ENV_NAMUNA)
+    yoq = sorted(kod - namuna)
+    ortiqcha = sorted(namuna - kod)
+    return (_check(".env.example mavjud", True)
+            & _check(f"{len(kod)} ta sozlama qamralgan", not yoq, "yo'q: " + ", ".join(yoq))
+            & _check("ortiqcha kalit yo'q", not ortiqcha, "ortiqcha: " + ", ".join(ortiqcha)))
 
 
 def _sozlamalar():
@@ -136,6 +176,7 @@ if __name__ == "__main__":
         test_env_haqiqatan_ustidan_yozadi(),
         test_notogri_qiymat_tizimni_buzmaydi(),
         test_vazn_oraligi(),
+        test_env_namuna_toliq(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "
           f"({sum(results)}/{len(results)})")
