@@ -70,9 +70,19 @@ def _consume_forever(worker_id, stop_event):
                         except Exception as re:
                             log.error("Worker %d: qayta publish xatosi: %s", worker_id, re)
                     else:
-                        log.error("Worker %d: %d marta urinildi, job tashlandi: %s. "
-                                  "Kerak bo'lsa trigger_data dagi yozuvni o'chirib qayta yuboring.",
-                                  worker_id, retries, e)
+                        # Bu kun `results` ga TUSHMAYDI va o'zi qaytmaydi:
+                        # `trigger_data` ga allaqachon "yuborildi" deb yozilgan,
+                        # shuning uchun keyingi o'tishlar uni `skipped` qiladi.
+                        # Qayta yuborish uchun kursorni ORQAGA surish kerak —
+                        # bitta yozuvni o'chirish yetmaydi, chunki kursor
+                        # xodimning eng oxirgi kunidan hisoblanadi.
+                        log.error(
+                            "Worker %d: %d marta urinildi, job TASHLANDI: %s\n"
+                            "    Bu kun natijalarga tushmaydi va o'zi qaytmaydi.\n"
+                            "    Qayta yuborish uchun (o'sha kundan BOSHLAB hammasini):\n"
+                            "      db.trigger_data.deleteMany({clientId: '<id>', "
+                            "date: {$gte: '<YYYY-MM-DD>'}})",
+                            worker_id, retries, e)
                     channel.basic_reject(method.delivery_tag, requeue=False)
         except Exception as e:
             if not stop_event.is_set():

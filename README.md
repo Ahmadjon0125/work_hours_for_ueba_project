@@ -1722,6 +1722,56 @@ Ikkalasi ham `trigger_runs` ga `status: "error"` bo'lib tushadi va
 dashboardda ko'rinadi. Ma'lumot baribir yo'qolmaydi — hech narsa yozilmadi,
 cursor orqada qoldi, keyingi o'tish o'sha joydan davom etadi.
 
+### Qaysi xato o'zi tuzaladi, qaysisi qo'l talab qiladi
+
+**O'zi tuzaladi** — aksariyati:
+
+| Nosozlik | Qanday tiklanadi | Qancha vaqtda |
+|---|---|---|
+| Manba baza javob bermadi | bitta o'tish ichida 3 urinish (`SOURCE_READ_RETRIES`), keyin keyingi o'tish | 2 s → 5 soat |
+| Bir nechta xodim o'qilmadi (`partial`) | keyingi collector o'sha xodimlarni qayta o'qiydi | keyingi retrain |
+| RabbitMQ o'chdi | kursor orqada qoladi, keyingi o'tish o'sha joydan davom etadi | 5 soat |
+| Worker aloqasi uzildi | avtomatik qayta ulanadi | 5 soniya |
+| Job `running` da qotdi | `recover_stale()` dastur ishga tushganda yopadi | keyingi start |
+| Ish bajarilmadi (vaqtinchalik) | 3 marta qayta urinish (`MAX_RETRIES`) | darhol |
+| Navbat to'lib ketdi | workerlar hazm qiladi (~680 job/s) | daqiqalar |
+
+**Qo'l talab qiladi** — uchta holat:
+
+**1. Sozlama yoki sxema xatosi.** `MONGO_URI`, `DB_NAME`, maydon nomlari
+noto'g'ri bo'lsa yoki DLP sxemani o'zgartirsa — qayta urinish hech qachon
+yordam bermaydi. **Belgisi: bir xil xato har o'tishda takrorlanadi.**
+Bitta marta chiqqan xato — vaqtinchalik; takrorlanayotgani — sozlama.
+
+**2. Ish 3 urinishdan keyin tashlandi.** Bu yagona holat, bunda **ma'lumot
+o'zi qaytmaydi**. Sababi: `publish` muvaffaqiyatli bo'lgani uchun
+`trigger_data` ga "yuborildi" deb yozilgan, keyingi o'tishlar uni `skipped`
+qiladi.
+
+O'lchab tekshirildi — natijani o'chirib ko'rdim:
+
+```
+1-urinish: oddiy trigger o'tishi              -> sent=0 skipped=10   qaytmadi
+2-urinish: trigger_data dan BITTA yozuv o'chdi -> sent=0 skipped=10   qaytmadi
+3-urinish: o'sha kundan BOSHLAB hammasi o'chdi -> sent=63             QAYTDI
+```
+
+Ikkinchi urinish nega yetmadi: kursor (`_window_start`) xodimning
+**eng oxirgi** yuborilgan kunidan hisoblanadi. Iyundagi bitta yozuvni
+o'chirsangiz ham kursor sentabrda qolaveradi.
+
+To'g'ri buyruq:
+
+```js
+db.trigger_data.deleteMany({ clientId: "<id>", date: { $gte: "<YYYY-MM-DD>" } })
+```
+
+Agar o'sha xodimda undan oldingi yozuv qolmasa, kursor `LOOKBACK_HOURS` ga
+tushadi — u holda o'sha sozlamani ham vaqtincha kattalashtirish kerak.
+
+**3. Xizmat butunlay o'lgan.** RabbitMQ ko'tarilmayapti, disk to'lgan,
+manba serverga tarmoq yo'q — bularni tizim hal qila olmaydi.
+
 ### Ochiq qolgan xatarlar
 
 1. **Uzoq uzilishdan keyingi birinchi o'tish chegaralanmagan.**
