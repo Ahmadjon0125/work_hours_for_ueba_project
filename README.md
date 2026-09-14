@@ -1662,6 +1662,66 @@ barqaror holatga chiqadi. O'lchangan o'rtacha hujjat hajmlari bo'yicha bashorat:
 
 Hujjat hajmlari: `results` 723 B, `raw_data_for_train` 302 B, `trigger_data` 282 B.
 
+### Xatolik qayerda bo'lganini qanday bilaman
+
+Har uzilish nuqtasi **uch joyga** yozib qoldiradi, va uchalasi ham qaysi
+bosqichda to'xtaganini ko'rsatadi:
+
+| Qayerda | Nima saqlanadi | Qancha turadi |
+|---|---|---|
+| `training_jobs` hujjati | `status`, `stageProgress.<bosqich>.status`, foiz, xato matni, `errors[]` | doimiy |
+| `trigger_runs` hujjati | `status`, `sent`, `skipped`, xato matni | oxirgi `TRIGGER_KEEP_RUNS` o'tish |
+| Konteyner logi | to'liq stack trace, har client alohida | docker log siyosati |
+
+Dashboardda: holat qatorida **✕ xato** belgisi va **«Xatolar»** tugmasi
+(faqat xato bo'lganda ko'rinadi) → `/api/errors` → vaqt, manba, qayerda,
+xato matni.
+
+O'lchangan misol — retrain paytida manba baza yo'qoldi:
+
+```jsonc
+"status":        "error",
+"stage":         "error",
+"progressText":  "Xato bilan to'xtadi",
+"errorCount":    1,
+"stageProgress": { "collecting": { "percent": 0, "status": "error",
+                                   "text": "yoq-server:27017: Name or service not known" } }
+```
+
+`stageProgress` aynan **qaysi bosqich** va **necha foizda** to'xtaganini
+aytadi. Bu eng muhim ma'lumot: collector'da yiqildimi yoki trainer'da.
+
+Xodim darajasidagi xato butun zanjirni yiqitmaydi. O'lchangan (10 xodimdan
+3 tasining o'qishi buzildi):
+
+```
+status        partial
+errorCount    3
+kun / xodim   448 / 10
+tushib qolgan: jasur@dg-pc-02, malika@dg-pc-03, sardor@dg-pc-04
+```
+
+Qolgan 7 xodimning ma'lumoti yangilandi, tushib qolgan 3 tasiniki **eski
+holicha qoldi** (chala yozilmadi), va o'qitish baribir bajarildi.
+
+### Jimgina "muvaffaqiyat" bo'lmasligi
+
+Stress sinovda topilgan nuqson: RabbitMQ yotganda `trigger.run()` xatoni
+yutib, `(0, 0)` qaytarardi va o'tish **`finished`** deb yozilardi.
+Dashboardda yashil ✓ ko'rinardi, aslida hech narsa yuborilmagan edi —
+nosozlik faqat konteyner logida qolardi.
+
+Endi ikkita alohida istisno bor ([trigger.py](services/trigger.py)):
+
+| Istisno | Qachon |
+|---|---|
+| `QueueUnavailable` | navbatga ulanib bo'lmadi |
+| `NoActiveClients` | manba bazada active xodim topilmadi |
+
+Ikkalasi ham `trigger_runs` ga `status: "error"` bo'lib tushadi va
+dashboardda ko'rinadi. Ma'lumot baribir yo'qolmaydi — hech narsa yozilmadi,
+cursor orqada qoldi, keyingi o'tish o'sha joydan davom etadi.
+
 ### Ochiq qolgan xatarlar
 
 1. **Uzoq uzilishdan keyingi birinchi o'tish chegaralanmagan.**
@@ -1801,8 +1861,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
-| `test_progress_errors.py` | Jarayon xabarlari, har bosqichning alohida foizi, zanjir bosqichlari tartibi, xatolar tarixi, baza yotganda health | 17 |
-| | **Jami** | **71** |
+| `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi, baza yotganda health, jimgina "muvaffaqiyat" bo'lmasligi | 19 |
+| | **Jami** | **73** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1855,7 +1915,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     71 ta tekshiruv
+tests/                     73 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

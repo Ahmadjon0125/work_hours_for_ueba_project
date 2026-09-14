@@ -359,6 +359,55 @@ def test_health_baza_yotganda_ortiqcha_sorov_yubormaydi():
     return _check("bironta ham so'ralmadi", chaqirildi == [], str(chaqirildi))
 
 
+# --- Jimgina "muvaffaqiyat" bo'lmasin --------------------------------------
+#
+# Stress sinovda topilgan nuqson: RabbitMQ yotganda trigger (0, 0) qaytarardi
+# va o'tish `finished` deb yozilardi — dashboardda yashil ✓ ko'rinib, aslida
+# hech narsa yuborilmagan bo'lardi. Nosozlik faqat konteyner logida qolardi.
+
+def test_navbat_yoq_bolsa_xato_qaytadi():
+    print("  RabbitMQ ulanmasa trigger xato tashlaydi (jimgina tugamaydi)")
+    import services.trigger as trg
+
+    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients, trg.connect)
+    try:
+        trg.ensure_indexes = lambda: None
+        trg.local_db = lambda: {config.COL_TRIGGER_DATA: None}
+        trg.active_clients = lambda: [{"clientId": "C1", "hostname": "pc-1", "_id": "C1"}]
+
+        def _ulanmaydi():
+            raise OSError("Name or service not known")
+        trg.connect = _ulanmaydi
+        try:
+            trg.run()
+            return _check("xato tashladi", False, "hech narsa tashlamadi")
+        except trg.QueueUnavailable as e:
+            return (_check("QueueUnavailable tashlandi", True)
+                    & _check("matnda sabab bor", "RabbitMQ" in str(e), str(e)[:60])
+                    & _check("ma'lumot yo'qolmagani aytilgan",
+                             "yo'qolmadi" in str(e), str(e)[:80]))
+    finally:
+        (trg.ensure_indexes, trg.local_db, trg.active_clients, trg.connect) = asl
+
+
+def test_active_xodim_yoq_bolsa_xato_qaytadi():
+    print("  Active xodim topilmasa ham jimgina tugamaydi")
+    import services.trigger as trg
+
+    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients)
+    try:
+        trg.ensure_indexes = lambda: None
+        trg.local_db = lambda: {config.COL_TRIGGER_DATA: None}
+        trg.active_clients = lambda: []
+        try:
+            trg.run()
+            return _check("xato tashladi", False, "hech narsa tashlamadi")
+        except trg.NoActiveClients:
+            return _check("NoActiveClients tashlandi", True)
+    finally:
+        (trg.ensure_indexes, trg.local_db, trg.active_clients) = asl
+
+
 def test_jarayonsiz_ham_ishlaydi():
     print("  on_progress berilmasa collector baribir ishlaydi (CLI rejimi)")
     asl_idx, asl_cl, asl_db = (collector_mod.ensure_indexes,
@@ -381,6 +430,8 @@ if __name__ == "__main__":
         test_ikkala_manba_vaqt_boyicha(), test_xatosiz_holat(), test_limit(),
         test_takroriy_xato_bir_marta(), test_uzun_xato_qisqartiriladi(),
         test_collector_jarayonni_xabar_qiladi(), test_jarayonsiz_ham_ishlaydi(),
+        test_navbat_yoq_bolsa_xato_qaytadi(),
+        test_active_xodim_yoq_bolsa_xato_qaytadi(),
         test_health_baza_yotganda_ham_javob_beradi(),
         test_health_baza_yotganda_ortiqcha_sorov_yubormaydi(),
         test_har_bosqich_oz_foizini_yozadi(), test_set_stage_faqat_oz_bosqichini_nollaydi(),

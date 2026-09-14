@@ -17,6 +17,18 @@ from utils.logger import get_logger
 log = get_logger("trigger")
 
 
+class NoActiveClients(Exception):
+    """Manba bazada active xodim topilmadi — kutilmagan holat."""
+
+
+class QueueUnavailable(Exception):
+    """Navbatga ulanib bo'lmadi — o'tish umuman boshlanmadi.
+
+    Alohida tur: "hech narsa yuborilmadi, chunki navbat yo'q" bilan
+    "hech narsa yuborilmadi, chunki yangi kun yo'q" ni ajratish uchun.
+    """
+
+
 def _window_start(trigger_col, client_id, now):
     """Cursor: oxirgi yuborilgan finish ning kun boshi. Cursor yo'q bo'lsa — oxirgi LOOKBACK_HOURS."""
     last = trigger_col.find_one({"clientId": client_id}, {"finish": 1},
@@ -40,8 +52,10 @@ def run():
 
     clients = active_clients()
     if not clients:
-        log.warning("Active client topilmadi — trigger o'tishi bo'sh")
-        return 0, 0
+        # Bu ham jimgina "muvaffaqiyat" bo'lib ketmasin: manba baza bo'sh
+        # ro'yxat qaytarishi sozlama xatosi yoki nosozlik belgisi bo'lishi
+        # mumkin, va u holda kunlar jimgina to'planmay qoladi.
+        raise NoActiveClients("Active xodim topilmadi — o'tish bo'sh tugadi")
 
     conn = None
     try:
@@ -49,11 +63,16 @@ def run():
         channel = conn.channel()
         declare_queue(channel)
     except Exception as e:
-        log.error("RabbitMQ ulanmadi, o'tish bekor qilindi (data yo'qolmaydi, "
-                  "cursor orqada qoladi): %s: %s", type(e).__name__, e)
+        # Ilgari bu yerda (0, 0) qaytarilardi va o'tish `finished` deb
+        # yozilardi — dashboardda yashil ✓ ko'rinib, aslida hech narsa
+        # yuborilmagan bo'lardi. Nosozlik faqat konteyner logida qolardi.
+        # Ma'lumot baribir yo'qolmaydi (hech narsa yozilmadi, cursor orqada
+        # qoldi), lekin bu MUVAFFAQIYAT emas — yuqoriga uzatamiz.
         if conn is not None and conn.is_open:
             conn.close()
-        return 0, 0
+        raise QueueUnavailable(
+            f"RabbitMQ ulanmadi, o'tish bekor qilindi (ma'lumot yo'qolmadi, "
+            f"cursor orqada qoldi): {type(e).__name__}: {e}") from e
 
     sent_days = skipped_days = 0
     total_events = 0
