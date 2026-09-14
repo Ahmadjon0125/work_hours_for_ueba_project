@@ -40,22 +40,19 @@ SINGLE_EVENT_STAY_HOURS = float(os.getenv("SINGLE_EVENT_STAY_HOURS", 1))
 RESULTS_RETENTION_DAYS = int(os.getenv("RESULTS_RETENTION_DAYS", 365))
 
 # --- Ish kuni manbasi ---
-# Agent hozirlik qaydlari saqlanadigan collection (asosiy bazada).
-SESSION_COLLECTION = os.getenv("SESSION_COLLECTION", "agentsessionstatuses")
-
-
-def _statuslar(kalit, default):
-    """Vergul bilan ajratilgan status ro'yxatini o'qiydi."""
-    xom = os.getenv(kalit, default)
-    return tuple(x.strip().upper() for x in xom.split(",") if x.strip())
-
-
-# Qaysi status ish boshlanishi, qaysisi tugashi. Agent yangi status qo'shsa
-# yoki nomlarini o'zgartirsa — bu yerda emas, `.env` da tuzatiladi.
-SESSION_START_STATUSES = _statuslar("SESSION_START_STATUSES",
-                                    "LOGON,UNLOCK,REMOTE_CONNECT")
-SESSION_END_STATUSES = _statuslar("SESSION_END_STATUSES",
-                                  "LOGOFF,LOCK,REMOTE_DISCONNECT")
+# Agent sessiyalari saqlanadigan collection (asosiy bazada). Har yozuv bitta
+# (xodim, kompyuter, kun) uchun: agent qachon serverga ulandi va qachon uzildi.
+SESSION_COLLECTION = os.getenv("SESSION_COLLECTION", "agentsessions")
+# Ulanish va uzilish vaqti maydonlari. DLP nomlarni o'zgartirsa — kodga emas,
+# shu yerga tegiladi.
+SESSION_CONNECT_FIELD = os.getenv("SESSION_CONNECT_FIELD", "connectTime")
+SESSION_DISCONNECT_FIELD = os.getenv("SESSION_DISCONNECT_FIELD", "disconnectTime")
+# Yozuv qaysi kunga tegishli ekanini DLP o'zi belgilaydi — kunni connectTime dan
+# hisoblab olmaymiz, shu maydonni o'qiymiz (sessiya yarim tundan o'tsa farq qiladi).
+SESSION_DATE_FIELD = os.getenv("SESSION_DATE_FIELD", "dateStr")
+SESSION_DATE_FORMAT = os.getenv("SESSION_DATE_FORMAT", "%d.%m.%Y")
+# Uzilish sababi natijaga yoziladi: "ping timeout" birdan uzilganini bildiradi
+SESSION_REASON_FIELD = os.getenv("SESSION_REASON_FIELD", "disconnectReason")
 
 # --- Anomaliya chegarasi ---
 MIN_DOW_SAMPLES = int(os.getenv("MIN_DOW_SAMPLES", 3))

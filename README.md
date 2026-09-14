@@ -5,8 +5,9 @@ shu oynadan **tashqarida** faollik bo'lganini tekshiradi. Ish vaqtidan
 tashqaridagi faollik — DLP nuqtai nazaridan e'tibor talab qiladigan holat.
 
 Ma'lumot manbai — DataGaze DLP tizimining MongoDB'sidagi
-**`agentsessionstatuses`** collection'i: agent yuboradigan hozirlik qaydlari
-(tizimga kirish/chiqish, ekranni ochish/qulflash, masofadan ulanish).
+**`agentsessions`** collection'i: agentning DLP serveri bilan ulanish
+sessiyalari. DLP har bir (xodim, kompyuter, kun) uchun bitta yozuv yuritadi —
+agent o'sha kuni qachon ulangan va qachon uzilgan.
 
 ---
 
@@ -51,7 +52,7 @@ faollik (oyna ichida yashil, tashqarida qizil, baseline yo'q bo'lsa kulrang).*
 ## Umumiy manzara
 
 ```
-alpha-demo.agentsessionstatuses          (DLP bazasi — FAQAT O'QILADI)
+alpha-demo.agentsessions                 (DLP bazasi — FAQAT O'QILADI)
         │
         ├── COLLECTOR ──► raw_data_for_train ──► TRAINER ──► baseline
         │   (90 kunlik tarix)                                (o'rganilgan norma)
@@ -68,7 +69,7 @@ Pastdagisi — **baholash**, har 5 soatda avtomatik.
 
 | Baza | Rejim | Nima bor |
 |---|---|---|
-| `alpha-demo` (DLP) | **faqat o'qish** | `agentsessionstatuses`, `clients` |
+| `alpha-demo` (DLP) | **faqat o'qish** | `agentsessions`, `clients`, `groups` |
 | `ueba_local` | o'qish/yozish | `raw_data_for_train`, `baseline`, `baseline_runs`, `trigger_data`, `results`, `training_jobs` |
 
 Ajratish kod darajasida: [services/mongo.py](services/mongo.py) da ikkita
@@ -80,24 +81,43 @@ mumkin emas — bu tasodifiy emas, ataylab qo'yilgan to'siq.
 
 ```json
 {
-  "clientId":   ObjectId("684d6e4c0614f7499b947d48"),   // clients._id ga bog'lanadi
-  "computerId": ObjectId("684d6e4c0614f7499b947d41"),
-  "status":     "UNLOCK",
-  "dateTime":   ISODate("2026-08-25T17:40:53"),
-  "info":       ""                                       // ba'zan RDP tafsilotlari
+  "clientId":         ObjectId("684d6e4c0614f7499b947d48"),  // clients._id ga bog'lanadi
+  "computer":         ObjectId("684d6e4c0614f7499b947d41"),
+  "dateStr":          "25.08.2026",                          // yozuv qaysi kunga tegishli
+  "date":             ISODate("2026-08-25T00:00:00"),
+  "connectTime":      ISODate("2026-08-25T09:12:04"),        // kunning BIRINCHI ulanishi
+  "disconnectTime":   ISODate("2026-08-25T18:31:22"),        // OXIRGI uzilish
+  "disconnectReason": "transport close"
 }
 ```
 
-Olti xil status uch juftlik hosil qiladi:
+**Yozuvning kaliti — `clientId` + `computer` + `dateStr`.** Ya'ni har xodimga,
+har kompyuteri uchun, har kunga bitta yozuv.
 
-```
-LOGON          <-> LOGOFF               tizimga kirish / chiqish
-UNLOCK         <-> LOCK                 ekranni ochish / qulflash
-REMOTE_CONNECT <-> REMOTE_DISCONNECT    masofadan ulanish / uzilish
-```
+DLP jamoasi tasdiqlagan xatti-harakat:
 
-Status nomlari `.env` da (`SESSION_START_STATUSES`, `SESSION_END_STATUSES`) —
-agent yangisini qo'shsa kodga tegilmaydi.
+| Hodisa | Nima bo'ladi |
+|---|---|
+| Agent ulanadi, bugunga yozuv yo'q | yangi yozuv: `connectTime = hozir`, `disconnectTime = null` |
+| Agent uziladi | `disconnectTime` va `disconnectReason` yoziladi |
+| Kun ichida **qayta** ulanadi | faqat `disconnectTime` yangilanadi — **`connectTime` tegilmaydi** |
+
+Oxirgi qator eng muhimi: shu tufayli `connectTime` doim kunning **birinchi**
+ulanishi, `disconnectTime` esa **oxirgi** uzilishi bo'lib qoladi. Ya'ni ular
+to'g'ridan-to'g'ri ish kunining boshi va oxiri — qo'shimcha hisob-kitob kerak emas.
+
+Maydon nomlari `.env` da (`SESSION_CONNECT_FIELD`, `SESSION_DISCONNECT_FIELD`,
+`SESSION_DATE_FIELD`) — DLP nomlarni o'zgartirsa kodga tegilmaydi.
+
+**Ikkita cheklov** (DLP hujjatidan):
+
+1. **`disconnectTime` bo'sh bo'lishi mumkin** — sessiya hali tugamagan yoki
+   ertangi kunga o'tib ketgan. Bu «yarim tungacha ishladi» degani **emas**,
+   shuning uchun bunday yozuv kun **oxiri** uchun ishlatilmaydi (boshi uchun
+   ishlatiladi).
+2. **Kompyuter bir necha kun o'chmasa oraliq kunlar tushib qoladi** — yozuv
+   faqat ulanish paytida yaratiladi. Yozuvning yo'qligi «ishlamagan» degani
+   emas; bunday kun `insufficient` bo'lib qoladi.
 
 ---
 
@@ -107,8 +127,8 @@ agent yangisini qo'shsa kodga tegilmaydi.
 
 **[services/collector.py](services/collector.py)** · faqat o'qitish paytida
 
-Har bir active xodim uchun `agentsessionstatuses` dan **90 kunlik**
-hodisalarni oladi. Har xodim uchun **bitta so'rov**.
+Har bir active xodim uchun `agentsessions` dan **90 kunlik** sessiyalarni
+oladi. Har xodim uchun **bitta so'rov**.
 
 **Active xodim kim:** `clients` da `disabled: false` yoki maydon umuman
 yo'q. Ya'ni `disabled` qo'yilmagan xodim ham active hisoblanadi.
@@ -129,10 +149,15 @@ nazar bir xil**.
 **Har kun uchun uchta qiymat** ([services/workday.py](services/workday.py)):
 
 ```
-start      = kunning birinchi hodisasi
-finish     = kunning oxirgi hodisasi
-activeMin  = LOGON/UNLOCK → LOCK/LOGOFF oraliqlari yig'indisi
+start      = kunning eng erta connectTime     (kompyuterlar bo'ylab min)
+finish     = kunning eng kech disconnectTime  (kompyuterlar bo'ylab max)
+activeMin  = sessiyalar davomiyligi yig'indisi
 ```
+
+Bir xodimda ikkita kompyuter bo'lsa o'sha kunga ikkita yozuv tushadi —
+chegaralar ular bo'ylab birlashtiriladi. `activeMin` esa yig'indi, ya'ni
+`durationMin` dan farqi: u kun boshidan oxirigacha bo'lgan **to'liq** oraliq
+(uzilishlar ichida), `activeMin` esa faqat **tarmoqda turilgan** vaqt.
 
 **Arxiv oynaning aynan nusxasi bo'lib qoladi.** Collector uchta tozalash
 qiladi:
@@ -659,29 +684,31 @@ Kulrang fon 02:20 dan 23:47 gacha, ichida ikkita **yashil** nuqta —
 
 ## Sof ish vaqti — `activeMin`
 
-Kun uzunligidan tashqari **sof ish vaqti** ham hisoblanadi: ochilish va
-qulflanish oralig'idagi daqiqalar, tanaffuslar chiqarib tashlangan holda.
+Kun uzunligidan tashqari **sof ish vaqti** ham hisoblanadi: agent
+tarmoqda turgan daqiqalar, uzilishlar chiqarib tashlangan holda.
 
 ```
-10:30–22:17    kun uzunligi 707 daqiqa,  sof ish 512 daqiqa,  tanaffus 195 daqiqa
+09:00–18:00    kun uzunligi 540 daqiqa
+               sessiyalar: 09:00–12:00 va 13:00–18:00
+               sof ish 420 daqiqa,  uzilish 120 daqiqa
 ```
 
 Algoritm ([workday.active_minutes](services/workday.py)):
 
 ```
-LOGON/UNLOCK/REMOTE_CONNECT     →  oraliq ochiladi
-LOGOFF/LOCK/REMOTE_DISCONNECT   →  oraliq yopiladi, davomiyligi qo'shiladi
+har sessiya uchun:  disconnectTime − connectTime
+                    hammasi qo'shiladi
 ```
 
 Bu **quyi chegara** — ikkita ataylab qilingan yon berish bor:
 
-- **Juftini topmagan yopuvchi hodisa sanalmaydi.** Kun `LOCK` bilan
-  boshlansa (odam kechqurundan beri kirgan), o'sha ochiq oraliq hisobga
-  olinmaydi. Sun'iy cho'zib yuborishdan ko'ra kam ko'rsatgan yaxshi.
-- **Kun `LOGOFF` siz tugasa**, ochiq oraliq kunning oxirgi hodisasigacha
-  yopiladi — undan nariga cho'zilmaydi.
-
-Hodisalar tartibsiz kelsa ham to'g'ri ishlaydi — funksiya o'zi saralaydi.
+- **Uzilishi yozilmagan sessiya sanalmaydi.** Bo'sh `disconnectTime`
+  ko'pincha «sessiya ertangi kunga o'tdi» degani — uni kun oxirigacha
+  cho'zish sun'iy bo'lardi. Bunday kun `activeMin` siz qoladi (`null`),
+  lekin kun **boshlanishi** baribir `connectTime` dan olinadi.
+- **Tarmoqda turish ≠ ishlash.** Kompyuter yoqiq turib odam stolda
+  bo'lmasligi mumkin. Shuning uchun bu son ish vaqtining yuqori chegarasi
+  emas, shunchaki «agent qancha vaqt aloqada bo'lgani».
 
 Dashboard jadvalida «Sof ish» ustuni sifatida ko'rinadi, hover'da tanaffus
 vaqti.
@@ -1343,20 +1370,28 @@ Har xodim × har kun = 1 hujjat. `trigger_data` ham **aynan shu shaklda**.
 
 ## Manba bazadagi indeks
 
-`agentsessionstatuses` da hozir faqat `{clientId: 1, computerId: 1}` indeksi
-bor — `dateTime` indekslanmagan. Bizning so'rov `clientId` + vaqt oralig'i
-bo'yicha ketadi, ya'ni `clientId` prefiksigacha indeksdan foydalanadi, keyin
-o'sha xodimning butun tarixini xotirada filtrlaydi.
+**Yangi indeks so'rash kerak emas.** `agentsessions` da allaqachon ikkita
+mos indeks bor:
 
-Hozirgi hajmda (~2400 hujjat) muammo yo'q. Ma'lumot o'sganda DLP jamoasidan
-so'rash kerak:
-
-```js
-db.agentsessionstatuses.createIndex({ clientId: 1, dateTime: -1 })
+```
+clientId_1_computer_1_dateStr_1
+date_-1_dateStr_1_clientId_1
 ```
 
-Bizning kod DLP bazasiga yoza olmaydi, shuning uchun buni faqat ular qo'sha
-oladi.
+Bizning so'rov `clientId` + `connectTime` oralig'i bo'yicha ketadi va
+birinchi indeksning `clientId` prefiksidan foydalanadi. O'lchangan
+(`explain("executionStats")`):
+
+```
+bosqich:            IXSCAN -> FETCH
+ko'rilgan indeks kaliti:  17
+ko'rilgan hujjat:         17
+qaytgan:                  17        ← nisbat 1:1, ortiqcha o'qish yo'q
+vaqt:                     1 ms
+```
+
+Bizning kod DLP bazasiga yoza olmaydi, shuning uchun indeks kerak bo'lsa
+faqat ular qo'sha oladi — hozircha kerak emas.
 
 ---
 
@@ -1410,7 +1445,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 53 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 56 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1418,7 +1453,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 
 | Guruh | Sozlamalar |
 |---|---|
-| **Manba baza** | `MONGO_URI`, `DB_NAME`, `SESSION_COLLECTION`, `SESSION_START_STATUSES`, `SESSION_END_STATUSES` |
+| **Manba baza** | `MONGO_URI`, `DB_NAME`, `SESSION_COLLECTION`, `SESSION_CONNECT_FIELD`, `SESSION_DISCONNECT_FIELD`, `SESSION_DATE_FIELD`, `SESSION_DATE_FORMAT`, `SESSION_REASON_FIELD` |
 | **Mahalliy baza** | `LOCAL_MONGO_URI`, `LOCAL_DB_NAME`, `COL_*` (6 ta) |
 | **RabbitMQ** | `RABBITMQ_HOST/PORT/USER/PASSWORD`, `QUEUE_NAME`, `WORKER_COUNT`, `MAX_RETRIES` |
 | **API** | `API_HOST`, `API_PORT`, `API_PAGE_SIZE`, `API_PAGE_MAX` |
@@ -1760,14 +1795,14 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | Fayl | Nimani qo'riqlaydi | Soni |
 |---|---|---|
 | `test_config.py` | Har bir sozlama `.env` dan o'qiladimi; noto'g'ri qiymat tizimni buzmaydimi | 4 |
-| `test_workday.py` | Sof ish vaqti (tanaffus, chala ma'lumot, tartibsiz hodisalar), kunlarga ajratish | 7 |
+| `test_workday.py` | Sof ish vaqti, ochiq sessiya, ikki kompyuter birlashishi, kunlarga ajratish | 8 |
 | `test_collector.py` | Oyna chegaralari (COL-01), manba xatosi (COL-04), arxiv tozalash (COL-02), qayta urinish | 9 |
 | `test_detectors.py` | Ball jadvali, oyna qoidasi, `riskScore`, vazn, xato izolyatsiyasi, nom tekshiruvi | 13 |
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
 | `test_progress_errors.py` | Jarayon xabarlari, har bosqichning alohida foizi, zanjir bosqichlari tartibi, xatolar tarixi, baza yotganda health | 17 |
-| | **Jami** | **70** |
+| | **Jami** | **71** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1820,7 +1855,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     70 ta tekshiruv
+tests/                     71 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

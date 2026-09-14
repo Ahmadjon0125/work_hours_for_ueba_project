@@ -83,6 +83,13 @@ class FakeDB:
         return self.coll
 
 
+def _ses(connect, disconnect, day=None):
+    """Manba `agentsessions` dagi bitta yozuv shakli."""
+    return {"date": day or connect.strftime("%Y-%m-%d"),
+            "connect": connect, "disconnect": disconnect,
+            "reason": "transport close"}
+
+
 def _check(label, condition, detail=""):
     print(f"    {'✓' if condition else '✗'} {label}{'' if condition else '  <- ' + detail}")
     return condition
@@ -101,11 +108,10 @@ def test_source_failure_keeps_existing_day():
     }])
 
     def failing_source(client, window_start, window_end=None):
-        # Yarim o'qildi: kun o'rtasidagi ikkita hodisa keldi...
-        yield "agentsessionstatuses", [(base.replace(hour=12), "LOCK"),
-                                       (base.replace(hour=13), "UNLOCK")]
-        # ...keyin uzildi. 08:00 LOGON va 18:00 LOGOFF hali kelmagan edi.
-        raise SourceReadError("agentsessionstatuses o'qib bo'lmadi: Network is unreachable")
+        # Yarim o'qildi: kun o'rtasidagi bitta sessiya keldi...
+        yield "agentsessions", [_ses(base.replace(hour=12), base.replace(hour=13), day)]
+        # ...keyin uzildi. 08:00-18:00 sessiyasi hali kelmagan edi.
+        raise SourceReadError("agentsessions o'qib bo'lmadi: Network is unreachable")
 
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: [
@@ -134,9 +140,9 @@ def test_all_sources_ok_writes_day():
     raw = FakeCollection()
 
     def good_source(client, window_start, window_end=None):
-        yield "agentsessionstatuses", [
-            (base.replace(hour=8), "LOGON"), (base.replace(hour=12), "LOCK"),
-            (base.replace(hour=13), "UNLOCK"), (base.replace(hour=18), "LOGOFF")]
+        # Kun ichida uzilib qayta ulangan: ikkita sessiya, kun 08:00-18:00
+        yield "agentsessions", [_ses(base.replace(hour=8), base.replace(hour=12), day),
+                                _ses(base.replace(hour=13), base.replace(hour=18), day)]
 
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: [
@@ -151,7 +157,7 @@ def test_all_sources_ok_writes_day():
     print("  Normal holat: barcha manbalar o'qildi")
     return all([
         _check("kun yozildi (08:00-18:00)", span == ("08:00", "18:00"), f"{span}"),
-        _check("4 ta event sanaldi", stored["eventCount"] == 4),
+        _check("4 ta vaqt belgisi sanaldi", stored["eventCount"] == 4),
         _check("failed bo'sh", not result["failed"]),
     ])
 
@@ -166,7 +172,8 @@ def test_window_covers_only_complete_days():
         seen["start"], seen["end"] = window_start, window_end
         # Chegaralarni iter_client_sessions qo'llaydi (alohida sinov bor),
         # bu yerda collect() to'g'ri oyna uzatishini tekshiramiz
-        yield "agentsessionstatuses", [(window_start + timedelta(hours=7), "LOGON")]
+        con = window_start + timedelta(hours=7)
+        yield "agentsessions", [_ses(con, con + timedelta(hours=8))]
 
     collector_mod.ensure_indexes = lambda: None
     collector_mod.active_clients = lambda: [
@@ -197,12 +204,15 @@ def test_source_respects_window_bounds():
     """iter_client_sessions ikkala chegarani ham qo'llaydi."""
     start = datetime(2026, 7, 10, 0, 0)
     end = datetime(2026, 9, 8, 0, 0)
+    def _doc(dt):
+        return {"connectTime": dt, "disconnectTime": dt + timedelta(hours=1),
+                "dateStr": dt.strftime("%d.%m.%Y")}
     docs = [
-        {"dateTime": datetime(2026, 7, 9, 23, 59), "status": "LOGON"},   # oynadan oldin
-        {"dateTime": datetime(2026, 7, 10, 0, 0), "status": "LOGON"},    # chegarada — kiradi
-        {"dateTime": datetime(2026, 8, 1, 12, 0), "status": "LOCK"},     # o'rtada
-        {"dateTime": datetime(2026, 9, 7, 23, 59), "status": "LOGOFF"},  # oxirgi to'liq kun
-        {"dateTime": datetime(2026, 9, 8, 0, 0), "status": "LOGON"},     # bugungi kun — chiqadi
+        _doc(datetime(2026, 7, 9, 23, 59)),   # oynadan oldin
+        _doc(datetime(2026, 7, 10, 0, 0)),    # chegarada — kiradi
+        _doc(datetime(2026, 8, 1, 12, 0)),    # o'rtada
+        _doc(datetime(2026, 9, 7, 23, 59)),   # oxirgi to'liq kun
+        _doc(datetime(2026, 9, 8, 0, 0)),     # bugungi kun — chiqadi
     ]
 
     class Coll:
@@ -212,11 +222,11 @@ def test_source_respects_window_bounds():
     mongo_mod.main_db = lambda: FakeDB(Coll())
     out = list(mongo_mod.iter_client_sessions(
         {"clientId": "C1", "_id": "C1"}, start, end))
-    got = sorted(dt for dt, _ in out[0][1])
+    got = sorted(ses["connect"] for ses in out[0][1])
 
     print("  COL-01: manba o'qishda oyna chegaralari")
     return all([
-        _check("3 ta timestamp qoldi", len(got) == 3, f"{len(got)} ta"),
+        _check("3 ta sessiya qoldi", len(got) == 3, f"{len(got)} ta"),
         _check("oynadan oldingisi chiqarildi", datetime(2026, 7, 9, 23, 59) not in got),
         _check("chegaradagi 00:00 kiritildi", datetime(2026, 7, 10, 0, 0) in got),
         _check("ishga tushirilgan kun chiqarildi", datetime(2026, 9, 8, 0, 0) not in got),
@@ -253,8 +263,7 @@ def test_inactive_client_rows_removed():
 
     def source(client, window_start, window_end=None):
         base = datetime.strptime(_day(5), "%Y-%m-%d")
-        yield "agentsessionstatuses", [(base.replace(hour=9), "LOGON"),
-                                       (base.replace(hour=17), "LOGOFF")]
+        yield "agentsessions", [_ses(base.replace(hour=9), base.replace(hour=17), _day(5))]
 
     _setup(raw, source, ACTIVE)
     collector_mod.collect()
@@ -294,8 +303,7 @@ def test_stale_day_removed():
 
     def source(client, window_start, window_end=None):
         base = datetime.strptime(_day(5), "%Y-%m-%d")
-        yield "agentsessionstatuses", [(base.replace(hour=9), "LOGON"),
-                                       (base.replace(hour=17), "LOGOFF")]
+        yield "agentsessions", [_ses(base.replace(hour=9), base.replace(hour=17), _day(5))]
 
     _setup(raw, source, ACTIVE)
     collector_mod.collect()
@@ -340,7 +348,9 @@ class _RetryColl:
         self.attempts += 1
         if self.attempts <= self.fail_times:
             raise ConnectionError("Network is unreachable")
-        return _RetryCursor([{"dateTime": datetime(2026, 1, 5, 9, 0), "status": "LOGON"}])
+        return _RetryCursor([{"connectTime": datetime(2026, 1, 5, 9, 0),
+                              "disconnectTime": datetime(2026, 1, 5, 17, 0),
+                              "dateStr": "05.01.2026"}])
 
 
 class _RetryCursor:

@@ -137,8 +137,10 @@ def test_collector_jarayonni_xabar_qiladi():
     base = datetime.now() - timedelta(days=3)
 
     def manba(client, ws, we=None):
-        yield "agentsessionstatuses", [(base.replace(hour=9), "LOGON"),
-                                      (base.replace(hour=17), "LOGOFF")]
+        yield "agentsessions", [{"date": base.strftime("%Y-%m-%d"),
+                                 "connect": base.replace(hour=9),
+                                 "disconnect": base.replace(hour=17),
+                                 "reason": "transport close"}]
 
     qadamlar = []
     asl_source = workday_mod.iter_client_sessions

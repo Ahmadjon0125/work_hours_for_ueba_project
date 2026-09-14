@@ -3,6 +3,7 @@
 Ajratish ataylab: asosiy bazaga yozma amal kod darajasida imkonsiz bo'lsin.
 """
 import time
+from datetime import datetime
 
 from pymongo import ASCENDING, MongoClient
 
@@ -128,10 +129,21 @@ SESSION_COLLECTION = config.SESSION_COLLECTION
 
 
 def iter_client_sessions(client, window_start, window_end=None):
-    """Agent hozirlik hodisalari: (collection_nomi, [(datetime, status), ...]).
+    """Agent sessiyalari: (collection_nomi, [sessiya, ...]).
 
-    `services/workday.py` undan kun boshi/oxiri va sof ish daqiqalarini
-    hisoblaydi.
+    Har sessiya — DLP dagi bitta hujjat: bitta (xodim, kompyuter, kun) uchun
+    agent qachon serverga ulangan va qachon uzilgan.
+
+        {"date": "2026-09-08", "connect": datetime, "disconnect": datetime|None,
+         "reason": "ping timeout"|None}
+
+    Kun DLP ning o'z maydonidan (`dateStr`) olinadi — `connect` dan hisoblab
+    chiqarilmaydi. Sessiya yarim tundan o'tsa, u qaysi kunga tegishli ekanini
+    manba tizimning o'zi hal qilgan.
+
+    `disconnect` bo'sh bo'lishi mumkin: sessiya hali tugamagan yoki ertangi
+    kunga o'tib ketgan. Bunday yozuv tashlanmaydi — `workday.py` uni kun
+    boshlanishi uchun ishlatadi, tugashi uchun esa ishlatmaydi.
 
     Xato yuqoriga uzatiladi — "o'qib bo'lmadi" ni "hech narsa yo'q" deb qabul
     qilish mumkin emas (COL-04 bilan bir xil qoida).
@@ -140,25 +152,40 @@ def iter_client_sessions(client, window_start, window_end=None):
     # ObjectId ham, string ham bo'lishi mumkin — ikkalasini ham qidiramiz
     id_values = [client["_id"], client["clientId"]]
 
+    con_f, dis_f = config.SESSION_CONNECT_FIELD, config.SESSION_DISCONNECT_FIELD
+    date_f, reason_f = config.SESSION_DATE_FIELD, config.SESSION_REASON_FIELD
+
     bounds = {"$gte": window_start}
     if window_end is not None:
         bounds["$lt"] = window_end
-    query = {"clientId": {"$in": id_values}, "dateTime": bounds}
+    query = {"clientId": {"$in": id_values}, con_f: bounds}
 
     last_error = None
     for attempt in range(config.SOURCE_READ_RETRIES + 1):
-        events = []
+        sessions = []
         try:
             cursor = (db[SESSION_COLLECTION]
-                      .find(query, {"_id": 0, "dateTime": 1, "status": 1})
+                      .find(query, {"_id": 0, con_f: 1, dis_f: 1,
+                                    date_f: 1, reason_f: 1})
                       .batch_size(config.BATCH_SIZE))
             for doc in cursor:
-                dt = parse_to_datetime(doc.get("dateTime"))
-                if dt is None or dt < window_start:
+                con = parse_to_datetime(doc.get(con_f))
+                if con is None or con < window_start:
                     continue
-                if window_end is not None and dt >= window_end:
+                if window_end is not None and con >= window_end:
                     continue
-                events.append((dt, doc.get("status") or ""))
+                dis = parse_to_datetime(doc.get(dis_f))
+                # Nomuvofiq yozuv: uzilish ulanishdan oldin. Kunni buzmasin.
+                if dis is not None and dis < con:
+                    log.warning("%s | %s: %s < %s, uzilish e'tiborsiz qoldirildi",
+                                client["clientId"], SESSION_COLLECTION, dis_f, con_f)
+                    dis = None
+                sessions.append({
+                    "date": _session_date(doc.get(date_f), con),
+                    "connect": con,
+                    "disconnect": dis,
+                    "reason": doc.get(reason_f),
+                })
             break
         except Exception as e:
             last_error = e
@@ -172,4 +199,22 @@ def iter_client_sessions(client, window_start, window_end=None):
             f"{SESSION_COLLECTION} o'qib bo'lmadi ({config.SOURCE_READ_RETRIES + 1} urinish): "
             f"{type(last_error).__name__}: {last_error}") from last_error
 
-    yield SESSION_COLLECTION, events
+    yield SESSION_COLLECTION, sessions
+
+
+def _session_date(xom, connect):
+    """DLP ning kun maydonini "YYYY-MM-DD" ga o'giradi.
+
+    Maydon yo'q yoki tanib bo'lmasa — `connect` ning kuniga qaytamiz, chunki
+    kunsiz yozuv butunlay yaroqsiz bo'lib qolardi.
+    """
+    if isinstance(xom, str) and xom.strip():
+        try:
+            return datetime.strptime(xom.strip(), config.SESSION_DATE_FORMAT).strftime("%Y-%m-%d")
+        except ValueError:
+            log.warning("%s: '%s' sanasini %s formatida o'qib bo'lmadi",
+                        SESSION_COLLECTION, xom, config.SESSION_DATE_FORMAT)
+    xom_dt = parse_to_datetime(xom)
+    if xom_dt is not None:
+        return xom_dt.strftime("%Y-%m-%d")
+    return connect.strftime("%Y-%m-%d")

@@ -1,29 +1,28 @@
-"""Ish kunining boshi, oxiri va sof ish vaqti — `agentsessionstatuses` dan.
+"""Ish kunining boshi, oxiri va sof ish vaqti — `agentsessions` dan.
 
-Manba bitta: agentning o'z hozirlik qaydlari. Ular faollikdan chiqarilgan
-xulosa emas — agent tizimga kirish, chiqish, ekranni qulflash va ochish
-hodisalarining o'zini yuboradi.
+Manba bitta: agentning server bilan ulanish sessiyalari. DLP har bir
+(xodim, kompyuter, kun) uchun bitta yozuv yuritadi:
 
-Olti xil status uch juftlik hosil qiladi:
+    connectTime     — agent o'sha kuni birinchi marta qachon ulandi
+    disconnectTime  — oxirgi marta qachon uzildi
+    dateStr         — yozuv qaysi kunga tegishli
 
-    LOGON          <-> LOGOFF               tizimga kirish / chiqish
-    UNLOCK         <-> LOCK                 ekranni ochish / qulflash
-    REMOTE_CONNECT <-> REMOTE_DISCONNECT    masofadan ulanish / uzilish
+Kun ichida qayta ulanilsa DLP faqat `disconnectTime` ni yangilaydi,
+`connectTime` esa tegilmaydi. Shuning uchun ular to'g'ridan-to'g'ri kunning
+boshi va oxiri bo'lib xizmat qiladi — qo'shimcha hisob-kitob kerak emas.
 
-Kun boshi — birinchi hodisa, oxiri — oxirgi hodisa. Bundan tashqari
-`activeMin` hisoblanadi: ochilish va qulflanish oralig'idagi sof ish
-daqiqalari (tanaffuslar chiqarib tashlangan).
+Bir xodimda ikkita kompyuter bo'lsa, o'sha kunga ikkita yozuv tushadi.
+Kun chegaralari ular bo'ylab birlashtiriladi: eng erta ulanish va eng kech
+uzilish.
+
+`disconnectTime` bo'sh bo'lishi mumkin — sessiya hali tugamagan yoki ertangi
+kunga o'tib ketgan. Bunday yozuv kun BOSHLANISHI uchun ishlatiladi, lekin
+TUGASHI uchun ishlatilmaydi: bo'sh uzilishni "yarim tungacha ishladi" deb
+talqin qilish xato bo'lardi.
 """
 from collections import defaultdict
 
-import config
 from services.mongo import iter_client_sessions
-
-# Hodisaning ma'nosi: ish boshlanishimi yoki tugashimi.
-# Agent status nomlarini o'zgartirsa yoki yangisini qo'shsa — kodga emas,
-# `.env` dagi SESSION_START_STATUSES / SESSION_END_STATUSES ga tegiladi.
-SESSION_START = config.SESSION_START_STATUSES
-SESSION_END = config.SESSION_END_STATUSES
 
 
 def collect_client_days(client, window_start, window_end=None):
@@ -31,50 +30,50 @@ def collect_client_days(client, window_start, window_end=None):
 
     Qaytaradi: {"2026-09-08": {"stamps": [datetime, ...], "activeMin": float}}
 
+    `stamps` — o'sha kunning barcha ulanish va uzilish vaqtlari. Chaqiruvchi
+    undan `min()`/`max()` bilan kun chegaralarini oladi (`build_day_agg`),
+    shuning uchun bir nechta kompyuter avtomatik birlashadi.
+
     Oyna: `[window_start, window_end)`. `window_end` berilmasa yuqori chegara
     yo'q — trigger shunday ishlatadi, bugungi tugallanmagan kun ham kerak.
     """
     days = defaultdict(lambda: {"stamps": [], "activeMin": None})
-    hodisalar = defaultdict(list)          # sana -> [(dt, status), ...]
+    sessiyalar = defaultdict(list)          # sana -> [sessiya, ...]
 
-    for _, events in iter_client_sessions(client, window_start, window_end):
-        for dt, status in events:
-            kun = dt.strftime("%Y-%m-%d")
-            days[kun]["stamps"].append(dt)
-            hodisalar[kun].append((dt, status))
+    for _, sessions in iter_client_sessions(client, window_start, window_end):
+        for ses in sessions:
+            kun = ses["date"]
+            days[kun]["stamps"].append(ses["connect"])
+            if ses["disconnect"] is not None:
+                days[kun]["stamps"].append(ses["disconnect"])
+            sessiyalar[kun].append(ses)
 
-    for kun, evs in hodisalar.items():
-        days[kun]["activeMin"] = active_minutes(evs)
+    for kun, arr in sessiyalar.items():
+        days[kun]["activeMin"] = active_minutes(arr)
 
     return dict(days)
 
 
-def active_minutes(events):
-    """Ochilishdan qulflanishgacha bo'lgan oraliqlar yig'indisi (daqiqa).
+def active_minutes(sessions):
+    """Tarmoqda o'tkazilgan sof daqiqalar: sessiyalar davomiyligi yig'indisi.
 
-    Bu QUYI chegara: juftini topmagan hodisalar hisobga olinmaydi. Masalan kun
-    LOCK bilan boshlansa (odam kechqurundan beri kirgan), o'sha ochiq oraliq
-    sanalmaydi — sun'iy cho'zib yuborishdan ko'ra kam ko'rsatgan yaxshi.
+    Bu QUYI chegara: uzilishi yozilmagan sessiya hisobga olinmaydi. Uni kun
+    oxirigacha cho'zish mumkin edi, lekin bo'sh `disconnectTime` ko'pincha
+    "sessiya ertangi kunga o'tdi" degani — sun'iy cho'zishdan ko'ra kam
+    ko'rsatgan yaxshi.
 
-    Oxirgi oraliq ochiq qolsa (kun LOGOFF'siz tugasa) u kunning oxirgi
-    hodisasigacha yopiladi.
-
-    Hodisalar tartibsiz kelsa ham to'g'ri ishlaydi — o'zi saralaydi.
+    `durationMin` dan farqi: u kunning birinchi ulanishidan oxirgi uzilishigacha
+    bo'lgan to'liq oraliq (tanaffuslar ichida), bu esa faqat tarmoqda
+    turilgan vaqt.
     """
-    if not events:
+    if not sessions:
         return None
 
-    evs = sorted(events)
     jami = 0.0
-    ochiq = None
-    for dt, status in evs:
-        if status in SESSION_START:
-            if ochiq is None:
-                ochiq = dt
-        elif status in SESSION_END:
-            if ochiq is not None:
-                jami += (dt - ochiq).total_seconds() / 60.0
-                ochiq = None
-    if ochiq is not None:
-        jami += (evs[-1][0] - ochiq).total_seconds() / 60.0
-    return round(jami, 2)
+    topildi = False
+    for ses in sessions:
+        if ses["disconnect"] is None:
+            continue
+        jami += (ses["disconnect"] - ses["connect"]).total_seconds() / 60.0
+        topildi = True
+    return round(jami, 2) if topildi else None
