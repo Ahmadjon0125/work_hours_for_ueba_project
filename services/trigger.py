@@ -11,7 +11,7 @@ import config
 from mq.rabbitmq import connect, declare_queue, publish
 from services.mongo import active_clients, ensure_indexes, local_db
 from services.workday import collect_client_days
-from utils.helpers import build_day_agg, build_day_doc, date_str_days_ago
+from utils.helpers import build_day_agg, build_day_doc, date_str_days_ago, now as hozir
 from utils.logger import get_logger
 
 log = get_logger("trigger")
@@ -45,7 +45,7 @@ def _window_start(trigger_col, client_id, now):
 
 def run():
     """Bitta trigger o'tishi. (yuborilgan_kunlar, skip_kunlar) qaytaradi."""
-    now = datetime.now()
+    now = hozir()
     ensure_indexes()  # idempotent — boot'da Mongo yotgan bo'lsa shu yerda yaratiladi
     db = local_db()
     trigger_col = db[config.COL_TRIGGER_DATA]

@@ -15,6 +15,7 @@ from pymongo.errors import DuplicateKeyError
 
 import config
 from services.mongo import local_db
+from utils.helpers import now as hozir
 from utils.logger import get_logger
 
 log = get_logger("jobs")
@@ -25,7 +26,7 @@ class JobAlreadyRunning(Exception):
 
 
 def _now():
-    return datetime.now().isoformat(timespec="seconds")
+    return hozir().isoformat(timespec="seconds")
 
 
 def create(mode):

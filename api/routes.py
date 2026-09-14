@@ -16,7 +16,7 @@ from services import jobs
 from services.collector import collect
 from services.mongo import active_clients, local_db, main_db
 from services.trainer import current_baseline_id, train
-from utils.helpers import date_str_days_ago
+from utils.helpers import date_str_days_ago, now as hozir
 from utils.logger import get_logger
 
 log = get_logger("api")
@@ -162,7 +162,7 @@ def health():
                       "chartColumnWidth": config.CHART_COLUMN_WIDTH,
                       "chartCellWidth": config.CHART_CELL_WIDTH},
         # Vaqt mintaqasi: noto'g'ri bo'lsa oyna chegaralari jimgina siljiydi
-        "time": {"now": datetime.now().isoformat(timespec="seconds"),
+        "time": {"now": hozir().isoformat(timespec="seconds"),
                  "tz": time.strftime("%Z") or "?",
                  "utcOffset": time.strftime("%z") or "?"},
         "lastTrigger": last_trigger,

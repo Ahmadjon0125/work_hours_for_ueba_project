@@ -14,6 +14,7 @@ from api.app import create_app
 from mq.worker import start_workers
 from services import jobs, trigger
 from services.mongo import check_time_alignment, ensure_indexes
+from utils.helpers import now as hozir
 from utils.logger import get_logger
 
 log = get_logger("main")
@@ -71,10 +72,14 @@ def _startup():
 
     start_workers(_stop_event)
 
-    _scheduler = BackgroundScheduler()
+    # Scheduler ham AYNAN shu mintaqada ishlashi kerak: `next_run_time` ga
+    # naive vaqt beriladi, APScheduler esa uni o'z mintaqasida talqin qiladi.
+    # Mos bo'lmasa birinchi o'tish soatlab siljib ketardi.
+    _scheduler = BackgroundScheduler(timezone=config.TIMEZONE) if config.TIMEZONE \
+        else BackgroundScheduler()
     _scheduler.add_job(_trigger_job, "interval", hours=config.TRIGGER_INTERVAL_HOURS,
                        id="trigger", max_instances=1, coalesce=True,
-                       next_run_time=datetime.now() + timedelta(seconds=10))
+                       next_run_time=hozir() + timedelta(seconds=10))
     _scheduler.start()
     log.info("Scheduler ishga tushdi: har %g soatda trigger (birinchi o'tish 10s dan keyin)",
              config.TRIGGER_INTERVAL_HOURS)

@@ -9,7 +9,7 @@ import pymongo
 from pymongo import ASCENDING, MongoClient
 
 import config
-from utils.helpers import parse_to_datetime
+from utils.helpers import now as hozir, parse_to_datetime, utc_now
 from utils.logger import get_logger
 
 log = get_logger("mongo")
@@ -86,13 +86,13 @@ def check_time_alignment():
     """Ilova soati manba ma'lumoti bilan mos keladimi — ishga tushishda tekshiriladi.
 
     Nima uchun kerak: DLP `connectTime`/`disconnectTime` ni MAHALLIY vaqtda
-    saqlaydi, pymongo esa ularni naive qaytaradi. Bizning `datetime.now()` ham
-    naive mahalliy. Ikkalasi bir xil mintaqada bo'lsa hammasi joyida.
+    saqlaydi, pymongo esa ularni naive qaytaradi. Ilova vaqti `helpers.now()`
+    dan olinadi, u esa `.env` dagi `TZ` mintaqasida ishlaydi — ya'ni server
+    qanday sozlanganidan qat'i nazar bir xil.
 
-    Server `TZ` si noto'g'ri bo'lsa (masalan UTC) ilova ma'lumotdan bir necha
-    soat orqada qoladi va oyna chegaralari siljiydi: `window_end = bugungi
-    00:00` boshqa payt kesiladi, kursor taqqoslashlari surinadi. Bu JIMGINA
-    noto'g'ri natija beradi — xato tashlanmaydi.
+    Shunday bo'lsa ham tekshiruv kerak: `.env` dagi `TZ` NING O'ZI noto'g'ri
+    qo'yilgan bo'lishi mumkin (masalan DLP boshqa mintaqada). Bunda xato
+    tashlanmaydi — natija jimgina noto'g'ri bo'ladi.
 
     Ikkita mustaqil tekshiruv:
 
@@ -108,7 +108,7 @@ def check_time_alignment():
     Qaytaradi: (holat, xabar). Holat: "ok" | "ogohlantirish" | "xato" | "nomalum".
     """
     tz = time.strftime("%z") or "?"
-    hozir = datetime.now()
+    hozir_vaqt = hozir()
 
     # --- 1. Soat farqi (manba server bilan) ---
     try:
@@ -121,7 +121,7 @@ def check_time_alignment():
     if server_utc is not None:
         if server_utc.tzinfo is not None:
             server_utc = server_utc.replace(tzinfo=None)
-        skew = abs((datetime.utcnow() - server_utc).total_seconds())
+        skew = abs((utc_now() - server_utc).total_seconds())
         if skew > config.CLOCK_SKEW_WARN_SEC:
             return "xato", (
                 f"SOAT FARQI: ilova va manba server soati {skew/60:.1f} daqiqa "
@@ -144,8 +144,8 @@ def check_time_alignment():
     if eng_yangi is None:
         return "nomalum", "Eng yangi yozuvning vaqti o'qilmadi"
 
-    farq_soat = (eng_yangi - hozir).total_seconds() / 3600.0
-    asos = (f"ilova vaqti {hozir:%Y-%m-%d %H:%M} (TZ {tz}), "
+    farq_soat = (eng_yangi - hozir_vaqt).total_seconds() / 3600.0
+    asos = (f"ilova vaqti {hozir_vaqt:%Y-%m-%d %H:%M} (TZ {tz}), "
             f"manbadagi eng yangi yozuv {eng_yangi:%Y-%m-%d %H:%M}")
 
     if farq_soat > 0.25:

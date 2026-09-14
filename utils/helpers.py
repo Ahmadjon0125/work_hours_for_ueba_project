@@ -4,7 +4,7 @@ Status va ball hisobi bu yerda EMAS — u siyosat, `services/detectors/scoring.p
 Ish kuni qaysi manbadan olinishi ham bu yerda emas — `services/workday.py` da.
 """
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from dateutil import parser as date_parser
 
@@ -12,6 +12,27 @@ import config
 
 DAYS_MAP = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday",
             4: "Friday", 5: "Saturday", 6: "Sunday"}
+
+def now():
+    """Ilova vaqti — naive, `.env` dagi TZ mintaqasida.
+
+    `datetime.now()` o'rniga SHU ishlatiladi. Farqi: `datetime.now()`
+    operatsion tizimning mintaqasini o'qiydi, bu esa `config.TIMEZONE` ni.
+    Server UTC da sozlangan bo'lsa ham ilova Toshkent vaqtida ishlaydi.
+
+    Nima uchun naive: manbadagi vaqtlar ham naive (DLP mahalliy vaqtni
+    saqlaydi, pymongo uni tzinfo'siz qaytaradi). Ikkalasi bir turda
+    bo'lmasa Python taqqoslashda TypeError beradi.
+    """
+    if config.TIMEZONE is None:
+        return datetime.now()
+    return datetime.now(config.TIMEZONE).replace(tzinfo=None)
+
+
+def utc_now():
+    """Naive UTC — faqat server soatlarini taqqoslash uchun."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 def parse_to_datetime(val):
     """Istalgan ko'rinishdagi vaqtni naive lokal datetime ga keltiradi. Xato -> None."""

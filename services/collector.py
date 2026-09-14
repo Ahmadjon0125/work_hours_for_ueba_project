@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import config
 from services.mongo import SESSION_COLLECTION, active_clients, ensure_indexes, local_db
 from services.workday import collect_client_days
-from utils.helpers import build_day_agg, build_day_doc, day_of_week
+from utils.helpers import build_day_agg, build_day_doc, day_of_week, now as hozir
 from utils.logger import get_logger
 
 log = get_logger("collector")
@@ -40,7 +40,7 @@ def collect(on_progress=None):
     yozish qilinmaydi (COL-04).
     """
     ensure_indexes()
-    now = datetime.now()
+    now = hozir()
     # Oyna faqat TO'LIQ tugagan kunlardan iborat (COL-04 emas, COL-01):
     # yuqori chegara — bugungi 00:00, ya'ni ishga tushirilgan kun kirmaydi;
     # quyi chegara — undan 60 kun oldingi 00:00. Soat nechada ishga

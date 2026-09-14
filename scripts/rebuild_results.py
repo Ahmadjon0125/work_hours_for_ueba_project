@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pymongo import UpdateOne
 
 import config
+from utils.helpers import now as hozir
 from services.mongo import local_db
 from services.processor import evaluate_job
 from services.trainer import current_baseline_id
@@ -86,7 +87,7 @@ def main():
             for d in results.find({}, {"clientId": 1, "date": 1, "status": 1, "_id": 0})}
 
     if args.apply and not args.no_backup:
-        backup = f"{config.COL_RESULTS}_backup_{datetime.now():%Y%m%d_%H%M%S}"
+        backup = f"{config.COL_RESULTS}_backup_{hozir():%Y%m%d_%H%M%S}"
         results.aggregate([{"$out": backup}])
         print(f"Zaxira nusxa: {config.LOCAL_DB_NAME}.{backup}\n")
 

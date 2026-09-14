@@ -1453,7 +1453,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 62 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 63 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1471,7 +1471,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `DASHBOARD_POLL_MS`, `DASHBOARD_PROGRESS_HOLD_MS`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
 | **Grafik** | `CHART_COLUMN_WIDTH`, `CHART_CELL_WIDTH` |
 | **Loglar** | `LOG_DIR`, `LOG_FILE`, `LOG_MAX_MB`, `LOG_BACKUPS` |
-| **Vaqt tekshiruvi** | `CLOCK_SKEW_WARN_SEC`, `TIME_CHECK_FRESH_HOURS` |
+| **Vaqt** | `APP_TIMEZONE`, `CLOCK_SKEW_WARN_SEC`, `TIME_CHECK_FRESH_HOURS` |
 | **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
 | **Kuzatuv** | `COL_TRIGGER_RUNS`, `TRIGGER_KEEP_RUNS`, `HEALTH_PING_TIMEOUT` |
 
@@ -1886,13 +1886,37 @@ siljiydi. **Xato tashlanmaydi** — natija jimgina noto'g'ri bo'ladi.
 
 Uchta himoya:
 
-**1. TZ ni aniq qo'ying.** systemd unit'iga:
-```ini
-Environment=TZ=Asia/Tashkent
-```
-yoki butun serverga: `sudo timedatectl set-timezone Asia/Tashkent`.
+**1. Ilova vaqti serverdan olinmaydi.** `datetime.now()` operatsion tizimning
+mintaqasini o'qiydi — shuning uchun kodda u ishlatilmaydi. O'rniga
+[`helpers.now()`](utils/helpers.py) bor, u `.env` dagi `APP_TIMEZONE` ni
+o'qiydi:
 
-**2. Ishga tushishda avtomatik tekshiriladi.** `check_time_alignment()`
+```python
+def now():
+    return datetime.now(config.TIMEZONE).replace(tzinfo=None)
+```
+
+Server qanday sozlangan bo'lishidan qat'i nazar ilova bir xil ishlaydi.
+O'lchangan:
+
+```
+server TZ=UTC                tizim=09:34  ilova=14:34   oyna: 06-16 .. 09-13
+server TZ=Asia/Tashkent      tizim=14:34  ilova=14:34   oyna: 06-16 .. 09-13
+server TZ=America/New_York   tizim=05:34  ilova=14:34   oyna: 06-16 .. 09-13
+server TZ=Pacific/Auckland   tizim=21:34  ilova=14:34   oyna: 06-16 .. 09-13
+```
+
+Tizim vaqti 05:34 dan 21:34 gacha o'zgardi, ilova vaqti va oyna esa
+o'zgarmadi. [tests/test_config.py](tests/test_config.py) buni qo'riqlaydi.
+
+> **Nomi nega `TZ` emas:** `TZ` — operatsion tizimning o'z o'zgaruvchisi, va
+> `load_dotenv()` mavjud env o'zgaruvchisini ustidan yozmaydi. Ya'ni server
+> `TZ=UTC` bilan ishga tushirilsa `.env` dagi qiymat **jimgina e'tiborsiz
+> qolardi** — aynan oldini olmoqchi bo'lgan holatimiz. Birinchi urinishda
+> shu xatoga yo'l qo'yilgan edi va sinovda aniqlandi.
+
+**2. `.env` dagi mintaqaning O'ZI noto'g'ri bo'lsa ham aniqlanadi.**
+`check_time_alignment()`
 ([services/mongo.py](services/mongo.py)) ikkita mustaqil sinov qiladi:
 
 | Tekshiruv | Nimani ushlaydi | Cheklovi |
@@ -1917,7 +1941,7 @@ Ma'lumot eski bo'lsa (demo, arxiv) mintaqa xatosi bilinmaydi — bunda
 "time": { "now": "2026-09-14T14:19:32", "tz": "+05", "utcOffset": "+0500" }
 ```
 
-Chegaralar `.env` da: `CLOCK_SKEW_WARN_SEC` (300), `TIME_CHECK_FRESH_HOURS` (24).
+Sozlamalar `.env` da: `APP_TIMEZONE` (Asia/Tashkent), `CLOCK_SKEW_WARN_SEC` (300), `TIME_CHECK_FRESH_HOURS` (24).
 
 ### systemd xizmati
 
@@ -2174,7 +2198,7 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 
 | Fayl | Nimani qo'riqlaydi | Soni |
 |---|---|---|
-| `test_config.py` | Har bir sozlama `.env` dan o'qiladimi; noto'g'ri qiymat tizimni buzmaydimi; `.env.example` to'liqmi | 5 |
+| `test_config.py` | Har bir sozlama `.env` dan o'qiladimi; `.env.example` to'liqmi; ilova vaqti tizim TZ sidan mustaqilmi | 6 |
 | `test_workday.py` | Sof ish vaqti, ochiq sessiya, ikki kompyuter birlashishi, kunlarga ajratish | 8 |
 | `test_collector.py` | Oyna chegaralari (COL-01), manba xatosi (COL-04), arxiv tozalash (COL-02), qayta urinish | 9 |
 | `test_detectors.py` | Ball jadvali, oyna qoidasi, `riskScore`, vazn, xato izolyatsiyasi, nom tekshiruvi | 13 |
@@ -2182,7 +2206,7 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
 | `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi va tasnifi, baza yotganda health | 22 |
-| | **Jami** | **77** |
+| | **Jami** | **78** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -2235,7 +2259,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     77 ta tekshiruv
+tests/                     78 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

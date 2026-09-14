@@ -1,6 +1,7 @@
 """Barcha sozlamalar shu yerda o'qiladi (.env > default)."""
 import os
 import re
+from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 
@@ -46,6 +47,33 @@ LOG_DIR = os.getenv("LOG_DIR", os.path.join(os.path.dirname(os.path.abspath(__fi
 LOG_FILE = os.getenv("LOG_FILE", "ueba.log")
 LOG_MAX_MB = int(os.getenv("LOG_MAX_MB", 5))
 LOG_BACKUPS = int(os.getenv("LOG_BACKUPS", 3))
+
+# --- Vaqt mintaqasi ---
+# Ilova vaqti SERVERNING tizim soatiga emas, shu sozlamaga bog'liq.
+#
+# Nima uchun: DLP `connectTime`/`disconnectTime` ni mahalliy vaqtda saqlaydi.
+# Agar ilova serverning TZ si boshqa bo'lsa (masalan UTC), `datetime.now()`
+# ma'lumotdan soatlab farq qiladi va oyna chegaralari jimgina siljiydi —
+# xato tashlanmaydi, natija noto'g'ri bo'ladi. Endi mintaqa `.env` dan
+# o'qiladi, ya'ni server qanday sozlangan bo'lishidan qat'i nazar bir xil.
+# Nomi ataylab `TZ` EMAS: `TZ` — operatsion tizimning o'z o'zgaruvchisi va
+# `load_dotenv()` mavjud env o'zgaruvchisini ustidan yozmaydi. Ya'ni server
+# `TZ=UTC` bilan ishga tushirilsa `.env` dagi qiymat jimgina e'tiborsiz
+# qolardi — aynan oldini olmoqchi bo'lgan holatimiz.
+#
+# Bo'sh qoldirilsa tizim mintaqasi ishlatiladi (eski xatti-harakat).
+APP_TIMEZONE = os.getenv("APP_TIMEZONE", "Asia/Tashkent").strip()
+
+if not APP_TIMEZONE:
+    TIMEZONE = None
+else:
+    try:
+        TIMEZONE = ZoneInfo(APP_TIMEZONE)
+    except Exception:          # noto'g'ri nom yoki tzdata yo'q
+        # Tizim mintaqasiga qaytamiz: dastur to'xtamasin, lekin bu ko'rinsin.
+        print(f"OGOHLANTIRISH: '{APP_TIMEZONE}' vaqt mintaqasi topilmadi — "
+              f"tizim mintaqasi ishlatiladi. APP_TIMEZONE ni tekshiring.")
+        TIMEZONE = None
 
 # --- Vaqt tekshiruvi (ishga tushishda) ---
 # Ilova va manba server soati shundan ko'p farq qilsa xato deb belgilanadi (soniya)

@@ -13,7 +13,7 @@ from bson import ObjectId
 
 import config
 from services.mongo import local_db
-from utils.helpers import parse_to_datetime, sample_std, to_minutes
+from utils.helpers import now as hozir, parse_to_datetime, sample_std, to_minutes
 from utils.logger import get_logger
 
 log = get_logger("trainer")
@@ -48,7 +48,7 @@ def train(on_progress=None):
 
     `on_progress(foiz, matn)` — ixtiyoriy, collector'dagidek."""
     db = local_db()
-    now = datetime.now()
+    now = hozir()
 
     # Har client uchun kunlarni hafta kuni bo'yicha yig'amiz
     per_client = defaultdict(lambda: {"hostname": None, "fullName": None,

@@ -8,7 +8,7 @@ from datetime import datetime
 
 from services.detectors import registry
 from services.detectors.base import DayContext
-from utils.helpers import day_of_week, parse_to_datetime
+from utils.helpers import day_of_week, now as hozir, parse_to_datetime
 
 
 def evaluate_job(job, baseline_doc, now=None):
@@ -17,7 +17,7 @@ def evaluate_job(job, baseline_doc, now=None):
     baseline_doc None bo'lsa ham kunlar yo'qolmaydi: ballar null, status
     `insufficient` bo'ladi.
     """
-    now = now or datetime.now()
+    now = now or hozir()
     baseline = baseline_doc or {}
     weeks = baseline.get("weeks") or {}
     hostname = job.get("hostname") or job["clientId"]

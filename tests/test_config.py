@@ -6,6 +6,7 @@ Bu qo'riqchi test. Kimdir kelajakda `config.py` ga qattiq qiymat yozib qo'ysa
 Ishga tushirish:  python tests/test_config.py
 """
 import ast
+import datetime
 import importlib
 import os
 import re
@@ -26,6 +27,47 @@ NAMUNA = {int: "77", float: "7.5", str: "sinov-qiymati", tuple: "AAA,BBB,CCC"}
 def _check(label, condition, detail=""):
     print(f"    {'✓' if condition else '✗'} {label}{'' if condition else '  <- ' + detail}")
     return condition
+
+
+def test_vaqt_tizim_mintaqasidan_mustaqil():
+    """`helpers.now()` serverning TZ siga BOG'LIQ BO'LMASLIGI shart.
+
+    DLP vaqtni mahalliy mintaqada saqlaydi. Server boshqa mintaqada
+    sozlangan bo'lsa (masalan UTC) oyna chegaralari jimgina siljiydi va
+    xato tashlanmaydi. Shuning uchun ilova vaqti `.env` dagi
+    `APP_TIMEZONE` dan olinadi, operatsion tizimdan emas.
+    """
+    print("  Ilova vaqti serverning TZ siga bog'liq emas")
+    import time as _time
+    from utils.helpers import now as hozir
+
+    if config.TIMEZONE is None:
+        return _check("APP_TIMEZONE sozlangan", False,
+                      "TIMEZONE None — sinov o'tkazib yuborildi")
+
+    asl_tz = os.environ.get("TZ")
+    olchovlar = {}
+    try:
+        for tz in ("UTC", "America/New_York", "Pacific/Auckland", "Asia/Tashkent"):
+            os.environ["TZ"] = tz
+            _time.tzset()
+            olchovlar[tz] = (hozir(), datetime.datetime.now())
+    finally:
+        if asl_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = asl_tz
+        _time.tzset()
+
+    ilova = [v[0] for v in olchovlar.values()]
+    tizim = [v[1] for v in olchovlar.values()]
+    ilova_tarqoq = (max(ilova) - min(ilova)).total_seconds()
+    tizim_tarqoq = (max(tizim) - min(tizim)).total_seconds()
+
+    return (_check("ilova vaqti o'zgarmadi (<2 s)", ilova_tarqoq < 2,
+                   f"{ilova_tarqoq:.0f} s tarqoq")
+            & _check("tizim vaqti esa o'zgardi (mintaqalar haqiqatan farq qiladi)",
+                     tizim_tarqoq > 3600, f"{tizim_tarqoq:.0f} s"))
 
 
 def _env_kalitlari(yol):
@@ -177,6 +219,7 @@ if __name__ == "__main__":
         test_notogri_qiymat_tizimni_buzmaydi(),
         test_vazn_oraligi(),
         test_env_namuna_toliq(),
+        test_vaqt_tizim_mintaqasidan_mustaqil(),
     ]
     print(f"\n{'HAMMASI O‘TDI ✓' if all(results) else 'SINOV YIQILDI ✗'} "
           f"({sum(results)}/{len(results)})")
