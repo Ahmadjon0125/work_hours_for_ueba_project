@@ -328,6 +328,35 @@ tbody tr:hover { background: var(--panel2); }
 .run-stage.error .run-stage-name { color: var(--red); }
 .run-stage.error .run-stage-name::after { content: ' ✕'; }
 
+/* --- Xatolar jadvali: odam tili + texnik matn --- */
+#errorsTable td { vertical-align: top; white-space: normal; }
+#errorsTable td.xato { max-width: 760px; }
+.xato-sabab { font-weight: 600; color: var(--text); }
+.xato-kod {
+  display: inline-block; margin-left: 8px; padding: 1px 7px;
+  border-radius: 4px; background: #2a3240; color: #ffb86b;
+  font-size: 11.5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.xato-izoh { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.xato-chora {
+  display: inline-block; margin-top: 6px; padding: 1px 9px;
+  border-radius: 10px; font-size: 11.5px; font-weight: 600;
+}
+.xato-chora.ok { background: #1d3a28; color: #6ee7a0; }
+.xato-chora.warn { background: #45301a; color: #ffb86b; }
+.xato-chora.bad { background: #4a1f1f; color: #ff8b7e; }
+.xato-xom { margin-top: 6px; }
+.xato-xom summary {
+  cursor: pointer; color: var(--muted); font-size: 12px; width: max-content;
+}
+.xato-xom summary:hover { color: var(--text); }
+.xato-xom pre {
+  margin: 6px 0 0; padding: 8px 10px; border-radius: 6px;
+  background: #10151d; border: 1px solid var(--border);
+  color: var(--muted); font-size: 11.5px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow: auto;
+}
+
 button.ghost {
   background: transparent; color: var(--muted);
   border: 1px solid var(--border); border-radius: 6px;

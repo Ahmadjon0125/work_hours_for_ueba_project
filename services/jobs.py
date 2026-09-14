@@ -100,6 +100,10 @@ def add_error(job_id, xato, kontekst=None):
     keyin dashboardda ko'rinadi.
     """
     yozuv = {"at": _now(), "error": str(xato)[:400]}
+    # Istisno turini alohida saqlaymiz: matndan ajratib olishdan ko'ra
+    # ishonchli, va xatoni tasniflashda aynan shu ishlatiladi.
+    if isinstance(xato, BaseException):
+        yozuv["kod"] = type(xato).__name__
     if kontekst:
         yozuv["context"] = kontekst
     local_db()[config.COL_TRAINING_JOBS].update_one(

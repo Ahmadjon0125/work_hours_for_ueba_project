@@ -13,7 +13,7 @@ import services.collector as collector_mod
 import services.jobs as jobs_mod
 import services.workday as workday_mod
 import api.routes as routes_mod
-from api.routes import build_error_log
+from api.routes import build_error_log, xato_tahlili
 
 
 def _check(label, condition, detail=""):
@@ -63,10 +63,15 @@ def test_takroriy_xato_bir_marta():
 
 def test_uzun_xato_qisqartiriladi():
     print("  Juda uzun xato matni qisqartiriladi")
-    uzun = "x" * 900
+    # Chegara 300 dan 1000 ga ko'tarildi: texnik matn endi jadvalda yig'ilib
+    # turadi ("Texnik matn" ochiladi), shuning uchun uni kesish shart emas —
+    # ilgari stack trace'ning aynan kerakli oxiri tushib qolardi.
+    uzun = "x" * 3000
     out = build_error_log([{"type": "retrain", "finishedAt": "2026-09-09T10:00:00",
                             "error": uzun}], [])
-    return _check("300 belgidan uzun emas", len(out[0]["xato"]) <= 300, str(len(out[0]["xato"])))
+    n = len(out[0]["xato"])
+    return (_check("1000 belgidan uzun emas", n <= 1000, str(n))
+            & _check("300 dan ko'p saqlanadi", n > 300, str(n)))
 
 
 def test_trigger_xatosi():
@@ -408,6 +413,63 @@ def test_active_xodim_yoq_bolsa_xato_qaytadi():
         (trg.ensure_indexes, trg.local_db, trg.active_clients) = asl
 
 
+# --- Xatoni odam tiliga o'girish ------------------------------------------
+
+def test_xato_tasnifi():
+    print("  Xato matni sabab, chora va kodga ajratiladi")
+    holatlar = [
+        # (matn, kod, kutilgan_sabab_bo'lagi, kutilgan_chora)
+        ("yoq-server:27017: [Errno -2] Name or service not known", None,
+         "manzili topilmadi", "dasturchi"),
+        ("RabbitMQ ulanmadi: gaierror", "QueueUnavailable",
+         "Navbat", "tekshiruv"),
+        ("agentsessions o'qib bo'lmadi (3 urinish)", "SourceReadError",
+         "o'qib bo'lmadi", "retrain"),
+        ("dastur qayta ishga tushdi, job uzilib qoldi", None,
+         "uzilib qoldi", "retrain"),
+        ("192.168.100.8:27017: [Errno 101] Network is unreachable", None,
+         "ulanib bo'lmadi", "tekshiruv"),
+        ("E11000 duplicate key error", "DuplicateKeyError",
+         "ikki marta", "tekshiruv"),
+        ("'connectTime'", "KeyError", "shakli", "dasturchi"),
+        ("Authentication failed.", "OperationFailure", "Ruxsat", "dasturchi"),
+        ("butunlay tanish bo'lmagan matn", None, "Kutilmagan", "dasturchi"),
+    ]
+    ok = True
+    for matn, kod, sabab_bolagi, chora in holatlar:
+        s, izoh, ch, k = xato_tahlili(matn, kod)
+        ok &= _check(f"{sabab_bolagi} -> {chora}",
+                     sabab_bolagi.lower() in s.lower() and ch == chora,
+                     f"sabab={s!r} chora={ch!r}")
+    return ok
+
+
+def test_duplicatekey_keyerror_bilan_chalkashmaydi():
+    print("  DuplicateKeyError ichidagi 'KeyError' chalkashtirmaydi")
+    # `duplicatekeyerror` matnida `keyerror` bor — tartib noto'g'ri bo'lsa
+    # bu "sxema o'zgargan" deb tasniflanib ketardi.
+    s, _, chora, _ = xato_tahlili("E11000 duplicate key error", "DuplicateKeyError")
+    return (_check("sabab to'g'ri", "ikki marta" in s, s)
+            & _check("chora tekshiruv", chora == "tekshiruv", chora))
+
+
+def test_xato_royxatida_tahlil_bor():
+    print("  build_error_log har yozuvga sabab/izoh/chora/kod qo'shadi")
+    joblar = [{"type": "retrain", "startedAt": "2026-09-14T10:00:00",
+               "finishedAt": "2026-09-14T10:00:05",
+               "error": "yoq-server:27017: [Errno -2] Name or service not known",
+               "errorKod": "ServerSelectionTimeoutError"}]
+    out = build_error_log(joblar, [])
+    e = out[0]
+    return (_check("sabab bor", bool(e.get("sabab")), str(e))
+            & _check("izoh bor", bool(e.get("izoh")), str(e))
+            & _check("chora bor", e.get("chora") in ("tekshiruv", "retrain", "dasturchi"),
+                     str(e.get("chora")))
+            & _check("kod saqlangan", e.get("kod") == "ServerSelectionTimeoutError",
+                     str(e.get("kod")))
+            & _check("xom matn ham qoldi", "Errno -2" in e.get("xato", ""), str(e)[:80]))
+
+
 def test_jarayonsiz_ham_ishlaydi():
     print("  on_progress berilmasa collector baribir ishlaydi (CLI rejimi)")
     asl_idx, asl_cl, asl_db = (collector_mod.ensure_indexes,
@@ -430,6 +492,8 @@ if __name__ == "__main__":
         test_ikkala_manba_vaqt_boyicha(), test_xatosiz_holat(), test_limit(),
         test_takroriy_xato_bir_marta(), test_uzun_xato_qisqartiriladi(),
         test_collector_jarayonni_xabar_qiladi(), test_jarayonsiz_ham_ishlaydi(),
+        test_xato_tasnifi(), test_duplicatekey_keyerror_bilan_chalkashmaydi(),
+        test_xato_royxatida_tahlil_bor(),
         test_navbat_yoq_bolsa_xato_qaytadi(),
         test_active_xodim_yoq_bolsa_xato_qaytadi(),
         test_health_baza_yotganda_ham_javob_beradi(),

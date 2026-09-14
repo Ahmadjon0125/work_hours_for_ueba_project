@@ -42,7 +42,8 @@ def _trigger_job():
     except Exception as e:
         log.error("Trigger o'tishida xato: %s", e)
         if run_id:
-            jobs.trigger_finish(run_id, "error", error=str(e))
+            jobs.trigger_finish(run_id, "error", error=str(e),
+                                errorKod=type(e).__name__)
 
 
 @app.on_event("startup")

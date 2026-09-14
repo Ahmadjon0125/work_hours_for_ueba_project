@@ -1,5 +1,6 @@
 """FastAPI endpoint'lari."""
 import os
+import re
 import threading
 from collections import Counter, defaultdict
 from datetime import datetime
@@ -77,7 +78,8 @@ def _retrain_chain(mode, job_id):
         jobs.add_error(job_id, e, kontekst=f"{mode} zanjiri")
         # Qaysi bosqichda to'xtagani ekranda ko'rinsin — chiziq o'sha yerda qoladi
         jobs.finish_stage(job_id, joriy, status="error", text=str(e)[:80])
-        jobs.finish(job_id, "error", error=str(e), progressText="Xato bilan to'xtadi")
+        jobs.finish(job_id, "error", error=str(e), errorKod=type(e).__name__,
+                    progressText="Xato bilan to'xtadi")
 
 
 def _start_chain(mode):
@@ -218,6 +220,115 @@ def get_job(job_id: str):
     return job
 
 
+# Xato matnini odam tiliga o'girish jadvali.
+#
+# Har qator: (matnda qidiriladigan bo'laklar, sabab, izoh, chora).
+# Tartib muhim — birinchi mos kelgani olinadi, shuning uchun aniqrog'i
+# yuqorida turadi. Mos kelmasa oxirgi (default) ishlatiladi.
+#
+# `chora` uchta qiymat oladi:
+#   tekshiruv — hech narsa qilish shart emas, keyingi avtomatik o'tishda tuzaladi
+#   retrain   — "Qayta o'qitish" tugmasini bosish kerak
+#   dasturchi — sozlama, sxema yoki xizmat muammosi; kod/konfiguratsiya tuzatiladi
+_XATO_JADVALI = (
+    (("rabbitmq ulanmadi", "amqpconnectionerror", "queueunavailable",
+      "connection to broker"),
+     "Navbat (RabbitMQ) javob bermadi",
+     "Xizmat o'chiq yoki ko'tarilmagan. Ma'lumot yo'qolmadi — kursor orqada "
+     "qoldi, keyingi o'tish o'sha joydan davom etadi.",
+     "tekshiruv"),
+
+    (("name or service not known", "nodename nor servname", "gaierror",
+      "temporary failure in name resolution"),
+     "Server manzili topilmadi",
+     "Nom DNS orqali hal bo'lmadi. `MONGO_URI` yoki `RABBITMQ_HOST` dagi "
+     "manzilni tekshiring.",
+     "dasturchi"),
+
+    (("authentication failed", "not authorized", "requires authentication",
+      "access_refused", "unauthorized"),
+     "Ruxsat yo'q",
+     "Login/parol noto'g'ri yoki foydalanuvchida yetarli huquq yo'q.",
+     "dasturchi"),
+
+    (("no space left", "quota exceeded", "disk full"),
+     "Diskda joy qolmadi",
+     "Baza yoza olmayapti. Diskni bo'shatish kerak.",
+     "dasturchi"),
+
+    (("noactiveclients", "active xodim topilmadi"),
+     "Manba bazada active xodim topilmadi",
+     "`clients` bo'sh yoki hammasi `disabled: true`. Sozlamani tekshirish kerak.",
+     "dasturchi"),
+
+    (("dastur qayta ishga tushdi",),
+     "Dastur uzilib qoldi",
+     "Job o'rtasida to'xtadi va avtomatik yopildi. Yarim yozilgan ma'lumot yo'q.",
+     "retrain"),
+
+    (("o'qib bo'lmadi", "sourcereaderror"),
+     "Manba bazadan o'qib bo'lmadi",
+     "Uchala urinish ham muvaffaqiyatsiz tugadi. O'sha xodimning eski "
+     "ma'lumoti saqlanib qoldi.",
+     "retrain"),
+
+    (("connection refused", "network is unreachable", "econnrefused",
+      "connection reset", "broken pipe"),
+     "Serverga ulanib bo'lmadi",
+     "Server o'chiq yoki tarmoq yo'q. Tarmoq tiklangach o'zi ishlaydi.",
+     "tekshiruv"),
+
+    (("serverselectiontimeout", "autoreconnect", "networktimeout", "timeout"),
+     "Baza javob bermadi (vaqt tugadi)",
+     "Baza yuklangan yoki tarmoq sekin. Odatda vaqtinchalik.",
+     "tekshiruv"),
+
+    (("duplicatekey",),
+     "Bir xil yozuv ikki marta",
+     "Unique indeks ushlab qoldi — ma'lumot buzilmadi.",
+     "tekshiruv"),
+
+    (("keyerror", "attributeerror", "typeerror", "valueerror",
+      "jsondecodeerror", "invaliddocument"),
+     "Ma'lumot shakli kutilganidan boshqa",
+     "DLP sxemasi o'zgargan bo'lishi mumkin. Maydon nomlarini (`.env` dagi "
+     "`SESSION_*`) tekshirish kerak.",
+     "dasturchi"),
+
+    ((), "Kutilmagan xato",
+     "Tasniflab bo'lmadi. To'liq matnga qarang.",
+     "dasturchi"),
+)
+
+
+def xato_tahlili(matn, kod=None):
+    """Xato matnini odam tiliga o'giradi: (sabab, izoh, chora, kod).
+
+    `kod` — istisno turi (`jobs.add_error` saqlab qo'ygan). Bo'lmasa matndan
+    qidiriladi. Ikkalasi ham bo'lmasa `kod` bo'sh qoladi — bu xatolik emas,
+    shunchaki eski yozuv.
+    """
+    past = f"{kod or ''} {matn or ''}".lower()
+    for kalitlar, sabab, izoh, chora in _XATO_JADVALI:
+        if not kalitlar or any(k in past for k in kalitlar):
+            return sabab, izoh, chora, (kod or _kod_ajrat(matn))
+    return "Kutilmagan xato", "", "dasturchi", (kod or "")
+
+
+def _kod_ajrat(matn):
+    """Matndan texnik belgini ajratadi: `[Errno -2]` yoki `SomeError:`."""
+    if not matn:
+        return ""
+    errno = re.search(r"\[Errno (-?\d+)\]", matn)
+    # Suffiksli nomlar (SomeError/Exception/Timeout) va suffikssiz, lekin
+    # keng tarqalganlari (AutoReconnect, gaierror kabi).
+    turi = (re.search(r"\b([A-Z][A-Za-z]*(?:Error|Exception|Timeout|Failure))\b", matn)
+            or re.search(r"\b(AutoReconnect|NotPrimaryError|gaierror)\b", matn))
+    bolaklar = [t for t in (turi.group(1) if turi else None,
+                            f"Errno {errno.group(1)}" if errno else None) if t]
+    return " · ".join(bolaklar)
+
+
 def build_error_log(job_list, trigger_list, limit=50):
     """Ikkala manbadagi xatolarni bitta vaqt bo'yicha saralangan ro'yxatga yig'adi.
 
@@ -225,30 +336,37 @@ def build_error_log(job_list, trigger_list, limit=50):
     joyda javob berish uchun o'qitish zanjiri va trigger o'tishlari
     birlashtiriladi.
     """
-    UZUNLIK = 300      # pymongo xatolari juda uzun bo'ladi, jadvalga sig'masin
+    # To'liq matn saqlanadi: dashboard uni yig'ib qo'yadi, kerak bo'lganda
+    # ochib o'qiladi. Ilgari 300 belgiga kesilardi va aynan kerakli qismi
+    # (stack trace oxiri) tushib qolardi.
+    UZUNLIK = 1000
     out = []
+
+    def yozuv(at, manba, kontekst, matn, kod=None):
+        sabab, izoh, chora, kod = xato_tahlili(matn, kod)
+        return {"at": at, "manba": manba, "kontekst": kontekst,
+                "sabab": sabab, "izoh": izoh, "chora": chora, "kod": kod,
+                "xato": (matn or "")[:UZUNLIK]}
 
     for job in job_list:
         ichki = job.get("errors") or []
         # `errors[]` dagi yozuvlar kontekstga ega, shuning uchun ular ustun.
         for e in ichki:
-            out.append({"at": e.get("at"), "manba": job.get("type") or "retrain",
-                        "kontekst": e.get("context") or "",
-                        "xato": (e.get("error") or "")[:UZUNLIK]})
+            out.append(yozuv(e.get("at"), job.get("type") or "retrain",
+                             e.get("context") or "", e.get("error"), e.get("kod")))
         # Zanjir xatosi `finish(error=...)` da ham, `add_error` da ham yoziladi.
         # Ikkalasini ko'rsatsak bitta xato ikki qator bo'lib chiqardi.
         xato = job.get("error")
         if xato and not any((e.get("error") or "").startswith(xato[:80]) for e in ichki):
-            out.append({"at": job.get("finishedAt") or job.get("startedAt"),
-                        "manba": job.get("type") or "retrain",
-                        "kontekst": "zanjir to'xtadi",
-                        "xato": xato[:UZUNLIK]})
+            out.append(yozuv(job.get("finishedAt") or job.get("startedAt"),
+                             job.get("type") or "retrain", "zanjir to'xtadi",
+                             xato, job.get("errorKod")))
 
     for run in trigger_list:
         if run.get("error"):
-            out.append({"at": run.get("finishedAt") or run.get("startedAt"),
-                        "manba": "trigger", "kontekst": "o'tish to'xtadi",
-                        "xato": run["error"][:UZUNLIK]})
+            out.append(yozuv(run.get("finishedAt") or run.get("startedAt"),
+                             "trigger", "o'tish to'xtadi",
+                             run["error"], run.get("errorKod")))
 
     out.sort(key=lambda x: x.get("at") or "", reverse=True)
     return out[:limit]

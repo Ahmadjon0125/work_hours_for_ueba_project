@@ -1722,9 +1722,9 @@ Ikkalasi ham `trigger_runs` ga `status: "error"` bo'lib tushadi va
 dashboardda ko'rinadi. Ma'lumot baribir yo'qolmaydi — hech narsa yozilmadi,
 cursor orqada qoldi, keyingi o'tish o'sha joydan davom etadi.
 
-### Qaysi xato o'zi tuzaladi, qaysisi qo'l talab qiladi
+### Qaysi xato qanday tuzaladi
 
-**O'zi tuzaladi** — aksariyati:
+**Keyingi tekshiruvda tuzaladi** — aksariyati:
 
 | Nosozlik | Qanday tiklanadi | Qancha vaqtda |
 |---|---|---|
@@ -1736,7 +1736,7 @@ cursor orqada qoldi, keyingi o'tish o'sha joydan davom etadi.
 | Ish bajarilmadi (vaqtinchalik) | 3 marta qayta urinish (`MAX_RETRIES`) | darhol |
 | Navbat to'lib ketdi | workerlar hazm qiladi (~680 job/s) | daqiqalar |
 
-**Qo'l talab qiladi** — uchta holat:
+**Dasturchi tuzatadi** — uchta holat:
 
 **1. Sozlama yoki sxema xatosi.** `MONGO_URI`, `DB_NAME`, maydon nomlari
 noto'g'ri bo'lsa yoki DLP sxemani o'zgartirsa — qayta urinish hech qachon
@@ -1771,6 +1771,37 @@ tushadi — u holda o'sha sozlamani ham vaqtincha kattalashtirish kerak.
 
 **3. Xizmat butunlay o'lgan.** RabbitMQ ko'tarilmayapti, disk to'lgan,
 manba serverga tarmoq yo'q — bularni tizim hal qila olmaydi.
+
+### Xato qanday ko'rsatiladi
+
+Xatolar tarixida har yozuv **ikki qatlamda** chiqadi: odam tilidagi sabab va
+o'sha xatoning haqiqiy texnik matni.
+
+```
+Manba bazadan o'qib bo'lmadi   [AutoReconnect]
+Uchala urinish ham muvaffaqiyatsiz tugadi. O'sha xodimning eski ma'lumoti saqlanib qoldi.
+( Retrain qilinganda tuzaladi )
+▼ Texnik matn
+  agentsessions o'qib bo'lmadi (3 urinish): AutoReconnect: connection closed
+```
+
+| Qism | Nima |
+|---|---|
+| **Sabab** | qalin yozuv — nima bo'lgani |
+| `[kod]` | istisno turi yoki `Errno` — texnik belgi |
+| Izoh | nima qilish kerakligi va oqibati |
+| Yorliq | **Keyingi tekshiruvda** / **Retrain qilinganda** / **Dasturchi tuzatadi** |
+| Texnik matn | yig'ilgan holda; ochilsa to'liq xom matn (1000 belgigacha) |
+
+Tasnif jadvali [api/routes.py](api/routes.py) dagi `_XATO_JADVALI` da —
+xato matnida qidiriladigan bo'laklar, sabab, izoh va chora. Tartib muhim:
+birinchi mos kelgani olinadi, shuning uchun aniqrog'i yuqorida turadi
+(masalan `DuplicateKeyError` ichida `KeyError` bo'lgani uchun u sxema
+xatosidan oldin tekshiriladi).
+
+Istisno turi `jobs.add_error()` da **yozib qo'yiladi** (`type(e).__name__`),
+matndan ajratib olinmaydi — bu ishonchliroq. Eski yozuvlarda esa matndan
+qidiriladi.
 
 ### Ochiq qolgan xatarlar
 
@@ -1911,8 +1942,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
-| `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi, baza yotganda health, jimgina "muvaffaqiyat" bo'lmasligi | 19 |
-| | **Jami** | **73** |
+| `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi va tasnifi, baza yotganda health | 22 |
+| | **Jami** | **76** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -1965,7 +1996,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     73 ta tekshiruv
+tests/                     76 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

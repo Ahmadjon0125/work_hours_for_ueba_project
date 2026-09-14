@@ -430,13 +430,35 @@ async function loadErrors() {
   } catch (e) { rows = []; }
 
   $('errorsInfo').textContent = rows.length ? `— ${rows.length} ta` : '';
+
+  // Har xato ikki qatlamda: odam tilidagi sabab + yig'ilgan texnik matn.
+  // Ilgari faqat xom pymongo matni chiqardi va uni o'qib bo'lmasdi.
+  const CHORA = {
+    tekshiruv: ['ok', 'Keyingi tekshiruvda tuzaladi'],
+    retrain: ['warn', 'Retrain qilinganda tuzaladi'],
+    dasturchi: ['bad', 'Dasturchi tuzatadi'],
+  };
+  const esc = (t) => String(t || '').replace(/</g, '&lt;');
+
   tbody.innerHTML = rows.length
-    ? rows.map((x) => `<tr>
+    ? rows.map((x) => {
+      const [css, matn] = CHORA[x.chora] || CHORA.dasturchi;
+      return `<tr>
         <td class="time dim">${qisqaVaqt(x.at)}</td>
-        <td>${x.manba || ''}</td>
-        <td class="dim">${x.kontekst || ''}</td>
-        <td class="xato">${(x.xato || '').replace(/</g, '&lt;')}</td>
-      </tr>`).join('')
+        <td>${esc(x.manba)}</td>
+        <td class="dim">${esc(x.kontekst)}</td>
+        <td class="xato">
+          <div class="xato-sabab">${esc(x.sabab)}
+            ${x.kod ? `<code class="xato-kod">${esc(x.kod)}</code>` : ''}</div>
+          ${x.izoh ? `<div class="xato-izoh">${esc(x.izoh)}</div>` : ''}
+          <div class="xato-chora ${css}">${matn}</div>
+          <details class="xato-xom">
+            <summary>Texnik matn</summary>
+            <pre>${esc(x.xato)}</pre>
+          </details>
+        </td>
+      </tr>`;
+    }).join('')
     : '<tr><td colspan="4" class="empty">Xato qayd etilmagan</td></tr>';
 }
 
