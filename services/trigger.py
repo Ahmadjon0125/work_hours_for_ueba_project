@@ -10,11 +10,22 @@ from datetime import datetime, timedelta
 import config
 from mq.rabbitmq import connect, declare_queue, publish
 from services.mongo import active_clients, ensure_indexes, local_db
+from services.trainer import current_baseline_id
 from services.workday import collect_client_days
 from utils.helpers import build_day_agg, build_day_doc, date_str_days_ago, now as hozir
 from utils.logger import get_logger
 
 log = get_logger("trigger")
+
+
+class BaselineMissing(Exception):
+    """Odatiy jadval (baseline) hali qurilmagan — o'tish ma'nosiz.
+
+    Baseline bo'lmasa har kun `insufficient` bo'lib yoziladi, va dedup
+    tufayli KEYIN HAM qayta baholanmaydi: `trigger_data` ga "yuborildi" deb
+    belgilanadi, keyingi o'tishlar uni `skipped` qiladi. Ya'ni birinchi
+    kunlar butunlay yo'qoladi. Shuning uchun umuman boshlamaymiz.
+    """
 
 
 class NoActiveClients(Exception):
@@ -49,6 +60,15 @@ def run():
     ensure_indexes()  # idempotent — boot'da Mongo yotgan bo'lsa shu yerda yaratiladi
     db = local_db()
     trigger_col = db[config.COL_TRIGGER_DATA]
+
+    # TARTIB: avval collector + trainer, keyin trigger.
+    # Baseline yo'q bo'lsa o'tish nafaqat foydasiz, balki ZARARLI — pastdagi
+    # izohga qarang (BaselineMissing).
+    if current_baseline_id(db) is None:
+        raise BaselineMissing(
+            "Odatiy jadval (baseline) hali yo'q — o'tish o'tkazib yuborildi. "
+            "Avval `collector.py` va `trainer.py` ni ishga tushiring "
+            "(yoki dashboarddagi «Qayta o'qitish» tugmasini bosing).")
 
     clients = active_clients()
     if not clients:

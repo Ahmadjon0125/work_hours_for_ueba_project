@@ -266,6 +266,12 @@ _XATO_JADVALI = (
      "`clients` bo'sh yoki hammasi `disabled: true`. Sozlamani tekshirish kerak.",
      "dasturchi"),
 
+    (("baselinemissing", "baseline) hali yo'q", "odatiy jadval (baseline) hali"),
+     "Odatiy jadval hali qurilmagan",
+     "Trigger o'tkazib yuborildi — baseline bo'lmasa kunlar `insufficient` "
+     "bo'lib yoziladi va qayta baholanmaydi. Avval o'qitish kerak.",
+     "retrain"),
+
     (("dastur qayta ishga tushdi",),
      "Dastur uzilib qoldi",
      "Job o'rtasida to'xtadi va avtomatik yopildi. Yarim yozilgan ma'lumot yo'q.",

@@ -11,9 +11,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import config
 from api.app import create_app
+from api.routes import _retrain_chain
 from mq.worker import start_workers
 from services import jobs, trigger
 from services.mongo import check_time_alignment, ensure_indexes
+from services.trainer import current_baseline_id
 from utils.helpers import now as hozir
 from utils.logger import get_logger
 
@@ -40,11 +42,61 @@ def _trigger_job():
         sent, skipped = trigger.run()
         if run_id:
             jobs.trigger_finish(run_id, "finished", sent=sent, skipped=skipped)
+    except trigger.BaselineMissing as e:
+        # Bu XATO emas: birinchi o'qitish hali tugamagan. "error" deb yozsak
+        # dashboardda qizil ✕ va "Xatolar" tugmasi chiqib, birinchi daqiqalarda
+        # bekorga vahima ko'tarardi.
+        log.warning("Trigger o'tkazib yuborildi: %s", e)
+        if run_id:
+            jobs.trigger_finish(run_id, "skipped", error=str(e),
+                                errorKod=type(e).__name__)
     except Exception as e:
         log.error("Trigger o'tishida xato: %s", e)
         if run_id:
             jobs.trigger_finish(run_id, "error", error=str(e),
                                 errorKod=type(e).__name__)
+
+
+def _bootstrap():
+    """Birinchi ishga tushish: collector -> trainer -> trigger, SHU TARTIBDA.
+
+    Nima uchun kerak: baseline yo'q bo'lsa trigger har kunni `insufficient`
+    deb yozadi, va ular QAYTA BAHOLANMAYDI — `trigger_data` ga "yuborildi"
+    deb belgilangani uchun keyingi o'tishlar ularni `skipped` qiladi. Ya'ni
+    birinchi kunlar butunlay yo'qoladi.
+
+    Ilgari buni odam qo'lda qilishi kerak edi (`collector.py`, keyin
+    `trainer.py`). Qilmasa tizim ishlayotgandek ko'rinardi, lekin natijalar
+    bo'sh bo'lardi — aynan shunday holat yuz berdi.
+
+    Baseline allaqachon bo'lsa hech narsa qilmaydi.
+    """
+    try:
+        if current_baseline_id() is not None:
+            return
+    except Exception as e:
+        log.warning("Baseline bor-yo'qligini tekshirib bo'lmadi: %s", e)
+        return
+
+    log.info("Baseline topilmadi — birinchi o'qitish boshlanmoqda "
+             "(collector -> trainer). Bu bir necha daqiqa olishi mumkin.")
+    try:
+        job_id = jobs.create("train")
+    except jobs.JobAlreadyRunning:
+        log.info("O'qitish allaqachon ketmoqda — bootstrap o'tkazib yuborildi")
+        return
+    except Exception as e:
+        log.error("Birinchi o'qitishni boshlab bo'lmadi: %s", e)
+        return
+
+    _retrain_chain("train", job_id)          # xatolarni o'zi job'ga yozadi
+
+    if current_baseline_id() is None:
+        log.error("Birinchi o'qitish baseline bermadi — trigger kutadi. "
+                  "Xatolar tarixiga qarang.")
+        return
+    log.info("Birinchi o'qitish tugadi — trigger ishga tushirilmoqda")
+    _trigger_job()
 
 
 @app.on_event("startup")
@@ -71,6 +123,9 @@ def _startup():
         log.warning("Vaqt tekshiruvi bajarilmadi: %s", e)
 
     start_workers(_stop_event)
+
+    # Birinchi ishga tushish zanjiri fon thread'ida: HTTP server kutmasin.
+    threading.Thread(target=_bootstrap, name="bootstrap", daemon=True).start()
 
     # Scheduler ham AYNAN shu mintaqada ishlashi kerak: `next_run_time` ga
     # naive vaqt beriladi, APScheduler esa uni o'z mintaqasida talqin qiladi.

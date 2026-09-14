@@ -374,11 +374,13 @@ def test_navbat_yoq_bolsa_xato_qaytadi():
     print("  RabbitMQ ulanmasa trigger xato tashlaydi (jimgina tugamaydi)")
     import services.trigger as trg
 
-    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients, trg.connect)
+    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients, trg.connect,
+           trg.current_baseline_id)
     try:
         trg.ensure_indexes = lambda: None
         trg.local_db = lambda: {config.COL_TRIGGER_DATA: None}
         trg.active_clients = lambda: [{"clientId": "C1", "hostname": "pc-1", "_id": "C1"}]
+        trg.current_baseline_id = lambda db=None: "b1"   # baseline bor: shu sinov mavzusi emas
 
         def _ulanmaydi():
             raise OSError("Name or service not known")
@@ -392,25 +394,29 @@ def test_navbat_yoq_bolsa_xato_qaytadi():
                     & _check("ma'lumot yo'qolmagani aytilgan",
                              "yo'qolmadi" in str(e), str(e)[:80]))
     finally:
-        (trg.ensure_indexes, trg.local_db, trg.active_clients, trg.connect) = asl
+        (trg.ensure_indexes, trg.local_db, trg.active_clients, trg.connect,
+         trg.current_baseline_id) = asl
 
 
 def test_active_xodim_yoq_bolsa_xato_qaytadi():
     print("  Active xodim topilmasa ham jimgina tugamaydi")
     import services.trigger as trg
 
-    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients)
+    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients,
+           trg.current_baseline_id)
     try:
         trg.ensure_indexes = lambda: None
         trg.local_db = lambda: {config.COL_TRIGGER_DATA: None}
         trg.active_clients = lambda: []
+        trg.current_baseline_id = lambda db=None: "b1"   # baseline bor
         try:
             trg.run()
             return _check("xato tashladi", False, "hech narsa tashlamadi")
         except trg.NoActiveClients:
             return _check("NoActiveClients tashlandi", True)
     finally:
-        (trg.ensure_indexes, trg.local_db, trg.active_clients) = asl
+        (trg.ensure_indexes, trg.local_db, trg.active_clients,
+         trg.current_baseline_id) = asl
 
 
 # --- Xatoni odam tiliga o'girish ------------------------------------------
@@ -470,6 +476,66 @@ def test_xato_royxatida_tahlil_bor():
             & _check("xom matn ham qoldi", "Errno -2" in e.get("xato", ""), str(e)[:80]))
 
 
+# --- Birinchi ishga tushish tartibi ----------------------------------------
+
+def test_baseline_yoq_bolsa_trigger_toxtaydi():
+    """Baseline yo'q bo'lsa trigger UMUMAN boshlanmasligi shart.
+
+    Aks holda har kun `insufficient` bo'lib yoziladi va QAYTA BAHOLANMAYDI:
+    `trigger_data` ga "yuborildi" deb belgilanadi, keyingi o'tishlar ularni
+    `skipped` qiladi. Ya'ni birinchi kunlar butunlay yo'qoladi.
+    """
+    print("  Baseline yo'q bo'lsa trigger to'xtaydi (kunlar yo'qolmasin)")
+    import services.trigger as trg
+
+    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients,
+           trg.current_baseline_id)
+    try:
+        trg.ensure_indexes = lambda: None
+        trg.local_db = lambda: {config.COL_TRIGGER_DATA: None}
+        trg.active_clients = lambda: [{"clientId": "C1", "hostname": "pc-1", "_id": "C1"}]
+        trg.current_baseline_id = lambda db=None: None       # baseline YO'Q
+        try:
+            trg.run()
+            return _check("xato tashladi", False, "hech narsa tashlamadi")
+        except trg.BaselineMissing as e:
+            return (_check("BaselineMissing tashlandi", True)
+                    & _check("matnda nima qilish kerakligi bor",
+                             "trainer" in str(e).lower(), str(e)[:70]))
+    finally:
+        (trg.ensure_indexes, trg.local_db, trg.active_clients,
+         trg.current_baseline_id) = asl
+
+
+def test_baseline_bor_bolsa_trigger_davom_etadi():
+    print("  Baseline bor bo'lsa tekshiruv to'sqinlik qilmaydi")
+    import services.trigger as trg
+
+    asl = (trg.ensure_indexes, trg.local_db, trg.active_clients,
+           trg.current_baseline_id, trg.connect)
+    try:
+        trg.ensure_indexes = lambda: None
+        trg.local_db = lambda: {config.COL_TRIGGER_DATA: None}
+        trg.active_clients = lambda: [{"clientId": "C1", "hostname": "pc-1", "_id": "C1"}]
+        trg.current_baseline_id = lambda db=None: "b1"       # baseline BOR
+
+        def _ulanmaydi():
+            raise OSError("navbat yo'q")
+        trg.connect = _ulanmaydi
+        try:
+            trg.run()
+            return _check("navbat bosqichiga o'tdi", False, "hech narsa tashlamadi")
+        except trg.BaselineMissing:
+            return _check("baseline tekshiruvidan o'tdi", False,
+                          "BaselineMissing tashlandi — o'tmadi")
+        except trg.QueueUnavailable:
+            # Baseline tekshiruvidan O'TDI va navbat bosqichiga yetdi
+            return _check("baseline tekshiruvidan o'tdi", True)
+    finally:
+        (trg.ensure_indexes, trg.local_db, trg.active_clients,
+         trg.current_baseline_id, trg.connect) = asl
+
+
 def test_jarayonsiz_ham_ishlaydi():
     print("  on_progress berilmasa collector baribir ishlaydi (CLI rejimi)")
     asl_idx, asl_cl, asl_db = (collector_mod.ensure_indexes,
@@ -494,6 +560,8 @@ if __name__ == "__main__":
         test_collector_jarayonni_xabar_qiladi(), test_jarayonsiz_ham_ishlaydi(),
         test_xato_tasnifi(), test_duplicatekey_keyerror_bilan_chalkashmaydi(),
         test_xato_royxatida_tahlil_bor(),
+        test_baseline_yoq_bolsa_trigger_toxtaydi(),
+        test_baseline_bor_bolsa_trigger_davom_etadi(),
         test_navbat_yoq_bolsa_xato_qaytadi(),
         test_active_xodim_yoq_bolsa_xato_qaytadi(),
         test_health_baza_yotganda_ham_javob_beradi(),

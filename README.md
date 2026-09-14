@@ -1418,9 +1418,62 @@ yozilmasa, test yiqiladi.
 
 ```bash
 docker compose up -d --build                    # mongo + rabbitmq + app
-docker compose exec app python collector.py     # 90 kunlik tarixni yig'ish
-docker compose exec app python trainer.py       # baseline qurish
 ```
+
+Tamom — **qo'lda boshqa hech narsa qilish shart emas.** Dastur birinchi
+ishga tushganda baseline yo'qligini ko'radi va o'zi ketma-ket bajaradi:
+
+```
+Baseline topilmadi — birinchi o'qitish boshlanmoqda (collector -> trainer)
+Birinchi o'qitish tugadi — trigger ishga tushirilmoqda
+trigger run: 15 client, 107 yangi event, 55 kun yuborildi
+```
+
+Docker'siz ham xuddi shunday — `python main.py` yoki systemd xizmati
+ko'tarilganda o'sha zanjir ishlaydi.
+
+### Nima uchun tartib muhim
+
+Ilgari `collector.py` va `trainer.py` ni qo'lda ishga tushirish kerak edi.
+Qilmasa tizim **ishlayotgandek ko'rinardi**, lekin natijalar bo'sh bo'lardi.
+Haqiqiy holat (yangi kompyuterga clone qilinganda):
+
+```jsonc
+// results da bor-yo'g'i BITTA hujjat
+{ "hostname": "xodim7@pc-07", "date": "2026-09-14",
+  "status": "insufficient", "baselineId": null,
+  "eventCount": 1, "activeMin": null }
+```
+
+Sababi uch qavat edi:
+
+1. `.env` `.gitignore` da — yangi mashina `.env.example` dagi
+   `LOOKBACK_HOURS=5` ni oldi;
+2. `trigger_data` bo'sh, ya'ni kursor yo'q → trigger faqat **oxirgi 5 soatga**
+   qaradi, o'sha oraliqda manbada bitta sessiya bor edi;
+3. baseline hali yo'q → kun `insufficient` bo'lib yozildi.
+
+Eng yomoni uchinchisi: bunday kunlar **qayta baholanmaydi**. `trigger_data` ga
+"yuborildi" deb belgilangani uchun keyingi o'tishlar ularni `skipped` qiladi —
+birinchi kunlar butunlay yo'qoladi.
+
+Endi ikkita himoya bor:
+
+| Himoya | Qayerda |
+|---|---|
+| Birinchi ishga tushishda `collector -> trainer -> trigger` avtomatik | `main._bootstrap()` |
+| Baseline yo'q bo'lsa trigger **umuman boshlanmaydi** (`BaselineMissing`) | `trigger.run()` |
+
+Ikkinchisi zaxira: bootstrap yiqilsa yoki hali tugamagan bo'lsa, trigger
+bo'sh natija yozib ketmaydi. Bu holat dashboardda **qizil xato emas**,
+⏳ «o'qitish kutilmoqda» bo'lib ko'rinadi.
+
+> **Birinchi o'tish qancha tarixni oladi.** Trigger kursorsiz bo'lganda
+> `LOOKBACK_HOURS` (default 5 soat) ga tayanadi. Butun 90 kunlik tarixni
+> darrov ko'rmoqchi bo'lsangiz, birinchi ishga tushirishdan oldin `.env` da
+> `LOOKBACK_HOURS=2160` qo'ying, keyin 5 ga qaytaring. `collector` baribir
+> 90 kunni yig'adi va baseline to'liq quriladi — bu faqat `results` ga
+> nechta kun tushishiga ta'sir qiladi.
 
 Dashboard: **http://localhost:8000**
 
@@ -2306,8 +2359,8 @@ bilan yurgiziladi va oxirida `HAMMASI O'TDI ✓ (n/n)` yozadi.
 | `test_baseline_versions.py` | Baseline versiyalash, natijaning o'zi-o'ziga yetarliligi | 4 |
 | `test_jobs.py` | Bir vaqtda faqat bitta o'qitish, osilib qolgan job tiklanishi | 4 |
 | `test_risk_summary.py` | Xavf yig'indisi, kumulyativ tendensiya, oxirgi davr kesimi, saralash, daraja chegaralari, to'liq kuzatuv ro'yxati | 12 |
-| `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi va tasnifi, baza yotganda health | 22 |
-| | **Jami** | **78** |
+| `test_progress_errors.py` | Jarayon xabarlari, bosqich foizlari, xatolar tarixi va tasnifi, baza yotganda health, birinchi ishga tushish tartibi | 24 |
+| | **Jami** | **80** |
 
 Testlar jonli bazani talab qilmaydi — `test_collector.py` da mini-Mongo
 emulyatori bor (`FakeCollection`, `FakeDB`), qolganlari sof funksiyalarni
@@ -2360,7 +2413,7 @@ dashboard/
 scripts/
   rebuild_results.py       natijalarni arxivdan qayta qurish
 
-tests/                     78 ta tekshiruv
+tests/                     80 ta tekshiruv
 utils/
   helpers.py               vaqt funksiyalari, kunlik agregat, ism tanlash
   logger.py                logging sozlamasi

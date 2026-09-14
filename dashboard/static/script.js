@@ -396,7 +396,9 @@ function renderRunbar(h) {
   // ishlamagan" (idle) bilan chalkashtirmaslik kerak: birinchisi nosozlik,
   // ikkinchisi normal boshlang'ich holat.
   const belgi = { finished: ['ok', '✓'], partial: ['warn', '⚠'], error: ['bad', '✕'],
-                  running: ['', '…'], idle: ['', '—'], unknown: ['bad', '?'] };
+                  running: ['', '…'], idle: ['', '—'], unknown: ['bad', '?'],
+                  // `skipped` — xato emas: birinchi o'qitish hali tugamagan
+                  skipped: ['warn', '⏳'] };
 
   const [rk, ri] = belgi[r.status] || ['', ''];
   $('runRetrain').innerHTML = (r.status === 'unknown'
@@ -412,9 +414,11 @@ function renderRunbar(h) {
       : `Oxirgi tekshiruv: <b>${qisqaVaqt(t.finishedAt || t.startedAt)}</b>`)
     + ` <span class="${tk}">${ti}</span>`
     + (t.status === 'finished' ? ` <span class="muted">(${t.sent || 0} kun yuborildi)</span>` : '')
-    + (t.status === 'error' ? ` <span class="bad">xato</span>` : '');
+    + (t.status === 'error' ? ` <span class="bad">xato</span>` : '')
+    + (t.status === 'skipped' ? ` <span class="warn">o'qitish kutilmoqda</span>` : '');
 
   // "Xatolar" tugmasi faqat xato bo'lsa ko'rinadi
+  // `skipped` bu yerga KIRMAYDI — u nosozlik emas, kutish holati
   const xatoBor = r.status === 'error' || t.status === 'error'
     || (r.errorCount || 0) > 0 || r.status === 'partial';
   const btn = $('errorsBtn');
