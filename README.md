@@ -37,15 +37,24 @@ agent o'sha kuni qachon ulangan va qachon uzilgan.
 
 ## Dashboard
 
-![Dashboard: bitta xodim — xulosa, chetlanishli kunlar, ish oynasi grafigi va jadval](image.png)
+Ekran to'rt qismdan iborat: yuqorida **filtrlar** va **«Qayta o'qitish»**
+tugmasi, ostida **holat qatori** (oxirgi yangilash/tekshiruv, xato bo'lsa
+«Xatolar» tugmasi), keyin **oddiy tilda xulosa**, va eng pastda **to'rtta tab**.
 
-*Bitta xodim tanlangan holat. Grafikda X — kunlar, Y — sutka soatlari;
-kulrang fon — o'sha kunning ish oynasi; ikkita nuqta — birinchi va oxirgi
-faollik (oyna ichida yashil, tashqarida qizil, baseline yo'q bo'lsa kulrang).*
+![Ish oynasi va faollik vaqtlari: bitta xodim tanlangan](image.png)
 
-![Barcha xodimlar: umumiy manzara matritsasi](image-1.png)
+*«Ish oynasi va faollik vaqtlari» tabi, bitta xodim tanlangan. X — kunlar,
+Y — sutka soatlari. Kulrang ustun — o'sha kunning ish oynasi; ikkita nuqta —
+birinchi va oxirgi faollik (oyna ichida yashil, tashqarida qizil). Eng
+o'ngdagi kunda pastda yolg'iz qizil nuqta: xodim odatdagidan ancha erta
+kelgan. Bo'sh joylar — dam olish kunlari.*
 
-*Xodim tanlanmagan holat — qatorlar xodimlar, ustunlar kunlar.*
+![Kuzatuvdagi xodimlar: barcha xodimlar kesimi](image-1.png)
+
+*«Kuzatuvdagi xodimlar» tabi — barcha kuzatuvdagi xodimlar, to'plangan xavf
+bo'yicha saralangan. Belgi (▲ qizil / ■ sariq / ○ kulrang) oxirgi 7 kunlik
+xavf bo'yicha; chiziq — xavfning kunma-kun to'planishi; oxirgi ustun —
+chetlanishli kunlar soni. Xavfi nol xodim ham ro'yxatda qoladi.*
 
 ---
 
