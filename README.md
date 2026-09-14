@@ -16,20 +16,29 @@ agent o'sha kuni qachon ulangan va qachon uzilgan.
 - [Dashboard](#dashboard)
 - [Umumiy manzara](#umumiy-manzara)
 - [Bosqichma-bosqich](#bosqichma-bosqich) — collector, trainer, trigger, worker, dashboard
-- [Matematika](#matematika-bitta-kun-qanday-baholanadi) — oyna, chetlanish, ball, risk
-- [To'liq misol](#toliq-misol-bitta-kun-boshidan-oxirigacha)
-- [Sof ish vaqti](#sof-ish-vaqti--activemin)
-- [O'qitish jarayoni](#oqitish-jarayoni-train--retrain)
+- [Matematika: bitta kun qanday baholanadi](#matematika-bitta-kun-qanday-baholanadi) — oyna, chetlanish, ball, risk
+- [To'liq misol: bitta kun boshidan oxirigacha](#toliq-misol-bitta-kun-boshidan-oxirigacha)
+- [Sof ish vaqti — `activeMin`](#sof-ish-vaqti--activemin)
+- [O'qitish jarayoni (train / retrain)](#oqitish-jarayoni-train--retrain)
 - [Ishga tushganda nima bo'ladi](#ishga-tushganda-nima-boladi)
 - [Dashboard qanday ishlaydi](#dashboard-qanday-ishlaydi)
 - [Yangi detector qo'shish](#yangi-detector-qoshish)
 - [API](#api)
 - [Ma'lumot tuzilmalari](#malumot-tuzilmalari)
+- [Manba bazadagi indeks](#manba-bazadagi-indeks)
 - [Ishga tushirish](#ishga-tushirish)
 - [Sozlamalar](#sozlamalar)
+- [Xatolar va jarayon kuzatuvi](#xatolar-va-jarayon-kuzatuvi)
+- [Stress sinovi natijalari](#stress-sinovi-natijalari)
+- [O'rnatish qo'llanmasi (tizim ma'muri uchun)](#ornatish-qollanmasi-tizim-mamuri-uchun) — **tizim ma'muri shu yerdan boshlaydi**
+- [A. Native o'rnatish (Docker'siz) — asosiy usul](#a-native-ornatish-dockersiz--asosiy-usul) — 13 qadam
+- [B. Docker bilan o'rnatish](#b-docker-bilan-ornatish) — 4 qadam
+- [Muammo chiqsa](#muammo-chiqsa)
+- [Resurs talabi (o'lchangan)](#resurs-talabi-olchangan)
 - [Loglar va kuzatuv](#loglar-va-kuzatuv)
 - [Muammolarni bartaraf etish](#muammolarni-bartaraf-etish)
 - [Testlar](#testlar)
+- [Loyiha tuzilishi](#loyiha-tuzilishi)
 - [Edge caselar](#edge-caselar)
 - [Muhim qoidalar](#muhim-qoidalar)
 
@@ -1888,136 +1897,214 @@ qidiriladi.
    100 xodimda atigi 50 kun yetadi.
 3. **Disk to'lib qolsa** Mongo yozishni to'xtatadi. Bu holat sinalmagan.
 
-## Serverga o'rnatish (Docker'siz)
+## O'rnatish qo'llanmasi (tizim ma'muri uchun)
 
-Docker — faqat qadoqlash usuli. Ilova oddiy Python protsessi:
-`python main.py` ichida FastAPI + scheduler + worker thread'lar.
-Docker'siz ishlashi **sinab ko'rilgan**: host'dan ishga tushirilib,
-`health` uchala xizmat uchun `ok` qaytardi, dashboard ochildi.
+Bu bo'lim **serverga o'rnatadigan odam** uchun. Loyihaning ichki ishlashini
+bilish shart emas — quyidagi qadamlarni ketma-ket bajarish yetarli.
 
-### Serverda kerak bo'ladigan narsalar
+### Nima o'rnatiladi
 
-| | Nima | Izoh |
+Uchta komponent bir serverda ishlaydi:
+
+```
+┌──────────────────────────────────────────────────┐
+│  UEBA server                                     │
+│                                                  │
+│   ueba (Python)  ──►  MongoDB     (mahalliy)     │
+│        │         ──►  RabbitMQ    (mahalliy)     │
+│        │                                         │
+│        └──────────►  DLP MongoDB  (tashqi, FAQAT │
+│                                    O'QISH)       │
+└──────────────────────────────────────────────────┘
+```
+
+| Komponent | Versiya | Vazifasi |
 |---|---|---|
-| 1 | **Python 3.12** (3.10+ ham ishlashi kerak) | sinovlar 3.12 da o'tkazilgan |
-| 2 | **MongoDB 8.x** | mahalliy baza uchun; DLP bazasiga tegilmaydi |
-| 3 | **RabbitMQ 3.13** | navbat |
-| 4 | 7 ta Python paketi | `requirements.txt` |
+| Python | **3.9+** (3.12 da sinalgan) | ilovaning o'zi |
+| MongoDB | **8.x** (4.4+ yetarli) | natijalar saqlanadi |
+| RabbitMQ | **3.13** (3.8+ yetarli) | ish navbati |
 
-Tashqi paketlar ro'yxati qisqa: `pymongo`, `python-dotenv`, `python-dateutil`,
-`fastapi`, `uvicorn`, `pika`, `apscheduler`.
+**DLP bazasiga yozilmaydi.** Foydalanuvchiga faqat o'qish huquqi kerak:
+`clients`, `groups`, `agentsessions` collectionlariga.
 
-### O'rnatish
+### Server talabi
+
+| Xodim soni | vCPU | RAM | Disk |
+|---|---|---|---|
+| 500 gacha | 2 | 2 GB | 20 GB |
+| 2 000 gacha | 2 | 4 GB | 50 GB |
+| 5 000 gacha | 4 | 8 GB | 100 GB |
+
+GPU **kerak emas** — loyihada neyron tarmoq yo'q, hisoblash oddiy
+statistika. Batafsil: [Resurs talabi](#resurs-talabi-olchangan).
+
+### Tarmoq
+
+| Yo'nalish | Port | Nima uchun |
+|---|---|---|
+| UEBA server → DLP MongoDB | `27017` | ma'lumot o'qish |
+| Foydalanuvchi → UEBA server | `8000` | dashboard |
+
+MongoDB va RabbitMQ **mahalliy**, tashqariga ochilmasligi kerak.
+
+---
+
+## A. Native o'rnatish (Docker'siz) — asosiy usul
+
+Quyidagilar **Ubuntu 22.04 / 24.04** uchun. Boshqa distributivda paket
+nomlari farq qiladi, qolgan qadamlar bir xil.
+
+### 1-qadam. Python
+
+Ubuntu 24.04 da 3.12 allaqachon bor:
 
 ```bash
-# 1. Tizim xizmatlari
-sudo apt install -y python3.12 python3.12-venv mongodb-org rabbitmq-server
-sudo systemctl enable --now mongod rabbitmq-server
+python3 --version          # 3.9 dan yuqori bo'lsa yetarli
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip
+```
 
-# 2. Ilova
+Ubuntu 22.04 da standart Python 3.10 — u ham yetadi, qo'shimcha hech narsa
+kerak emas.
+
+### 2-qadam. MongoDB
+
+**Diqqat:** `mongodb-org` Ubuntu repozitoriysida **yo'q**, MongoDB'ning o'z
+repozitoriysini qo'shish kerak:
+
+```bash
+curl -fsSL https://pgp.mongodb.com/server-8.0.asc \
+  | sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg --dearmor
+
+echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg] \
+https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/8.0 multiverse" \
+  | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+
+sudo apt update
+sudo apt install -y mongodb-org
+sudo systemctl enable --now mongod
+```
+
+Tekshirish:
+
+```bash
+mongosh --quiet --eval 'db.runCommand({ping:1})'
+# { ok: 1 }
+```
+
+### 3-qadam. RabbitMQ
+
+Ubuntu repozitoriysidagi versiya (3.12) yetarli:
+
+```bash
+sudo apt install -y rabbitmq-server
+sudo systemctl enable --now rabbitmq-server
+```
+
+Tekshirish:
+
+```bash
+sudo rabbitmqctl status | head -3
+```
+
+> **Parol haqida.** Standart `guest/guest` foydalanuvchisi faqat
+> `localhost` dan ishlaydi — bizda hammasi bitta serverda bo'lgani uchun
+> shu yetarli. Agar RabbitMQ alohida serverga chiqarilsa, yangi
+> foydalanuvchi yaratib `.env` dagi `RABBITMQ_USER` / `RABBITMQ_PASSWORD`
+> ni o'zgartirish kerak.
+
+### 4-qadam. Foydalanuvchi va papkalar
+
+Ilova **root'dan ishlamasligi** kerak:
+
+```bash
 sudo useradd -r -s /usr/sbin/nologin ueba
 sudo mkdir -p /opt/ueba /var/log/ueba
 sudo chown -R ueba:ueba /opt/ueba /var/log/ueba
-# kodni /opt/ueba ga ko'chiring, keyin:
-sudo -u ueba python3.12 -m venv /opt/ueba/venv
+```
+
+### 5-qadam. Kodni joylash
+
+```bash
+sudo -u ueba git clone <REPO-MANZILI> /opt/ueba
+# yoki arxivni ochib: sudo chown -R ueba:ueba /opt/ueba
+```
+
+### 6-qadam. Python muhiti
+
+```bash
+sudo -u ueba python3 -m venv /opt/ueba/venv
+sudo -u ueba /opt/ueba/venv/bin/pip install --upgrade pip
 sudo -u ueba /opt/ueba/venv/bin/pip install -r /opt/ueba/requirements.txt
 ```
 
-### `.env` dagi farqlar
-
-Docker'da servis nomlari ishlatiladi, serverda esa `localhost`:
+Tekshirish:
 
 ```bash
-LOCAL_MONGO_URI=mongodb://localhost:27017   # docker'da: mongodb://mongo:27017
-RABBITMQ_HOST=localhost                     # docker'da: rabbitmq
-LOG_DIR=/var/log/ueba                       # docker'da: logs
-API_HOST=0.0.0.0                            # tashqaridan ko'rinishi uchun
-TZ=Asia/Tashkent                            # compose buni o'zi qo'yardi
+sudo -u ueba /opt/ueba/venv/bin/pip list | grep -iE "pymongo|fastapi|pika"
 ```
 
-### Vaqt mintaqasi — jimgina buziladigan yagona joy
-
-DLP `connectTime`/`disconnectTime` ni **mahalliy vaqtda** saqlaydi (tekshirilgan:
-`dateStr` va `connectTime` kuni 300/300 mos keladi). Pymongo ularni naive
-qaytaradi, bizning `datetime.now()` ham naive mahalliy — ikkalasi bir xil
-mintaqada bo'lsa hammasi joyida.
-
-Server `TZ` si noto'g'ri bo'lsa ilova ma'lumotdan bir necha soat orqada qoladi:
-`window_end = bugungi 00:00` boshqa paytda kesiladi, kursor taqqoslashlari
-siljiydi. **Xato tashlanmaydi** — natija jimgina noto'g'ri bo'ladi.
-
-Uchta himoya:
-
-**1. Ilova vaqti serverdan olinmaydi.** `datetime.now()` operatsion tizimning
-mintaqasini o'qiydi — shuning uchun kodda u ishlatilmaydi. O'rniga
-[`helpers.now()`](utils/helpers.py) bor, u `.env` dagi `APP_TIMEZONE` ni
-o'qiydi:
-
-```python
-def now():
-    return datetime.now(config.TIMEZONE).replace(tzinfo=None)
-```
-
-Server qanday sozlangan bo'lishidan qat'i nazar ilova bir xil ishlaydi.
-O'lchangan:
+Sinalgan versiyalar (muammo chiqsa shularga qaytaring):
 
 ```
-server TZ=UTC                tizim=09:34  ilova=14:34   oyna: 06-16 .. 09-13
-server TZ=Asia/Tashkent      tizim=14:34  ilova=14:34   oyna: 06-16 .. 09-13
-server TZ=America/New_York   tizim=05:34  ilova=14:34   oyna: 06-16 .. 09-13
-server TZ=Pacific/Auckland   tizim=21:34  ilova=14:34   oyna: 06-16 .. 09-13
+pymongo==4.17.0        fastapi==0.141.1       APScheduler==3.11.3
+pika==1.4.4            uvicorn==0.52.4        python-dotenv==1.2.3
+python-dateutil==2.9.0.post0
 ```
 
-Tizim vaqti 05:34 dan 21:34 gacha o'zgardi, ilova vaqti va oyna esa
-o'zgarmadi. [tests/test_config.py](tests/test_config.py) buni qo'riqlaydi.
+### 7-qadam. Sozlash
 
-> **Nomi nega `TZ` emas:** `TZ` — operatsion tizimning o'z o'zgaruvchisi, va
-> `load_dotenv()` mavjud env o'zgaruvchisini ustidan yozmaydi. Ya'ni server
-> `TZ=UTC` bilan ishga tushirilsa `.env` dagi qiymat **jimgina e'tiborsiz
-> qolardi** — aynan oldini olmoqchi bo'lgan holatimiz. Birinchi urinishda
-> shu xatoga yo'l qo'yilgan edi va sinovda aniqlandi.
-
-**2. `.env` dagi mintaqaning O'ZI noto'g'ri bo'lsa ham aniqlanadi.**
-`check_time_alignment()`
-([services/mongo.py](services/mongo.py)) ikkita mustaqil sinov qiladi:
-
-| Tekshiruv | Nimani ushlaydi | Cheklovi |
-|---|---|---|
-| Soat farqi (manba server bilan) | noto'g'ri sozlangan soat | mintaqani ko'rsatmaydi |
-| Manbadagi eng yangi yozuv kelajakdami | **mintaqa xatosi** | ma'lumot yangi bo'lishi shart |
-
-Agent kelajakka yozolmaydi — shuning uchun eng yangi yozuv "hozir" dan keyin
-tursa, soat noto'g'ri. Sinab ko'rilgan:
-
-```
-TZ=Asia/Tashkent  ->  [ok]    ilova 14:21, eng yangi yozuv 13:51
-TZ=UTC            ->  [xato]  manba ma'lumoti 4.5 soat KELAJAKDA ko'rinyapti
+```bash
+sudo -u ueba cp /opt/ueba/.env.example /opt/ueba/.env
+sudo -u ueba nano /opt/ueba/.env
 ```
 
-Ma'lumot eski bo'lsa (demo, arxiv) mintaqa xatosi bilinmaydi — bunda
-`ok` emas, **`nomalum`** qaytariladi: "tekshirib bo'lmadi" deb aytish
-"hammasi joyida" deyishdan halolroq.
+**Majburiy o'zgartiriladigan qatorlar:**
 
-**3. `/api/health` da ko'rinadi:**
-```json
-"time": { "now": "2026-09-14T14:19:32", "tz": "+05", "utcOffset": "+0500" }
+```bash
+# DLP bazasi — bu ikkitasini DLP jamoasidan oling
+MONGO_URI=mongodb://DLP-SERVER-IP:27017/
+DB_NAME=DLP-BAZA-NOMI
+
+# Mahalliy xizmatlar: Docker'siz ishlaganda localhost
+LOCAL_MONGO_URI=mongodb://localhost:27017
+RABBITMQ_HOST=localhost
+
+# Loglar
+LOG_DIR=/var/log/ueba
+
+# Dashboard tashqaridan ko'rinishi uchun
+API_HOST=0.0.0.0
+
+# Vaqt mintaqasi — MUHIM, pastdagi izohga qarang
+APP_TIMEZONE=Asia/Tashkent
 ```
 
-Sozlamalar `.env` da: `APP_TIMEZONE` (Asia/Tashkent), `CLOCK_SKEW_WARN_SEC` (300), `TIME_CHECK_FRESH_HOURS` (24).
+Fayl ichida parol bo'ladi, shuning uchun huquqini toraytiring:
 
-### systemd xizmati
+```bash
+sudo chmod 600 /opt/ueba/.env
+sudo chown ueba:ueba /opt/ueba/.env
+```
 
-`/etc/systemd/system/ueba.service`:
+> **`APP_TIMEZONE` nega muhim.** DLP vaqtni mahalliy mintaqada saqlaydi.
+> Agar bu qiymat noto'g'ri bo'lsa ish kuni chegaralari siljiydi va natija
+> **jimgina** noto'g'ri bo'ladi — xato tashlanmaydi. Ilova buni ishga
+> tushishda tekshiradi va logga yozadi.
 
-```ini
+### 8-qadam. systemd xizmati
+
+```bash
+sudo tee /etc/systemd/system/ueba.service > /dev/null <<'EOF'
 [Unit]
 Description=UEBA — ish vaqti nazorati
 After=network-online.target mongod.service rabbitmq-server.service
-Wants=mongod.service rabbitmq-server.service
+Wants=network-online.target mongod.service rabbitmq-server.service
 
 [Service]
 Type=simple
 User=ueba
+Group=ueba
 WorkingDirectory=/opt/ueba
 EnvironmentFile=/opt/ueba/.env
 Environment=TZ=Asia/Tashkent
@@ -2025,32 +2112,219 @@ ExecStart=/opt/ueba/venv/bin/python main.py
 Restart=always
 RestartSec=10
 
+# Xavfsizlik
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/log/ueba
+
 [Install]
 WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now ueba
 ```
+
+`Restart=always` muhim: protsess yiqilsa systemd uni ko'taradi, ilova esa
+ishga tushishda uzilib qolgan ishlarni avtomatik yopadi.
+
+### 9-qadam. Birinchi ishga tushish
+
+Qo'lda hech narsa qilish **shart emas** — dastur baseline yo'qligini ko'radi
+va o'zi `collector → trainer → trigger` zanjirini bajaradi.
+
+Kuzatish:
 
 ```bash
-sudo systemctl enable --now ueba
-sudo journalctl -u ueba -f          # jonli loglar
+sudo journalctl -u ueba -f
 ```
 
-`Restart=always` muhim: protsess yiqilsa systemd uni qayta ko'taradi, va
-ishga tushishda `recover_stale()` uzilib qolgan job'ni avtomatik yopadi.
+Kutilayotgan yozuvlar:
 
-### Docker bilan farqi yo'q joylar
+```
+Vaqt tekshiruvi [ok]: ilova vaqti ... (TZ +0500)
+3 ta worker ishga tushdi
+Baseline topilmadi — birinchi o'qitish boshlanmoqda (collector -> trainer)
+Birinchi o'qitish tugadi — trigger ishga tushirilmoqda
+trigger run: N client, M yangi event, K kun yuborildi
+```
 
-Kod bir xil, sozlamalar bir xil, ma'lumot tuzilmasi bir xil. Faqat uchta
-narsa o'zgaradi: **servis manzillari**, **log papkasi** va **jarayonni kim
-boshqaradi** (compose o'rniga systemd).
+Xodim soniga qarab bu **bir necha daqiqa** olishi mumkin (2000 xodimda ~2 daqiqa).
 
-### Ehtiyot bo'ling
+> **Butun tarixni darrov ko'rish.** Birinchi o'tishda trigger `LOOKBACK_HOURS`
+> (default 5 soat) ga tayanadi, ya'ni natijalar jadvaliga faqat oxirgi 5
+> soatdagi kunlar tushadi. 90 kunlik tarixni darrov ko'rmoqchi bo'lsangiz,
+> **birinchi ishga tushirishdan oldin** `.env` da `LOOKBACK_HOURS=2160`
+> qo'ying, zanjir tugagach 5 ga qaytaring va `sudo systemctl restart ueba`.
 
-Loyiha papkasini Docker bilan birga ishlatgan bo'lsangiz, `logs/ueba.log`
-**root nomida** yaratilib qolgan bo'lishi mumkin — oddiy foydalanuvchi
-nomidan ishga tushirganda `PermissionError` beradi. Shuning uchun serverda
-`LOG_DIR=/var/log/ueba` qilib, papka egasini ilova foydalanuvchisiga
-bering. (Log papkasi ochilmasa ilova **to'xtamaydi** — ogohlantirish yozib,
-faqat konsolga log yozadi; systemd uni `journalctl` da yig'adi.)
+### 10-qadam. Tekshirish
+
+```bash
+# 1. Xizmat holati
+sudo systemctl status ueba
+
+# 2. Tizim sog'ligi
+curl -s localhost:8000/api/health | python3 -m json.tool
+```
+
+Kutilayotgan javob:
+
+```json
+{
+  "mongo_main":  "ok",      // DLP bazasi o'qilyapti
+  "mongo_local": "ok",      // mahalliy baza
+  "rabbitmq":    "ok",      // navbat
+  "queue_depth": 0,
+  "time": { "tz": "+05", "utcOffset": "+0500" }
+}
+```
+
+Uchalasi ham `"ok"` bo'lsa o'rnatish tugadi.
+
+```bash
+# 3. Natijalar paydo bo'ldimi
+curl -s "localhost:8000/api/results?limit=3" | python3 -m json.tool | head -20
+```
+
+Dashboard: **http://SERVER-IP:8000**
+
+### 11-qadam. Kundalik amallar
+
+| Vazifa | Buyruq |
+|---|---|
+| Holat | `sudo systemctl status ueba` |
+| Jonli loglar | `sudo journalctl -u ueba -f` |
+| Qayta ishga tushirish | `sudo systemctl restart ueba` |
+| To'xtatish | `sudo systemctl stop ueba` |
+| `.env` o'zgarishini qo'llash | `sudo systemctl restart ueba` |
+| Log fayllari | `/var/log/ueba/ueba.log` (5 MB × 3) |
+
+### 12-qadam. Zaxira nusxa
+
+Faqat **mahalliy baza** zaxiralanadi. DLP bazasiga tegilmaydi.
+
+```bash
+mongodump --db=ueba_local --gzip --archive=/backup/ueba-$(date +%F).gz
+```
+
+Tiklash:
+
+```bash
+mongorestore --gzip --archive=/backup/ueba-2026-09-14.gz --drop
+```
+
+> Aslida zaxira **shart emas**: `raw_data_for_train` va `baseline` keyingi
+> o'qitishda qayta quriladi. Yo'qolsa qaytarib bo'lmaydigan yagona narsa —
+> `results` (baholangan kunlar tarixi, 365 kun saqlanadi).
+
+### 13-qadam. Yangilash
+
+```bash
+sudo systemctl stop ueba
+sudo -u ueba git -C /opt/ueba pull
+sudo -u ueba /opt/ueba/venv/bin/pip install -r /opt/ueba/requirements.txt
+sudo systemctl start ueba
+```
+
+`.env` tegilmaydi — u `.gitignore` da. Yangi sozlama qo'shilgan bo'lsa
+`.env.example` bilan solishtiring:
+
+```bash
+diff <(grep -oP '^\w+(?==)' /opt/ueba/.env.example | sort) \
+     <(grep -oP '^\w+(?==)' /opt/ueba/.env | sort)
+```
+
+---
+
+## B. Docker bilan o'rnatish
+
+Serverda Docker bo'lsa bu yo'l ancha qisqa — MongoDB va RabbitMQ ni alohida
+o'rnatish kerak emas, `docker compose` hammasini o'zi ko'taradi.
+
+### 1-qadam. Docker
+
+```bash
+sudo apt install -y docker.io docker-compose-v2
+sudo systemctl enable --now docker
+```
+
+### 2-qadam. Kod va sozlash
+
+```bash
+git clone <REPO-MANZILI> /opt/ueba
+cd /opt/ueba
+cp .env.example .env
+nano .env
+```
+
+O'zgartiriladigan qatorlar (native'dan **farq qiladi** — servis nomlari
+ishlatiladi):
+
+```bash
+MONGO_URI=mongodb://DLP-SERVER-IP:27017/
+DB_NAME=DLP-BAZA-NOMI
+
+LOCAL_MONGO_URI=mongodb://mongo:27017     # servis nomi, localhost EMAS
+RABBITMQ_HOST=rabbitmq                    # servis nomi
+
+LOG_DIR=logs
+API_HOST=0.0.0.0
+APP_TIMEZONE=Asia/Tashkent
+```
+
+### 3-qadam. Ishga tushirish
+
+```bash
+docker compose up -d --build
+```
+
+Tamom. Birinchi o'qitish zanjiri o'zi ishlaydi.
+
+```bash
+docker compose logs -f app
+```
+
+### 4-qadam. Kundalik amallar
+
+| Vazifa | Buyruq |
+|---|---|
+| Holat | `docker compose ps` |
+| Jonli loglar | `docker compose logs -f app` |
+| **`.env` o'zgarishini qo'llash** | `docker compose up -d` |
+| Qayta ishga tushirish | `docker compose restart app` |
+| To'xtatish | `docker compose down` |
+
+> **`restart` va `up -d` farqi.** `docker compose restart` konteynerni qayta
+> ishga tushiradi, lekin `.env` ni **qayta o'qimaydi** — u faqat konteyner
+> yaratilganda o'qiladi. Sozlama o'zgartirsangiz `docker compose up -d`
+> ishlating.
+
+Ma'lumot `ueba_mongo_data` volume'ida qoladi, `docker compose down` uni
+o'chirmaydi.
+
+---
+
+## Muammo chiqsa
+
+| Belgi | Sabab | Yechim |
+|---|---|---|
+| `mongo_main: "error"` | DLP bazasiga ulanib bo'lmayapti | `MONGO_URI`, tarmoq, 27017 porti |
+| `mongo_local: "error"` | mahalliy MongoDB ishlamayapti | `sudo systemctl status mongod` |
+| `rabbitmq: "error"` | navbat ishlamayapti | `sudo systemctl status rabbitmq-server` |
+| Dashboard bo'sh, `results` da 1-2 yozuv | birinchi o'tish faqat 5 soatni oldi | `LOOKBACK_HOURS` (9-qadamdagi izoh) |
+| Barcha kunlar "Baholanmadi" | baseline hali qurilmagan | loglarda "Birinchi o'qitish" tugaganini tekshiring |
+| Ish vaqtlari 5 soatga siljigan | `APP_TIMEZONE` noto'g'ri | 7-qadam, keyin qayta o'qitish |
+| `PermissionError: .../logs/ueba.log` | log papkasi huquqi | `sudo chown -R ueba:ueba /var/log/ueba` |
+
+Loglarda xato bo'lsa dashboardda ham ko'rinadi: yuqoridagi holat qatorida
+**«Xatolar»** tugmasi paydo bo'ladi — har xato odam tilida, texnik kodi va
+«kim tuzatadi» belgisi bilan yoziladi.
+
+Batafsil: [Muammolarni bartaraf etish](#muammolarni-bartaraf-etish),
+[Xatolar va jarayon kuzatuvi](#xatolar-va-jarayon-kuzatuvi).
+
+---
 
 ## Resurs talabi (o'lchangan)
 
