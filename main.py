@@ -13,7 +13,7 @@ import config
 from api.app import create_app
 from mq.worker import start_workers
 from services import jobs, trigger
-from services.mongo import ensure_indexes
+from services.mongo import check_time_alignment, ensure_indexes
 from utils.logger import get_logger
 
 log = get_logger("main")
@@ -59,6 +59,16 @@ def _startup():
         # Mongo hozir yotgan bo'lsa ham dastur ko'tariladi: /api/health xatoni ko'rsatadi,
         # indekslar keyingi trigger o'tishida yaratiladi.
         log.error("Indekslarni yaratib bo'lmadi (Mongo yotgan?): %s", e)
+    # Vaqt mintaqasi mosligini ishga tushishdayoq tekshiramiz: noto'g'ri TZ
+    # xato tashlamaydi, jimgina noto'g'ri natija beradi.
+    try:
+        holat, xabar = check_time_alignment()
+        (log.error if holat == "xato" else
+         log.warning if holat in ("ogohlantirish", "nomalum") else log.info)(
+            "Vaqt tekshiruvi [%s]: %s", holat, xabar)
+    except Exception as e:
+        log.warning("Vaqt tekshiruvi bajarilmadi: %s", e)
+
     start_workers(_stop_event)
 
     _scheduler = BackgroundScheduler()

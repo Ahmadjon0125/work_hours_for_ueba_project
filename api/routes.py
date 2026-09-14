@@ -2,6 +2,7 @@
 import os
 import re
 import threading
+import time
 from collections import Counter, defaultdict
 from datetime import datetime
 
@@ -160,6 +161,10 @@ def health():
                       # Grafik ustun/katak kengligi — kodda qattiq yozilmasin
                       "chartColumnWidth": config.CHART_COLUMN_WIDTH,
                       "chartCellWidth": config.CHART_CELL_WIDTH},
+        # Vaqt mintaqasi: noto'g'ri bo'lsa oyna chegaralari jimgina siljiydi
+        "time": {"now": datetime.now().isoformat(timespec="seconds"),
+                 "tz": time.strftime("%Z") or "?",
+                 "utcOffset": time.strftime("%z") or "?"},
         "lastTrigger": last_trigger,
         # Eski shakl saqlanadi — hozirgi dashboard shundan o'qiydi
         "lastRetrain": last_retrain,

@@ -1453,7 +1453,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 60 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 62 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1471,6 +1471,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `DASHBOARD_POLL_MS`, `DASHBOARD_PROGRESS_HOLD_MS`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
 | **Grafik** | `CHART_COLUMN_WIDTH`, `CHART_CELL_WIDTH` |
 | **Loglar** | `LOG_DIR`, `LOG_FILE`, `LOG_MAX_MB`, `LOG_BACKUPS` |
+| **Vaqt tekshiruvi** | `CLOCK_SKEW_WARN_SEC`, `TIME_CHECK_FRESH_HOURS` |
 | **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
 | **Kuzatuv** | `COL_TRIGGER_RUNS`, `TRIGGER_KEEP_RUNS`, `HEALTH_PING_TIMEOUT` |
 
@@ -1872,9 +1873,51 @@ API_HOST=0.0.0.0                            # tashqaridan ko'rinishi uchun
 TZ=Asia/Tashkent                            # compose buni o'zi qo'yardi
 ```
 
-> `TZ` ni unutmang. Docker'da uni `docker-compose.yml` o'rnatardi; serverda
-> tizim vaqt mintaqasi to'g'ri bo'lishi kerak, aks holda kun chegaralari
-> siljiydi.
+### Vaqt mintaqasi — jimgina buziladigan yagona joy
+
+DLP `connectTime`/`disconnectTime` ni **mahalliy vaqtda** saqlaydi (tekshirilgan:
+`dateStr` va `connectTime` kuni 300/300 mos keladi). Pymongo ularni naive
+qaytaradi, bizning `datetime.now()` ham naive mahalliy — ikkalasi bir xil
+mintaqada bo'lsa hammasi joyida.
+
+Server `TZ` si noto'g'ri bo'lsa ilova ma'lumotdan bir necha soat orqada qoladi:
+`window_end = bugungi 00:00` boshqa paytda kesiladi, kursor taqqoslashlari
+siljiydi. **Xato tashlanmaydi** — natija jimgina noto'g'ri bo'ladi.
+
+Uchta himoya:
+
+**1. TZ ni aniq qo'ying.** systemd unit'iga:
+```ini
+Environment=TZ=Asia/Tashkent
+```
+yoki butun serverga: `sudo timedatectl set-timezone Asia/Tashkent`.
+
+**2. Ishga tushishda avtomatik tekshiriladi.** `check_time_alignment()`
+([services/mongo.py](services/mongo.py)) ikkita mustaqil sinov qiladi:
+
+| Tekshiruv | Nimani ushlaydi | Cheklovi |
+|---|---|---|
+| Soat farqi (manba server bilan) | noto'g'ri sozlangan soat | mintaqani ko'rsatmaydi |
+| Manbadagi eng yangi yozuv kelajakdami | **mintaqa xatosi** | ma'lumot yangi bo'lishi shart |
+
+Agent kelajakka yozolmaydi — shuning uchun eng yangi yozuv "hozir" dan keyin
+tursa, soat noto'g'ri. Sinab ko'rilgan:
+
+```
+TZ=Asia/Tashkent  ->  [ok]    ilova 14:21, eng yangi yozuv 13:51
+TZ=UTC            ->  [xato]  manba ma'lumoti 4.5 soat KELAJAKDA ko'rinyapti
+```
+
+Ma'lumot eski bo'lsa (demo, arxiv) mintaqa xatosi bilinmaydi — bunda
+`ok` emas, **`nomalum`** qaytariladi: "tekshirib bo'lmadi" deb aytish
+"hammasi joyida" deyishdan halolroq.
+
+**3. `/api/health` da ko'rinadi:**
+```json
+"time": { "now": "2026-09-14T14:19:32", "tz": "+05", "utcOffset": "+0500" }
+```
+
+Chegaralar `.env` da: `CLOCK_SKEW_WARN_SEC` (300), `TIME_CHECK_FRESH_HOURS` (24).
 
 ### systemd xizmati
 
@@ -1891,6 +1934,7 @@ Type=simple
 User=ueba
 WorkingDirectory=/opt/ueba
 EnvironmentFile=/opt/ueba/.env
+Environment=TZ=Asia/Tashkent
 ExecStart=/opt/ueba/venv/bin/python main.py
 Restart=always
 RestartSec=10

@@ -5,6 +5,7 @@ Ajratish ataylab: asosiy bazaga yozma amal kod darajasida imkonsiz bo'lsin.
 import time
 from datetime import datetime
 
+import pymongo
 from pymongo import ASCENDING, MongoClient
 
 import config
@@ -79,6 +80,87 @@ def ensure_indexes():
     # detectorlar bo'yicha filtrni qoplaydi.
     results.create_index([("triggeredDetectors", ASCENDING)])
     log.info("Indekslar tekshirildi (4 ta unique + 2 ta qidiruv)")
+
+
+def check_time_alignment():
+    """Ilova soati manba ma'lumoti bilan mos keladimi — ishga tushishda tekshiriladi.
+
+    Nima uchun kerak: DLP `connectTime`/`disconnectTime` ni MAHALLIY vaqtda
+    saqlaydi, pymongo esa ularni naive qaytaradi. Bizning `datetime.now()` ham
+    naive mahalliy. Ikkalasi bir xil mintaqada bo'lsa hammasi joyida.
+
+    Server `TZ` si noto'g'ri bo'lsa (masalan UTC) ilova ma'lumotdan bir necha
+    soat orqada qoladi va oyna chegaralari siljiydi: `window_end = bugungi
+    00:00` boshqa payt kesiladi, kursor taqqoslashlari surinadi. Bu JIMGINA
+    noto'g'ri natija beradi — xato tashlanmaydi.
+
+    Ikkita mustaqil tekshiruv:
+
+    1. **Soat farqi** — ilovaning UTC vaqti manba server soati bilan
+       taqqoslanadi. Har doim ishlaydi, lekin faqat soat noto'g'riligini
+       ko'rsatadi, mintaqa noto'g'riligini emas.
+    2. **Kelajakdagi ma'lumot** — manbadagi eng yangi yozuv ilovaning "hozir"
+       idan keyin turmasligi kerak: agent kelajakka yozolmaydi. Bu mintaqa
+       xatosini aniq ushlaydi, LEKIN faqat ma'lumot yangi bo'lsa. Eski
+       bazada (demo, arxiv) 5 soatlik siljish sezilmaydi — shuning uchun
+       bunday holatda "ok" emas, "tekshirib bo'lmadi" qaytariladi.
+
+    Qaytaradi: (holat, xabar). Holat: "ok" | "ogohlantirish" | "xato" | "nomalum".
+    """
+    tz = time.strftime("%z") or "?"
+    hozir = datetime.now()
+
+    # --- 1. Soat farqi (manba server bilan) ---
+    try:
+        with pymongo.timeout(config.HEALTH_PING_TIMEOUT):
+            info = main_db().client.admin.command("hostInfo")
+        server_utc = info.get("system", {}).get("currentTime")
+    except Exception as e:
+        return "nomalum", f"Manba bazani tekshirib bo'lmadi ({type(e).__name__}): {e}"
+
+    if server_utc is not None:
+        if server_utc.tzinfo is not None:
+            server_utc = server_utc.replace(tzinfo=None)
+        skew = abs((datetime.utcnow() - server_utc).total_seconds())
+        if skew > config.CLOCK_SKEW_WARN_SEC:
+            return "xato", (
+                f"SOAT FARQI: ilova va manba server soati {skew/60:.1f} daqiqa "
+                f"farq qiladi. NTP sozlanganini tekshiring.")
+
+    # --- 2. Kelajakdagi ma'lumot (faqat ma'lumot yangi bo'lsa ma'noli) ---
+    try:
+        with pymongo.timeout(config.HEALTH_PING_TIMEOUT):
+            doc = main_db()[SESSION_COLLECTION].find_one(
+                {config.SESSION_CONNECT_FIELD: {"$ne": None}},
+                {config.SESSION_CONNECT_FIELD: 1},
+                sort=[(config.SESSION_CONNECT_FIELD, -1)])
+    except Exception as e:
+        return "nomalum", f"Sessiyalarni o'qib bo'lmadi ({type(e).__name__}): {e}"
+
+    if not doc:
+        return "nomalum", "Manbada bironta sessiya topilmadi — taqqoslab bo'lmadi"
+
+    eng_yangi = parse_to_datetime(doc.get(config.SESSION_CONNECT_FIELD))
+    if eng_yangi is None:
+        return "nomalum", "Eng yangi yozuvning vaqti o'qilmadi"
+
+    farq_soat = (eng_yangi - hozir).total_seconds() / 3600.0
+    asos = (f"ilova vaqti {hozir:%Y-%m-%d %H:%M} (TZ {tz}), "
+            f"manbadagi eng yangi yozuv {eng_yangi:%Y-%m-%d %H:%M}")
+
+    if farq_soat > 0.25:
+        return "xato", (
+            f"VAQT MINTAQASI NOTO'G'RI BO'LISHI MUMKIN: manba ma'lumoti "
+            f"{farq_soat:.1f} soat KELAJAKDA ko'rinyapti. {asos}. "
+            f"Server TZ sini tekshiring (masalan TZ=Asia/Tashkent).")
+
+    # Ma'lumot eski bo'lsa mintaqa xatosi bilinmaydi — "ok" deyish yolg'on bo'lardi
+    if -farq_soat > config.TIME_CHECK_FRESH_HOURS:
+        return "nomalum", (
+            f"Mintaqani tekshirib bo'lmadi: manbadagi eng yangi yozuv "
+            f"{-farq_soat/24:.1f} kunlik. {asos}")
+
+    return "ok", asos
 
 
 def _group_names():

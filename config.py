@@ -47,6 +47,13 @@ LOG_FILE = os.getenv("LOG_FILE", "ueba.log")
 LOG_MAX_MB = int(os.getenv("LOG_MAX_MB", 5))
 LOG_BACKUPS = int(os.getenv("LOG_BACKUPS", 3))
 
+# --- Vaqt tekshiruvi (ishga tushishda) ---
+# Ilova va manba server soati shundan ko'p farq qilsa xato deb belgilanadi (soniya)
+CLOCK_SKEW_WARN_SEC = int(os.getenv("CLOCK_SKEW_WARN_SEC", 300))
+# Mintaqa tekshiruvi faqat ma'lumot shu muddatdan yangi bo'lsa ma'noli (soat).
+# Eski bazada 5 soatlik siljish bilinmaydi — "ok" deyish yolg'on bo'lardi.
+TIME_CHECK_FRESH_HOURS = float(os.getenv("TIME_CHECK_FRESH_HOURS", 24))
+
 # --- Ish kuni manbasi ---
 # Agent sessiyalari saqlanadigan collection (asosiy bazada). Har yozuv bitta
 # (xodim, kompyuter, kun) uchun: agent qachon serverga ulandi va qachon uzildi.
