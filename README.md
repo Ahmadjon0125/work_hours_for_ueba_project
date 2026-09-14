@@ -1816,6 +1816,95 @@ qidiriladi.
    100 xodimda atigi 50 kun yetadi.
 3. **Disk to'lib qolsa** Mongo yozishni to'xtatadi. Bu holat sinalmagan.
 
+## Resurs talabi (o'lchangan)
+
+Quyidagilar **haqiqiy o'lchov**, taxmin emas. O'lchash sharoiti: Intel
+i5-1135G7 (4 yadro / 8 oqim), 7.4 GB RAM, Docker; 500 va 2000 xodimlik
+sinov bazalari yaratilib, to'liq zanjir ishga tushirildi.
+
+### Tavsiya etilgan server
+
+| Xodim soni | vCPU | RAM | Disk |
+|---|---|---|---|
+| 500 gacha | 2 | 2 GB | 20 GB |
+| 2 000 gacha | 2 | **4 GB** | 50 GB |
+| 5 000 gacha | 4 | 8 GB | 100 GB |
+
+Uchta konteyner: `app` (Python), `mongo`, `rabbitmq`. Image'lar jami **1.8 GB**
+(`mongo` 1.18 GB, `rabbitmq` 392 MB, `app` 234 MB).
+
+### Tezlik — chiziqli o'sadi
+
+| Xodim | Retrain (collector+trainer) | Trigger o'tishi | Python xotirasi |
+|---|---|---|---|
+| 10 | 0.24 s | — | — |
+| 500 | **10.6 s** | — | 73 MB |
+| 2 000 | **42 s** | **74 s** | 144 MB |
+
+Bitta xodimga: retrain **21 ms**, trigger **37 ms** — soni oshganda nisbat
+o'zgarmaydi.
+
+Workerlar 2000 xodimlik yuklamada **navbatni to'ldirmadi** — trigger yozib
+ulgurmasidan hazm qilib bo'ldi. Alohida o'lchangan o'tkazuvchanlik:
+**~680 job/s** (3 worker, 20 500 ta job 30 soniyada).
+
+### Xotira
+
+| | Bo'sh turganda | 2000 xodimlik yuklamada |
+|---|---|---|
+| `app` | 51 MB | 55 MB |
+| `mongo` | 117 MB | 482 MB |
+| `rabbitmq` | 138 MB | 135 MB |
+| **Jami** | **306 MB** | **672 MB** |
+
+Asosiy iste'molchi — MongoDB (WiredTiger keshi), u mavjud RAM ga moslashadi.
+
+### Disk — o'sish cheklangan
+
+Uchala collection ham tozalanadi (`results` 365 kun, `raw` va `trigger_data`
+90 kun), shuning uchun baza **barqaror holatga chiqadi**:
+
+| Xodim | `results`/yil | `raw` | `trigger_data` | JAMI |
+|---|---|---|---|---|
+| 100 | 23 MB | 2 MB | 2 MB | **0.03 GB** |
+| 500 | 117 MB | 10 MB | 9 MB | **0.14 GB** |
+| 1 000 | 234 MB | 20 MB | 19 MB | **0.27 GB** |
+| 2 000 | 469 MB | 41 MB | 38 MB | **0.55 GB** |
+| 5 000 | 1 172 MB | 101 MB | 95 MB | **1.37 GB** |
+
+O'lchangan hujjat hajmlari: `results` 893 B, `raw_data_for_train` 302 B,
+`trigger_data` 282 B; indeks ustamasi +5%.
+
+### DLP manba bazasiga yuk
+
+Bu eng muhim raqam — DLP jamoasi shuni so'raydi.
+
+| | Qiymat |
+|---|---|
+| So'rov turi | faqat `find()`, **yozish yo'q** |
+| Har o'tishda | xodim boshiga **bitta** so'rov |
+| Bitta so'rov | **4.6 ms** (haqiqiy serverda, tarmoq orqali o'lchangan) |
+| Indeks | `clientId_1_computer_1_dateStr_1` — IXSCAN, 17 kalit → 17 hujjat |
+| 2000 xodim uchun bitta o'tish | ~**9 soniya** jami so'rov vaqti |
+| Chastota | trigger har 5 soatda (kuniga ~5 marta) + retrain |
+
+Trigger **kursorli**: birinchi o'tishdan keyin faqat yangi kunlarni o'qiydi,
+90 kunlik to'liq o'qish faqat retrain paytida bo'ladi.
+
+> Miqyos o'lchovlari manba bazasi **shu mashinada** turgan holda
+> qilingan (1.8 ms/so'rov). Tarmoq orqali 4.6 ms, ya'ni 2000 xodimda
+> qo'shimcha ~6 soniya — umumiy vaqtga sezilarli ta'sir qilmaydi.
+
+### Nimalar kerak
+
+1. **Server** — yuqoridagi jadval bo'yicha, Docker o'rnatilgan.
+2. **Tarmoq** — DLP MongoDB'siga `27017` porti ochiq bo'lishi.
+3. **Baza foydalanuvchisi** — DLP bazasida **faqat o'qish** huquqi
+   (`clients`, `groups`, `agentsessions`).
+4. **Yangi indeks kerak emas** — mavjudlari yetarli.
+5. **Zaxira nusxa** — faqat mahalliy baza (`ueba_local`); manba bazaga
+   tegilmaydi.
+
 ## Loglar va kuzatuv
 
 Loglar `logs/ueba.log` ga va konsolga yoziladi:
