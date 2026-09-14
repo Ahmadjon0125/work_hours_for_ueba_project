@@ -14,7 +14,7 @@ yozadiganidan farq qilmaydi — ayni funksiya chaqiriladi.
     python scripts/rebuild_results.py --apply    # yozadi
 
 Chegaralar:
-  - manba (alpha-demo) bazaga UMUMAN tegilmaydi — faqat mahalliy ueba_local;
+  - manba (DLP) bazaga UMUMAN tegilmaydi — faqat mahalliy ueba_local;
   - arxivda yo'q kunlarga tegilmaydi (bugungi tugallanmagan kun, oynadan
     eski natijalar) — ular keyingi trigger o'tishida o'z-o'zidan yangilanadi;
   - hech narsa o'chirilmaydi, faqat upsert.

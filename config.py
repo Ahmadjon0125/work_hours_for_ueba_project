@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- Asosiy MongoDB (alpha-demo) — FAQAT O'QISH ---
+# --- Asosiy MongoDB (DLP bazasi) — FAQAT O'QISH ---
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "alpha-demo")
+DB_NAME = os.getenv("DB_NAME", "dlp")
 
 # --- Mahalliy MongoDB — barcha yozuvlar ---
 LOCAL_MONGO_URI = os.getenv("LOCAL_MONGO_URI", "mongodb://localhost:27017")

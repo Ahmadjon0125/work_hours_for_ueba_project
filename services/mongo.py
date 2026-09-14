@@ -27,7 +27,7 @@ _local_client = None
 
 
 def main_db():
-    """alpha-demo — FAQAT find() uchun."""
+    """DLP bazasi — FAQAT find() uchun."""
     global _main_client
     if _main_client is None:
         _main_client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=10000)

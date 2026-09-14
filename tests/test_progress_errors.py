@@ -427,7 +427,7 @@ def test_xato_tasnifi():
          "o'qib bo'lmadi", "retrain"),
         ("dastur qayta ishga tushdi, job uzilib qoldi", None,
          "uzilib qoldi", "retrain"),
-        ("192.168.100.8:27017: [Errno 101] Network is unreachable", None,
+        ("db-server:27017: [Errno 101] Network is unreachable", None,
          "ulanib bo'lmadi", "tekshiruv"),
         ("E11000 duplicate key error", "DuplicateKeyError",
          "ikki marta", "tekshiruv"),

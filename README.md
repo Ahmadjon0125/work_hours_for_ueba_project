@@ -61,7 +61,7 @@ chetlanishli kunlar soni. Xavfi nol xodim ham ro'yxatda qoladi.*
 ## Umumiy manzara
 
 ```
-alpha-demo.agentsessions                 (DLP bazasi — FAQAT O'QILADI)
+dlp.agentsessions                 (DLP bazasi — FAQAT O'QILADI)
         │
         ├── COLLECTOR ──► raw_data_for_train ──► TRAINER ──► baseline
         │   (90 kunlik tarix)                                (o'rganilgan norma)
@@ -78,7 +78,7 @@ Pastdagisi — **baholash**, har 5 soatda avtomatik.
 
 | Baza | Rejim | Nima bor |
 |---|---|---|
-| `alpha-demo` (DLP) | **faqat o'qish** | `agentsessions`, `clients`, `groups` |
+| `dlp` (DLP) | **faqat o'qish** | `agentsessions`, `clients`, `groups` |
 | `ueba_local` | o'qish/yozish | `raw_data_for_train`, `baseline`, `baseline_runs`, `trigger_data`, `results`, `training_jobs` |
 
 Ajratish kod darajasida: [services/mongo.py](services/mongo.py) da ikkita
@@ -286,7 +286,7 @@ Har thread **o'z ulanishiga** ega — `pika` talabi: bir connection, bir thread.
 {
   "jobId": "8f3c...uuid4",
   "clientId": "6a68d16e4abd38577c6314fb",
-  "hostname": "azam@azam-upc",
+  "hostname": "xodim2@pc-02",
   "windowStart": "2026-09-08T00:00:00",
   "windowEnd": "2026-09-09T12:00:00",
   "days": {
@@ -481,7 +481,7 @@ yaxlitlashi» qiladi (`round(24.5) == 24`).
 
 #### Uchta haqiqiy misol
 
-Bir xodim, `sanja@desktop-q46u2et`:
+Bir xodim, `xodim1@pc-01`:
 
 **5-sentabr, shanba → 2 ball**
 
@@ -629,7 +629,7 @@ yolg'on bo'lardi. Bunday kunda `anomalyScore` va `riskScore` — `null`,
 
 ## To'liq misol: bitta kun boshidan oxirigacha
 
-Real ma'lumot, `azam@azam-upc`, 2026-08-25 (seshanba).
+Real ma'lumot, `xodim2@pc-02`, 2026-08-25 (seshanba).
 
 **1. Manbada nima bor**
 
@@ -1209,7 +1209,7 @@ Alohida endpoint, chunki `/api/results` bitta xodim tanlanganda faqat
 o'shaning kunlarini qaytaradi, bu jadval esa har doim hammasini talab qiladi.
 
 ```json
-[{ "clientId": "...", "hostname": "azam@azam-upc", "fullName": null,
+[{ "clientId": "...", "hostname": "xodim2@pc-02", "fullName": null,
    "unit": "linux-dev",        // lavozim -> bo'lim -> guruh nomi
    "overallRisk": 29,          // oraliqdagi riskScore yig'indisi
    "recentRisk": 2,            // oxirgi RISK_RECENT_DAYS kunlik yig'indi
@@ -1251,8 +1251,8 @@ Parametrlar: `from`, `to`. Saralash — `overallRisk` kamayish tartibida.
 ### `GET /api/clients`
 
 ```json
-[{ "clientId": "...", "hostname": "azam@azam-upc", "fullName": null,
-   "label": "azam@azam-upc", "days": 13, "lastDate": "2026-09-08",
+[{ "clientId": "...", "hostname": "xodim2@pc-02", "fullName": null,
+   "label": "xodim2@pc-02", "days": 13, "lastDate": "2026-09-08",
    "stale": false }]
 ```
 
@@ -1272,7 +1272,7 @@ Har xodim × har kun = 1 hujjat. `trigger_data` ham **aynan shu shaklda**.
 ```json
 {
   "clientId": "6a68d16e4abd38577c6314fb",
-  "hostname": "azam@azam-upc",
+  "hostname": "xodim2@pc-02",
   "fullName": null,
   "date": "2026-08-25",
   "dayOfWeek": "Tuesday",
@@ -1299,7 +1299,7 @@ Har xodim × har kun = 1 hujjat. `trigger_data` ham **aynan shu shaklda**.
 {
   "baselineId": "6aa12294c00c35a67bdbd5c8",
   "clientId": "6a68d16e4abd38577c6314fb",
-  "hostname": "azam@azam-upc",
+  "hostname": "xodim2@pc-02",
   "windowDays": 90,
   "minDowSamples": 3,
   "totalDays": 13,
@@ -1329,7 +1329,7 @@ Har xodim × har kun = 1 hujjat. `trigger_data` ham **aynan shu shaklda**.
 
 ```json
 {
-  "clientId": "...", "hostname": "azam@azam-upc", "fullName": null,
+  "clientId": "...", "hostname": "xodim2@pc-02", "fullName": null,
   "date": "2026-08-25", "dayOfWeek": "Tuesday",
   "start": "22:17:05", "finish": "23:17:05",
   "durationMin": 60.0, "activeMin": 0.0, "eventCount": 1,
@@ -1717,7 +1717,7 @@ Xodim darajasidagi xato butun zanjirni yiqitmaydi. O'lchangan (10 xodimdan
 status        partial
 errorCount    3
 kun / xodim   448 / 10
-tushib qolgan: jasur@dg-pc-02, malika@dg-pc-03, sardor@dg-pc-04
+tushib qolgan: xodim3@pc-03, xodim4@pc-04, xodim5@pc-05
 ```
 
 Qolgan 7 xodimning ma'lumoti yangilandi, tushib qolgan 3 tasiniki **eski
@@ -2186,7 +2186,7 @@ Loglar `logs/ueba.log` ga va konsolga yoziladi:
 
 ```
 2026-09-09 14:10:43 | INFO | ueba.collector | Collector boshlandi: 15 active client, oyna ...
-2026-09-09 14:10:43 | INFO | ueba.collector | 6a68d16e... (azam@azam-upc): 13 kun yozildi
+2026-09-09 14:10:43 | INFO | ueba.collector | 6a68d16e... (xodim2@pc-02): 13 kun yozildi
 2026-09-09 14:11:23 | INFO | ueba.trigger   | trigger run: 15 client, 369 yangi event, 1 kun yuborildi, 9 kun skip
 2026-09-09 14:11:23 | INFO | ueba.worker    | Worker 2: job bajarildi (1 kun)
 ```
