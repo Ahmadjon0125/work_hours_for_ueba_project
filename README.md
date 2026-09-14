@@ -2016,6 +2016,13 @@ sinov bazalari yaratilib, to'liq zanjir ishga tushirildi.
 Uchta konteyner: `app` (Python), `mongo`, `rabbitmq`. Image'lar jami **1.8 GB**
 (`mongo` 1.18 GB, `rabbitmq` 392 MB, `app` 234 MB).
 
+> **Mutlaq raqamlar mashinaning holatiga bog'liq.** Quyidagi jadval
+> mahalliy MongoDB deyarli bo'sh bo'lganda o'lchangan. Keyinroq o'sha shakl
+> (500 xodim) bazada 800 MB boshqa ma'lumot turganda **32.7 s** chiqdi —
+> ya'ni 3 barobar sekin. Sabab: WiredTiger keshi bo'linadi. Nisbatlar
+> (chiziqlilik, omillar ta'siri) ishonchli, mutlaq vaqtlar esa serverning
+> yuklanganiga qarab farq qiladi.
+
 ### Tezlik — chiziqli o'sadi
 
 | Xodim | Retrain (collector+trainer) | Trigger o'tishi | Python xotirasi |
@@ -2057,6 +2064,91 @@ Uchala collection ham tozalanadi (`results` 365 kun, `raw` va `trigger_data`
 
 O'lchangan hujjat hajmlari: `results` 893 B, `raw_data_for_train` 302 B,
 `trigger_data` 282 B; indeks ustamasi +5%.
+
+### Sarf nimaga bog'liq
+
+Faqat xodimlar soniga emas. Omillar ajratib o'lchandi (hammasi 500 xodim,
+bir seansda, ketma-ket):
+
+| Nima o'zgardi | Vaqt | Qayta ishlangan kun |
+|---|---|---|
+| asos: 1 kompyuter, 90 kun | 32.7 s | 32 000 |
+| **3 kompyuter** (manba 3× kattaroq) | 34.7 s (**+6%**) | 32 000 |
+| **180 kun** (oyna 2×) | 64.3 s (**+96%**) | 64 000 |
+
+**Asosiy omil — qayta ishlanadigan kunlar soni**, ya'ni `xodim × DAYS_WINDOW`.
+500 xodim × 90 kun va 250 xodim × 180 kun bir xil turadi.
+
+**Kompyuterlar soni deyarli ta'sir qilmaydi** — bir xodimning bir kunidagi
+bir necha kompyuteri xotirada bitta kunga birlashtiriladi, natija soni
+o'zgarmaydi.
+
+**Xodimning faolligi umuman ta'sir qilmaydi.** Bu `agentsessions` ga
+o'tishning kutilmagan yutug'i. Haqiqiy bazada o'lchangan:
+
+```
+agentsessions:         xodim-kuniga 1 hujjat (309/314 holatda, qolgani 2 kompyuter)
+agentsessionstatuses:  o'rtacha 5, eng ko'pi 61 hodisa/kun
+```
+
+Eski manbada kun bo'yi ishlagan xodim 61 ta hodisa yaratardi va sarf o'sardi.
+Yangisida hujjat soni **kompyuter soniga** bog'liq, faollikka emas.
+
+### Cheklov protsessor emas, baza
+
+Retrain vaqti qismlarga ajratildi (500 xodim, 32 000 kun):
+
+```
+manbadan o'qish              1.1 s
+mahalliy bazaga yozish      ~28 s      <- 96%
+```
+
+32 000 ta `update_one(upsert=True)` bittalab yuboriladi, bittasi ~0.9 ms.
+
+Protsessor sarfi ham shuni tasdiqlaydi:
+
+```
+jami vaqt (wall)  0.68 s
+protsessor vaqti  0.11 s
+protsessor ulushi   16%      <- qolgan 84% bazani kutish
+```
+
+Ikkita xulosa:
+
+1. **DLP manba bazasiga tushadigan yuk yanada kichik** — quyidagi jadvaldagi
+   raqamlar ham yuqori chegara.
+2. **Mahalliy MongoDB — asosiy cheklov.** Server tanlashda pulni protsessorga
+   emas, **SSD va RAM ga** sarflash foydaliroq. `bulk_write` bilan bu joyni
+   5–10 barobar tezlashtirish mumkin (hali qilinmagan).
+
+### GPU kerakmi — yo'q
+
+Bu loyihada neyron tarmoq yo'q. «O'qitish» — har xodim, har hafta kuni uchun
+ikkita raqam:
+
+```python
+meanStart = sum(starts) / n
+stdStart  = sqrt(sum((x - mean)**2) / (n - 1))
+```
+
+`numpy` ham, `torch` ham, `sklearn` ham ishlatilmaydi — faqat Python'ning o'z
+arifmetikasi. Baholash ham bitta bo'lish: `z = (vaqt − o'rtacha) / og'ish`.
+
+Yuqorida ko'rinib turibdi: protsessor vaqtning atigi 16% ida ishlaydi. GPU
+qolgan 84% — baza kutishini tezlashtirmaydi.
+
+GPU faqat kelajakda **boshqa turdagi detektor** qo'shilganda kerak bo'lishi
+mumkin:
+
+| Detektor turi | GPU |
+|---|---|
+| Ish vaqti (hozirgi), USB, fayl hajmi — sanoq va chegara | kerak emas |
+| Xodimlarni guruhlash (clustering), 10 000 tagacha | kerak emas |
+| Matn tahlili (email, clipboard mazmuni) | ehtimol |
+| Ketma-ketlik modellari (LSTM/Transformer) | ha |
+
+Ya'ni GPU **ma'lumot mazmunini** tahlil qilganda kerak bo'ladi, vaqt va
+sanoqlarni emas.
 
 ### DLP manba bazasiga yuk
 
