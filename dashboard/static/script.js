@@ -164,16 +164,20 @@ function describe(row) {
   if (!o) return [];
   const oyna = `Ish oynasi ${minutesToHHMM(o.lo)}–${minutesToHHMM(o.hi)}`;
   const out = [];
-  if (o.before >= 1) {
+  // 1 daqiqadan kichik chetlanish ham chetlanish — matnsiz qolmasin.
+  // Ilgari chegara `>= 1` edi va bunday kun kartada sababsiz "Chetlanish"
+  // bo'lib chiqardi.
+  const miqdor = (m) => (m < 1 ? '1 daqiqadan kam' : humanMinutes(m));
+  if (o.before > 0) {
     out.push({
-      text: `Ish oynasi boshlanishidan ${humanMinutes(o.before)} oldin faollik`,
+      text: `Ish oynasi boshlanishidan ${miqdor(o.before)} oldin faollik`,
       detail: `Birinchi faollik ${row.start.slice(0, 5)} · ${oyna}`,
       z: o.before,
     });
   }
-  if (o.after >= 1) {
+  if (o.after > 0) {
     out.push({
-      text: `Ish oynasi tugaganidan ${humanMinutes(o.after)} keyin faollik`,
+      text: `Ish oynasi tugaganidan ${miqdor(o.after)} keyin faollik`,
       detail: `Oxirgi faollik ${row.finish.slice(0, 5)} · ${oyna}`,
       z: o.after,
     });
