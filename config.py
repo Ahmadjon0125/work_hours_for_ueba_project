@@ -39,6 +39,14 @@ SOURCE_READ_RETRY_DELAY = float(os.getenv("SOURCE_READ_RETRY_DELAY", 2))
 SINGLE_EVENT_STAY_HOURS = float(os.getenv("SINGLE_EVENT_STAY_HOURS", 1))
 RESULTS_RETENTION_DAYS = int(os.getenv("RESULTS_RETENTION_DAYS", 365))
 
+# --- Loglar ---
+# Log papkasi. Docker'da loyiha ichidagi `logs/`, serverda odatda
+# `/var/log/ueba`. Papka ochilmasa dastur to'xtamaydi — konsolga yozadi.
+LOG_DIR = os.getenv("LOG_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs"))
+LOG_FILE = os.getenv("LOG_FILE", "ueba.log")
+LOG_MAX_MB = int(os.getenv("LOG_MAX_MB", 5))
+LOG_BACKUPS = int(os.getenv("LOG_BACKUPS", 3))
+
 # --- Ish kuni manbasi ---
 # Agent sessiyalari saqlanadigan collection (asosiy bazada). Har yozuv bitta
 # (xodim, kompyuter, kun) uchun: agent qachon serverga ulandi va qachon uzildi.

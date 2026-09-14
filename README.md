@@ -1445,7 +1445,7 @@ venv/bin/python main.py
 
 ## Sozlamalar
 
-**Kodda qattiq yozilgan qiymat yo'q — 56 tasi ham `.env` da.** Buni
+**Kodda qattiq yozilgan qiymat yo'q — 60 tasi ham `.env` da.** Buni
 [tests/test_config.py](tests/test_config.py) qo'riqlaydi: u `config.py` ni
 AST bilan tekshiradi (har bir bosh harfli qiymat `os.getenv` orqali
 olinishi shart) va keyin har bir sozlamani haqiqatan almashtirib ko'radi.
@@ -1462,6 +1462,7 @@ Kimdir kodga qattiq qiymat yozib qo'ysa test yiqiladi.
 | **Detectorlar** | `DETECTOR_WEIGHT_<NOM>` |
 | **Dashboard** | `DASHBOARD_RANGE_DAYS`, `DASHBOARD_MAX_ISSUES`, `DASHBOARD_POLL_MS`, `DASHBOARD_PROGRESS_HOLD_MS`, `SEVERITY_HIGH`, `SEVERITY_MEDIUM`, `SEVERITY_LOW` |
 | **Grafik** | `CHART_COLUMN_WIDTH`, `CHART_CELL_WIDTH` |
+| **Loglar** | `LOG_DIR`, `LOG_FILE`, `LOG_MAX_MB`, `LOG_BACKUPS` |
 | **Xavf jadvali** | `RISK_RECENT_DAYS`, `RISK_TREND_POINTS`, `RISK_LEVEL_HIGH`, `RISK_LEVEL_MEDIUM` |
 | **Kuzatuv** | `COL_TRIGGER_RUNS`, `TRIGGER_KEEP_RUNS`, `HEALTH_PING_TIMEOUT` |
 
@@ -1815,6 +1816,103 @@ qidiriladi.
    = 5475 — chegaradan oshadi va eng eski kunlar **jimgina** tushib qoladi.
    100 xodimda atigi 50 kun yetadi.
 3. **Disk to'lib qolsa** Mongo yozishni to'xtatadi. Bu holat sinalmagan.
+
+## Serverga o'rnatish (Docker'siz)
+
+Docker — faqat qadoqlash usuli. Ilova oddiy Python protsessi:
+`python main.py` ichida FastAPI + scheduler + worker thread'lar.
+Docker'siz ishlashi **sinab ko'rilgan**: host'dan ishga tushirilib,
+`health` uchala xizmat uchun `ok` qaytardi, dashboard ochildi.
+
+### Serverda kerak bo'ladigan narsalar
+
+| | Nima | Izoh |
+|---|---|---|
+| 1 | **Python 3.12** (3.10+ ham ishlashi kerak) | sinovlar 3.12 da o'tkazilgan |
+| 2 | **MongoDB 8.x** | mahalliy baza uchun; DLP bazasiga tegilmaydi |
+| 3 | **RabbitMQ 3.13** | navbat |
+| 4 | 7 ta Python paketi | `requirements.txt` |
+
+Tashqi paketlar ro'yxati qisqa: `pymongo`, `python-dotenv`, `python-dateutil`,
+`fastapi`, `uvicorn`, `pika`, `apscheduler`.
+
+### O'rnatish
+
+```bash
+# 1. Tizim xizmatlari
+sudo apt install -y python3.12 python3.12-venv mongodb-org rabbitmq-server
+sudo systemctl enable --now mongod rabbitmq-server
+
+# 2. Ilova
+sudo useradd -r -s /usr/sbin/nologin ueba
+sudo mkdir -p /opt/ueba /var/log/ueba
+sudo chown -R ueba:ueba /opt/ueba /var/log/ueba
+# kodni /opt/ueba ga ko'chiring, keyin:
+sudo -u ueba python3.12 -m venv /opt/ueba/venv
+sudo -u ueba /opt/ueba/venv/bin/pip install -r /opt/ueba/requirements.txt
+```
+
+### `.env` dagi farqlar
+
+Docker'da servis nomlari ishlatiladi, serverda esa `localhost`:
+
+```bash
+LOCAL_MONGO_URI=mongodb://localhost:27017   # docker'da: mongodb://mongo:27017
+RABBITMQ_HOST=localhost                     # docker'da: rabbitmq
+LOG_DIR=/var/log/ueba                       # docker'da: logs
+API_HOST=0.0.0.0                            # tashqaridan ko'rinishi uchun
+TZ=Asia/Tashkent                            # compose buni o'zi qo'yardi
+```
+
+> `TZ` ni unutmang. Docker'da uni `docker-compose.yml` o'rnatardi; serverda
+> tizim vaqt mintaqasi to'g'ri bo'lishi kerak, aks holda kun chegaralari
+> siljiydi.
+
+### systemd xizmati
+
+`/etc/systemd/system/ueba.service`:
+
+```ini
+[Unit]
+Description=UEBA — ish vaqti nazorati
+After=network-online.target mongod.service rabbitmq-server.service
+Wants=mongod.service rabbitmq-server.service
+
+[Service]
+Type=simple
+User=ueba
+WorkingDirectory=/opt/ueba
+EnvironmentFile=/opt/ueba/.env
+ExecStart=/opt/ueba/venv/bin/python main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now ueba
+sudo journalctl -u ueba -f          # jonli loglar
+```
+
+`Restart=always` muhim: protsess yiqilsa systemd uni qayta ko'taradi, va
+ishga tushishda `recover_stale()` uzilib qolgan job'ni avtomatik yopadi.
+
+### Docker bilan farqi yo'q joylar
+
+Kod bir xil, sozlamalar bir xil, ma'lumot tuzilmasi bir xil. Faqat uchta
+narsa o'zgaradi: **servis manzillari**, **log papkasi** va **jarayonni kim
+boshqaradi** (compose o'rniga systemd).
+
+### Ehtiyot bo'ling
+
+Loyiha papkasini Docker bilan birga ishlatgan bo'lsangiz, `logs/ueba.log`
+**root nomida** yaratilib qolgan bo'lishi mumkin — oddiy foydalanuvchi
+nomidan ishga tushirganda `PermissionError` beradi. Shuning uchun serverda
+`LOG_DIR=/var/log/ueba` qilib, papka egasini ilova foydalanuvchisiga
+bering. (Log papkasi ochilmasa ilova **to'xtamaydi** — ogohlantirish yozib,
+faqat konsolga log yozadi; systemd uni `journalctl` da yig'adi.)
 
 ## Resurs talabi (o'lchangan)
 
