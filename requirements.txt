@@ -1,7 +1,16 @@
-pymongo
-python-dotenv
-python-dateutil
-fastapi
-uvicorn
-pika
-apscheduler
+# Katta versiya qulflangan, kichigi ochiq: xavfsizlik yangilanishlari keladi,
+# lekin API'ni buzadigan katta versiya kelmaydi.
+#
+# Eng xavflisi — APScheduler 4.x: u to'liq qayta yozilgan, `BackgroundScheduler`
+# API'si boshqacha. Chiqqan kuni cheklovsiz `pip install` uni tortib olardi.
+#
+# Sinalgan versiyalar (2026-09): pymongo 4.18.1, fastapi 0.141.1,
+# uvicorn 0.53.0, pika 1.4.4, apscheduler 3.11.3, dotenv 1.2.3, dateutil 2.9.0
+
+pymongo>=4.17,<5
+python-dotenv>=1.2,<2
+python-dateutil>=2.9,<3
+fastapi>=0.141,<1
+uvicorn>=0.52,<1
+pika>=1.4,<2
+apscheduler>=3.11,<4

@@ -2044,13 +2044,19 @@ Tekshirish:
 sudo -u ueba /opt/ueba/venv/bin/pip list | grep -iE "pymongo|fastapi|pika"
 ```
 
-Sinalgan versiyalar (muammo chiqsa shularga qaytaring):
+`requirements.txt` da **katta versiya qulflangan, kichigi ochiq**:
 
 ```
-pymongo==4.17.0        fastapi==0.141.1       APScheduler==3.11.3
-pika==1.4.4            uvicorn==0.52.4        python-dotenv==1.2.3
-python-dateutil==2.9.0.post0
+pymongo>=4.17,<5        fastapi>=0.141,<1      apscheduler>=3.11,<4
+pika>=1.4,<2            uvicorn>=0.52,<1       python-dotenv>=1.2,<2
+python-dateutil>=2.9,<3
 ```
+
+Shunday qilingani bejiz emas: xavfsizlik yangilanishlari avtomatik keladi
+(4.17 → 4.19), lekin API'ni buzadigan katta versiya kelmaydi. Eng xavflisi
+**APScheduler 4.x** — u to'liq qayta yozilgan, `BackgroundScheduler` API'si
+boshqacha. Cheklovsiz `pip install` uni chiqqan kuni tortib olardi va ilova
+ishga tushmay qolardi.
 
 ### 7-qadam. Sozlash
 

@@ -4,6 +4,7 @@ DIQQAT: faqat BITTA protsess sifatida ishga tushiriladi (`python main.py`).
 uvicorn --workers rejimi ishlatilmaydi — aks holda scheduler va workerlar ko'payadi.
 """
 import threading
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
 import uvicorn
@@ -20,7 +21,6 @@ from utils.helpers import now as hozir
 from utils.logger import get_logger
 
 log = get_logger("main")
-app = create_app()
 
 _stop_event = threading.Event()
 _scheduler = None
@@ -99,8 +99,8 @@ def _bootstrap():
     _trigger_job()
 
 
-@app.on_event("startup")
-def _startup():
+def _ishga_tushirish():
+    """Ishga tushish ilgagi: indekslar, tiklash, workerlar, bootstrap, scheduler."""
     global _scheduler
     try:
         ensure_indexes()
@@ -140,12 +140,33 @@ def _startup():
              config.TRIGGER_INTERVAL_HOURS)
 
 
-@app.on_event("shutdown")
-def _shutdown():
+def _toxtatish():
+    """To'xtash ilgagi: workerlarga signal, scheduler'ni yopish.
+
+    `_stop_event` bo'lmasa worker thread'lar navbatdan o'qishda davom etadi
+    va protsess `docker compose down` / `systemctl stop` da osilib qoladi.
+    """
     _stop_event.set()
     if _scheduler is not None:
         _scheduler.shutdown(wait=False)
     log.info("To'xtatildi")
+
+
+@asynccontextmanager
+async def _lifespan(app):
+    """Dastur hayotining boshi va oxiri — bitta joyda.
+
+    `yield` dan OLDINGISI ishga tushganda, KEYINGISI to'xtaganda bajariladi.
+    Ilgari bu ikkita alohida `@app.on_event(...)` edi; u FastAPI'da eskirgan.
+    """
+    _ishga_tushirish()
+    try:
+        yield
+    finally:
+        _toxtatish()
+
+
+app = create_app(lifespan=_lifespan)
 
 
 if __name__ == "__main__":
