@@ -1033,10 +1033,10 @@ async function setDefaultRange() {
 }
 
 async function init() {
-  $('refresh').addEventListener('click', async () => {
-    await loadRiskSummary();
-    await loadResults();
-  });
+  // "Jadvalni yangilash" tugmasi olib tashlandi: u sana o'zgartirish bilan
+  // AYNAN bir xil ish qilardi (loadRiskSummary + loadResults), ya'ni takror
+  // edi. Filtr o'zgarsa ma'lumot o'zi yuklanadi, bundan tashqari har 5
+  // daqiqada avtomatik yangilanadi.
   $('retrain').addEventListener('click', startRetrain);
   for (const id of ['from', 'to']) {
     $(id).addEventListener('change', async () => {

@@ -835,13 +835,19 @@ Grafiklar brauzerda `document.createElementNS` bilan chiziladi.
 Sahifa uch qismdan iborat:
 
 ```
-[ Sana … dan … Xodim ▾  ☐ Faqat chetlanishlar  [Jadvalni yangilash] … [Qayta o'qitish] ]
+[ Sana … dan … Xodim ▾  ☐ Faqat chetlanishlar … [Qayta o'qitish (retrain)] ]
 [ jarayon chizig'i · oxirgi yangilash · oxirgi tekshiruv · [Xatolar] ]
 [ Xulosa — bir jumlada nima bo'lgani ]
 
 ┌ Kuzatuvdagi xodimlar 15 ┬ E'tibor talab… 3 ┬ Ish oynasi… ┬ Barcha kunlar 12 ┐
 │ (faol tab paneli)                                                            │
 ```
+
+Filtr o'zgarsa ma'lumot **o'zi qayta yuklanadi** — alohida «yangilash»
+tugmasi yo'q. Ilgari bor edi, lekin u sana o'zgartirish bilan aynan bir xil
+ish qilardi (`loadRiskSummary` + `loadResults`), ya'ni takror edi va yonidagi
+«Qayta o'qitish» bilan chalkashtirardi. Bundan tashqari sahifa har **5
+daqiqada** o'zi yangilanadi.
 
 Filtrlar, holat qatori va xulosa **har doim** ko'rinadi — ular butun tanlovga
 tegishli. Qolgan to'rtta panel esa **tab**: bir vaqtda bittasi ochiq.
